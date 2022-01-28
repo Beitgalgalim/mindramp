@@ -3,17 +3,16 @@ import * as api from './api'
 
 import './App.css';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import { Text, HBox, Spacer, ResponsiveTab, TabPanel } from './elem';
+import { Text, HBox, Spacer } from './elem';
 
-import {  BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {  BrowserRouter, Routes, Route } from "react-router-dom";
 
-import { Collapse, Tabs } from '@material-ui/core';
+import { Collapse } from '@material-ui/core';
 import { Button } from '@mui/material';
 
 import { MsgButton, NotificationMessage } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
-import { isPropsEqual } from '@fullcalendar/react';
 
 function App(props:any) {
 
@@ -80,25 +79,12 @@ function App(props:any) {
         </Alert>
       </Collapse>}
 
-
-
-
       <BrowserRouter>
         <Routes>
-          <Route path="/admin" element={<Admin connected={connected}/>} />
-          <Route path="/" element={<UserEvents />} />
+          <Route path="/admin" element={<Admin connected={connected} notify={notify} user={user}/>} />
+          <Route path="/" element={<UserEvents notify={notify} user={user}/>} />
         </Routes>
       </BrowserRouter>
-
-
-
-
-
-
-
-
-
-
     </div>
   );
 }

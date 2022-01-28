@@ -76,7 +76,7 @@ export function Toolbar(props: any) {
 }
 
 export function TabPanel(props: any) {
-    const { children, value, index, ...other } = props;
+    const { children, value, index, style, ...other } = props;
 
     return (
         <Typography
@@ -85,7 +85,7 @@ export function TabPanel(props: any) {
             hidden={value !== index}
             id={`scrollable-auto-tabpanel-${index}`}
             {...other}
-            style={{ padding: 0 }}
+            style={{...style, padding: 0 }}
         >
             {props.title ? <h1 style={{textAlign:"center"}}>{props.title}</h1> : null}
             <Box style={{ padding: 2 }} p={3}>{children}</Box>
@@ -107,5 +107,7 @@ export function Text(props: any) {
         backgroundColor: props.backgroundColor,
         color: props.color,
         transform: props.transform || undefined
-    }}>{props.children}</div>
+    }}
+    onClick={props.onClick}
+    >{props.children}</div>
 }

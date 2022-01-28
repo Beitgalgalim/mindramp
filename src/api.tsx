@@ -1,20 +1,23 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
-    getFirestore, Firestore, collection, getDocs, getDoc, doc,
-    QueryDocumentSnapshot, DocumentData, 
-    query, where, orderBy, limit, startAfter,
-    updateDoc, setDoc, deleteDoc,
-    writeBatch
+    getFirestore, Firestore, collection, getDocs, doc,
+    DocumentData,
+    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc
+    // QueryDocumentSnapshot, where, limit, startAfter, getDoc, 
+    // , , writeBatch
 } from 'firebase/firestore/lite';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 import {
-    getAuth, onAuthStateChanged,  NextOrObserver, User,
-    signInWithEmailAndPassword,
-    sendPasswordResetEmail, signOut, updatePassword
+    getAuth, onAuthStateChanged, NextOrObserver, User
 } from "firebase/auth";
 
+import { EventApi } from '@fullcalendar/common'
+
 import { firebaseConfig } from './config';
-import {Collections} from './types';
+import { Collections, MediaResource } from './types';
+import { DateFormats } from './utils/date';
+import dayjs from 'dayjs';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -34,12 +37,85 @@ export function getEvents(): Promise<DocumentData[]> {
     return _getCollection(Collections.EVENT_COLLECTION);
 }
 
-export async function addEvent(event:any) {
-    const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
-    return setDoc(docRef, event);
+export function getMedia(): Promise<MediaResource[]> {
+    return _getCollection(Collections.MEDIA_COLLECTION).then(items => items.map(d =>
+    ({
+        name: d.name,
+        url: d.url,
+        path: d.path || "",
+        type: d.type,
+        _ref: d._ref
+    })));
 }
 
-async function _getCollection(collName:string, oBy?: string, orderDesc?: string):Promise<DocumentData[]> {
+export async function upsertEvent(event: any) {
+    const eventObj  = event.toPlainObject ? event.toPlainObject({collapseExtendedProps:true}): event;
+
+    eventObj.start = dayjs(event.start).format(DateFormats.DATE_TIME);
+    eventObj.end = dayjs(event.end).format(DateFormats.DATE_TIME);
+
+    if (eventObj._ref) {
+        const { _ref, ...cleanedEvt } = eventObj;
+        return updateDoc(_ref, cleanedEvt).then(()=>eventObj);    
+    } else {
+        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
+        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));    
+    }
+}
+
+
+export async function deleteEvent(event: EventApi) {
+    const ref = event.extendedProps?._ref;
+    if (ref) {
+        return deleteDoc(ref);
+    }
+}
+
+export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {
+    // First upload to storage
+    const storage = getStorage(app);
+    const storageRef = ref(storage);
+    const mediaRef = ref(storageRef, 'media');
+    const folderRef = ref(mediaRef, type === "icon" ? "icons" : "photos");
+    const resourceRef = ref(folderRef, name);
+
+    /** @type {any} */
+    const metadata = {
+        contentType: 'image/jpeg',
+    };
+
+    // Upload the file and metadata
+    const uploadTask = uploadBytes(resourceRef, file, metadata);
+    return uploadTask.then(val => {
+        return getDownloadURL(val.ref).then(url => {
+            const res = {
+                name,
+                type,
+                url,
+                path: val.ref.fullPath,
+            };
+            const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
+            return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+        })
+    });
+}
+
+export async function deleteMedia(path: string, docRef: DocumentReference) {
+    // First delete record
+    return deleteDoc(docRef).then(
+        () => {
+            if (path !== "") {
+                const storage = getStorage(app);
+                const docToDeleteRef = ref(storage, path);
+                return deleteObject(docToDeleteRef);
+            }
+        }
+    )
+
+}
+
+
+async function _getCollection(collName: string, oBy?: string, orderDesc?: string): Promise<DocumentData[]> {
     let colRef = collection(db, collName);
     const constraints = []
     if (oBy) {
