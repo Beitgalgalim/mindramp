@@ -53,7 +53,15 @@ export async function upsertEvent(event: any) {
 
     eventObj.start = dayjs(event.start).format(DateFormats.DATE_TIME);
     eventObj.end = dayjs(event.end).format(DateFormats.DATE_TIME);
-
+    if (!eventObj.notes) {
+        delete eventObj.notes;
+    }
+    if (!eventObj.imageUrl) {
+        delete eventObj.imageUrl;
+    }
+    if (!eventObj._ref) {
+        delete eventObj._ref;
+    }
     if (eventObj._ref) {
         const { _ref, ...cleanedEvt } = eventObj;
         return updateDoc(_ref, cleanedEvt).then(()=>eventObj);    

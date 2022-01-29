@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { Button, TextField } from '@mui/material';
-import { HBoxC, HBox, HBoxSB, VBox, Text, Spacer } from './elem';
+import { HBoxC, HBoxSB, VBox, Text, Spacer } from './elem';
 import { DateFormats } from './utils/date';
 import { EventApi } from '@fullcalendar/common'
 
@@ -58,7 +58,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
 
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
-                        <TextField variant="standard" helperText="כותרת" onChange={(e => setTitle(e.currentTarget.value))} value={title} />
+                        <TextField variant="standard" helperText="כותרת" onChange={(e => setTitle(e.currentTarget.value))} value={title || ""} />
                     </Grid>
                     <Grid container item xs={3} spacing={2} >
                         <AccessTime />
@@ -75,7 +75,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
                         <TextField variant="standard" helperText="תיאור"
-                            onChange={(e => setNotes(e.currentTarget.value))} value={notes} />
+                            onChange={(e => setNotes(e.currentTarget.value))} value={notes || ""} />
                     </Grid>
                     <Grid container item xs={3} spacing={2} >
                         <Image />

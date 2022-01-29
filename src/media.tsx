@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import {  useRef } from 'react';
 import { MediaResource } from './types';
 
-import { Text, Card, HBoxSB, Spacer } from './elem';
+import { Text, HBoxSB, Spacer } from './elem';
 import * as api from './api'
 import { Button } from '@material-ui/core';
 
@@ -14,7 +14,7 @@ export default function Media({ connected, media, notify }: { connected: boolean
         {media.map((m, i) => (
             <HBoxSB key={i}>
                 <Text>{m.name}</Text>
-                <img src={m.url} style={{ width: 40, height: 40 }} />
+                <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
                 <Spacer />
                 <Button variant={"outlined"}
                     onClick={()=>notify.ask("האם למחוק?", undefined, [
