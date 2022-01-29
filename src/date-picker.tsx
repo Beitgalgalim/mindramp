@@ -6,35 +6,12 @@ import { HBox, Spacer, ClickableText, ComboBox } from './elem';
 import ReactDatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateFormats, getTimes } from './utils/date';
+import { DateFormats, day2DayName, getTimes, MonthMap } from './utils/date';
 
 const dayjs = require('dayjs');
 
 
-const MonthMap: { [id: string]: string; } = {
-    Jan: "ינו",
-    Feb: "פבר",
-    Mar: "מרץ",
-    Apr: "אפר",
-    May: "מאי",
-    Jun: "יוני",
-    Jul: "יולי",
-    Aug: "אוג",
-    Sep: "ספט",
-    Oct: "אוק",
-    Nov: "נוב",
-    Dec: "דצמ",
-};
 
-const day2DayName: { [id: number]: string; } = {
-    0: "ראשון",
-    1: "שני",
-    2: "שלישי",
-    3: "רביעי",
-    4: "חמישי",
-    5: "שישי",
-    6: "שבת",
-};
 
 const times = getTimes();
 

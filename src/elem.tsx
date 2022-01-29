@@ -178,9 +178,6 @@ export function Text(props: any) {
     >{props.children}</div>
 }
 
-export function HeaderText(props:any) {
-    return <Text color="white" textAlign="center" alignSelf="center" fontSize={20}>{props.children}</Text>
-}
 
 export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
     { sliceWidth: number, height: number, hours: string[], sliceEachHour: number }) {
@@ -201,7 +198,7 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
             }}
 
             >
-                {j % sliceEachHour == 0 ? h : <Spacer height={20} />}
+                {j % sliceEachHour === 0 ? h : <Spacer height={20} />}
                 <div style={{ border: 0, borderLeft: 2, borderStyle: "solid", 
                     borderColor:"white", height: window.innerHeight - 20, width: 1 }} />
 
@@ -210,7 +207,7 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
     });
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity:0.2 }}>
+        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity:0.4 }}>
             {items}
         </div>
     );
