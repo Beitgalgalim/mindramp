@@ -34,7 +34,7 @@ export function initAPI(onAuth: NextOrObserver<User>): boolean {
 }
 
 export function getEvents(): Promise<DocumentData[]> {
-    return _getCollection(Collections.EVENT_COLLECTION);
+    return _getCollection(Collections.EVENT_COLLECTION, "start", "asc");
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -49,7 +49,7 @@ export function getMedia(): Promise<MediaResource[]> {
 }
 
 export async function upsertEvent(event: any) {
-    const eventObj  = event.toPlainObject ? event.toPlainObject({collapseExtendedProps:true}): event;
+    const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
     eventObj.start = dayjs(event.start).format(DateFormats.DATE_TIME);
     eventObj.end = dayjs(event.end).format(DateFormats.DATE_TIME);
@@ -64,10 +64,10 @@ export async function upsertEvent(event: any) {
     }
     if (eventObj._ref) {
         const { _ref, ...cleanedEvt } = eventObj;
-        return updateDoc(_ref, cleanedEvt).then(()=>eventObj);    
+        return updateDoc(_ref, cleanedEvt).then(() => eventObj);
     } else {
         const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
-        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));    
+        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));
     }
 }
 
@@ -123,11 +123,11 @@ export async function deleteMedia(path: string, docRef: DocumentReference) {
 }
 
 
-async function _getCollection(collName: string, oBy?: string, orderDesc?: string): Promise<DocumentData[]> {
+async function _getCollection(collName: string, oBy?: string, order?: "asc" | "desc"): Promise<DocumentData[]> {
     let colRef = collection(db, collName);
     const constraints = []
     if (oBy) {
-        constraints.push(orderDesc ? orderBy(oBy, "desc") : orderBy(oBy));
+        constraints.push(order ? orderBy(oBy, order) : orderBy(oBy));
     }
 
     let i = 1;

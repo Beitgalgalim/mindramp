@@ -19,7 +19,17 @@ function App(props:any) {
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
   const [connected, setConnected] = useState(false);
+  const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({ w: window.innerWidth, h: window.innerHeight })
+    }
+
+    window.addEventListener('resize', handleResize)
+
+  }, [])
 
   const notify = {
     success: (body: string, title?: string) => {
@@ -82,7 +92,7 @@ function App(props:any) {
       <BrowserRouter>
         <Routes>
           <Route path="/admin" element={<Admin connected={connected} notify={notify} user={user}/>} />
-          <Route path="/" element={<UserEvents notify={notify} user={user}/>} />
+          <Route path="/" element={<UserEvents windowSize={windowSize} connected={connected} notify={notify} user={user}/>} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -81,7 +81,7 @@ export function ComboBox(props: any) {
     const renderItem = ({ index, style }: { index: number, style: any }) => (
         <ListItem style={{ ...style, padding: 0 }} key={index} selected={currentIndex === index} >
             <ListItemButton style={{ padding: 0 }}
-            onClick={()=>props.onSelect(items[index])}>
+                onClick={() => props.onSelect(items[index])}>
                 <ListItemText
                     disableTypography
                     primary={<Typography style={{ fontSize: 12 }}>{items[index]}</Typography>}
@@ -90,7 +90,7 @@ export function ComboBox(props: any) {
         </ListItem>
     );
 
-    
+
 
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
         <div>
@@ -163,6 +163,7 @@ export function Text(props: any) {
     return <div style={{
         width: props.width || '100%',
         textAlign: props.textAlign || 'right',
+        alignSelf: props.alignSelf || undefined,
         fontSize: props.fontSize || 12,
         fontWeight: props.fontWeight,
         textDecoration: props.textDecoration,
@@ -176,3 +177,42 @@ export function Text(props: any) {
         onClick={props.onClick}
     >{props.children}</div>
 }
+
+export function HeaderText(props:any) {
+    return <Text color="white" textAlign="center" alignSelf="center" fontSize={20}>{props.children}</Text>
+}
+
+export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
+    { sliceWidth: number, height: number, hours: string[], sliceEachHour: number }) {
+
+    const items:JSX.Element[] = [];
+
+    hours.forEach((h, i) => {
+        for (let j = 0; j < sliceEachHour; j++) {
+            items.push(<div key={(i*100)+j} style={{
+                display: "flex",
+                width: sliceWidth,
+                height,
+                flexDirection: "column",
+                alignItems: "center",
+                color:"white",
+                opacity:1,
+
+            }}
+
+            >
+                {j % sliceEachHour == 0 ? h : <Spacer height={20} />}
+                <div style={{ border: 0, borderLeft: 2, borderStyle: "solid", 
+                    borderColor:"white", height: window.innerHeight - 20, width: 1 }} />
+
+            </div>);
+        }
+    });
+
+    return (
+        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity:0.2 }}>
+            {items}
+        </div>
+    );
+}
+
