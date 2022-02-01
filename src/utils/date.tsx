@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 export const DateFormats = {
     DATE_TIME: "YYYY-MM-DDTHH:mm",
@@ -57,3 +57,25 @@ export const day2DayName: { [id: number]: string; } = {
     5: "שישי",
     6: "שבת",
 };
+
+export function getDayDesc(date:Dayjs):string {
+
+    const toMidNight = (d:Dayjs)=>dayjs(d.format(DateFormats.DATE));
+
+
+    const now = toMidNight(dayjs());
+    const diff = date.diff(toMidNight(now), "days");
+
+    switch (diff) {
+        case 0:            return "היום";
+        case 1:             return "מחר";
+        case 2:             return "מחרתיים";
+        case -1:             return "אתמול";
+        case -2:             return "שלשום";
+        default:
+            return `${diff < 0?"לפני":"עוד"} ${Math.abs(diff)} ימים`;
+
+    }
+
+
+}

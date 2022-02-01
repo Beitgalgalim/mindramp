@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Box, ListItemButton, Typography
 } from '@mui/material';
@@ -75,8 +75,18 @@ export function ComboBox(props: any) {
     const { items, value } = props;
     const [open, setOpen] = React.useState(false);
 
-    const elRef = React.useRef<HTMLDivElement | null>(null);
+    const localElRef = React.useRef<HTMLDivElement | null>(null);
     const currentIndex = items.findIndex((item: any) => item === value);
+
+    const handleElClick = () => {
+        setOpen(true);
+    }
+
+    useEffect(() => {
+        if (props.elRef && props.elRef.current != null) {
+            props.elRef.current.onclick = handleElClick;
+        }
+    }, [props.elRef.current])
 
     const renderItem = ({ index, style }: { index: number, style: any }) => (
         <ListItem style={{ ...style, padding: 0 }} key={index} selected={currentIndex === index} >
@@ -94,16 +104,16 @@ export function ComboBox(props: any) {
 
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
         <div>
-            <ClickableText
-                ref={elRef}
+            {!props.elRef && <ClickableText
+                ref={localElRef}
                 onClick={() => {
                     setOpen(true)
                 }}>
                 {value}
-            </ClickableText>
+            </ClickableText>}
             <Popper
                 open={open}
-                anchorEl={elRef.current}
+                anchorEl={props.elRef ? props.elRef.current : localElRef.current}
                 transition disablePortal style={{ zIndex: 1001, backgroundColor: 'white' }}>
 
                 <FixedSizeList
@@ -182,32 +192,34 @@ export function Text(props: any) {
 export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
     { sliceWidth: number, height: number, hours: string[], sliceEachHour: number }) {
 
-    const items:JSX.Element[] = [];
+    const items: JSX.Element[] = [];
 
     hours.forEach((h, i) => {
         for (let j = 0; j < sliceEachHour; j++) {
-            items.push(<div key={(i*100)+j} style={{
+            items.push(<div key={(i * 100) + j} style={{
                 display: "flex",
                 width: sliceWidth,
                 height,
                 flexDirection: "column",
                 alignItems: "center",
-                color:"white",
-                opacity:1,
+                color: "white",
+                opacity: 1,
 
             }}
 
             >
                 {j % sliceEachHour === 0 ? h : <Spacer height={20} />}
-                <div style={{ border: 0, borderLeft: 2, borderStyle: "solid", 
-                    borderColor:"white", height: window.innerHeight - 20, width: 1 }} />
+                <div style={{
+                    border: 0, borderLeft: 2, borderStyle: "solid",
+                    borderColor: "white", height: window.innerHeight - 20, width: 1
+                }} />
 
             </div>);
         }
     });
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity:0.4 }}>
+        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity: 0.4 }}>
             {items}
         </div>
     );
