@@ -9,7 +9,8 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 import {
-    getAuth, onAuthStateChanged, NextOrObserver, User
+    getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
+    signInWithEmailAndPassword,
 } from "firebase/auth";
 
 import { EventApi } from '@fullcalendar/common'
@@ -21,6 +22,7 @@ import dayjs from 'dayjs';
 
 let app: FirebaseApp;
 let db: Firestore;
+let auth: Auth;
 
 
 export function initAPI(onAuth: NextOrObserver<User>): boolean {
@@ -28,10 +30,43 @@ export function initAPI(onAuth: NextOrObserver<User>): boolean {
         app = initializeApp({ ...firebaseConfig });
         db = getFirestore(app);
     }
-    const auth = getAuth(app);
+    auth = getAuth(app);
     onAuthStateChanged(auth, onAuth);
     return true;
 }
+
+export async function getUserInfo(user:string, pwd:string) {
+    return signInWithEmailAndPassword(auth, user, pwd)
+        .then((userCredential) => {
+            // Signed in
+            return userCredential.user;
+        });
+}
+
+// export async function getUserObj(user) {
+//     if (user && user.email) {
+//         let docRef = doc(db, Collections.USERS_INFO_COLLECTION, user.email.toLowerCase());
+//         return getDoc(docRef).then(u => {
+//             let data = u.data();
+//             if (!data) {
+//                 throw new Error("חשבונך מחכה לאישור - יש לפנות למנהל המערכת");
+//             } else if (data.inactive) {
+//                 throw new Error("חשבונך אינו פעיל - יש לפנות למנהל המערכת");
+//             }
+//             return {
+//                 displayName: data.displayName,
+//                 email: user.email.toLowerCase(),
+//                 _user: user,
+//                 _userInfo: data,
+//                 pushNotification: data.pushNotification
+//             };
+//         },
+//             (err) => {
+//                 throw new Error("חשבונך אינו פעיל - יש לפנות למנהל המערכת")
+//             });
+//     }
+//     return undefined;
+// }
 
 export function getEvents(): Promise<DocumentData[]> {
     return _getCollection(Collections.EVENT_COLLECTION, "start", "asc");

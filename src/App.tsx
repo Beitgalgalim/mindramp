@@ -5,7 +5,7 @@ import './App.css';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import { Text, HBox, Spacer } from './elem';
 
-import {  BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { Collapse } from '@material-ui/core';
 import { Button } from '@mui/material';
@@ -13,8 +13,10 @@ import { Button } from '@mui/material';
 import { MsgButton, NotificationMessage } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
+import { User } from '@firebase/auth';
+import  Login  from './login';
 
-function App(props:any) {
+function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
@@ -55,18 +57,17 @@ function App(props:any) {
       // Callback for AuthStateChanged
       (user) => {
         console.log("user:", JSON.stringify(user));
-        setUser(user?.displayName);
+        setUser(user?.email);
       });
     if (success) {
       setConnected(true);
     }
 
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
-  
+
   return (
     <div className="App">
       {msg && <Collapse in={msg.open} timeout={500} style={{ position: 'absolute', top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000 }} >
@@ -91,8 +92,20 @@ function App(props:any) {
 
       <BrowserRouter>
         <Routes>
-          <Route path="/admin" element={<Admin connected={connected} notify={notify} user={user}/>} />
-          <Route path="/" element={<UserEvents windowSize={windowSize} connected={connected} notify={notify} user={user}/>} />
+          <Route path="/admin" element={
+            // ---- Login -----
+            !user ? <Login
+              onLogin={(u:User) => {}}
+              onError={(err:Error) => notify.error(err.toString())}
+              onForgotPwd={() => {
+                //todo
+              }}
+            />
+              :
+              <Admin connected={connected} notify={notify} user={user} />
+
+          } />
+          <Route path="/" element={<UserEvents windowSize={windowSize} connected={connected} notify={notify} user={user} />} />
         </Routes>
       </BrowserRouter>
     </div>

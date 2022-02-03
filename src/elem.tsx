@@ -86,7 +86,7 @@ export function ComboBox(props: any) {
         if (props.elRef && props.elRef.current != null) {
             props.elRef.current.onclick = handleElClick;
         }
-    }, [props.elRef.current])
+    }, [props?.elRef?.current])
 
     const renderItem = ({ index, style }: { index: number, style: any }) => (
         <ListItem style={{ ...style, padding: 0 }} key={index} selected={currentIndex === index} >
