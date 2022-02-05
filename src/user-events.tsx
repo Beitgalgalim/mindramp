@@ -1,8 +1,8 @@
 import dayjs, { Dayjs } from "dayjs";
 import { useEffect, useState, useRef } from "react";
 import * as api from './api'
-import { HourLines, VBox, Text, Spacer, ComboBox } from "./elem";
-import { DateFormats, day2DayName, getDayDesc, getTimes, MonthMap2 } from "./utils/date";
+import { HourLines, VBox, Text, Spacer } from "./elem";
+import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2 } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const logo = require("./logo.png");
@@ -139,7 +139,7 @@ export default function UserEvents(props: any) {
     useEffect(() => {
         if (!props.connected)
             return;
-        api.getEvents().then(evts => setEvents(evts));
+        api.getEvents().then(evts => setEvents(explodeEvents(evts)));
     }, [props.connected]);
 
     useEffect(() => {

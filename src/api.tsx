@@ -2,9 +2,9 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
     getFirestore, Firestore, collection, getDocs, doc,
     DocumentData,
-    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc
-    // QueryDocumentSnapshot, where, limit, startAfter, getDoc, 
-    // , , writeBatch
+    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
+    where, QueryDocumentSnapshot
+    //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
@@ -35,7 +35,7 @@ export function initAPI(onAuth: NextOrObserver<User>): boolean {
     return true;
 }
 
-export async function getUserInfo(user:string, pwd:string) {
+export async function getUserInfo(user: string, pwd: string) {
     return signInWithEmailAndPassword(auth, user, pwd)
         .then((userCredential) => {
             // Signed in
@@ -83,35 +83,102 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: any) {
+export async function upsertEvent(event: any, ref: DocumentReference) {
     const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
-    eventObj.start = dayjs(event.start).format(DateFormats.DATE_TIME);
-    eventObj.end = dayjs(event.end).format(DateFormats.DATE_TIME);
+    prepareEventRecord(eventObj);
+
+    if (ref) {
+        if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
+            eventObj.recurrent.gid = ref.id;
+        }
+        return updateDoc(ref, eventObj).then(() => ({ _ref: ref, ...eventObj }));
+    } else {
+        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
+        if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
+            eventObj.recurrent.gid = docRef.id;
+        }
+        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));
+    }
+}
+
+function prepareEventRecord(eventObj: any) {
+    eventObj.date = dayjs(eventObj.start).format(DateFormats.DATE);
+    eventObj.start = dayjs(eventObj.start).format(DateFormats.DATE_TIME);
+    eventObj.end = dayjs(eventObj.end).format(DateFormats.DATE_TIME);
     if (!eventObj.notes) {
         delete eventObj.notes;
     }
     if (!eventObj.imageUrl) {
         delete eventObj.imageUrl;
     }
-    if (!eventObj._ref) {
-        delete eventObj._ref;
+    if (!eventObj.recurrent) {
+        delete eventObj.recurrent;
     }
-    if (eventObj._ref) {
-        const { _ref, ...cleanedEvt } = eventObj;
-        return updateDoc(_ref, cleanedEvt).then(() => eventObj);
-    } else {
-        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
-        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));
+    delete eventObj._ref;
+
+    if (!eventObj.instanceStatus) {
+        delete eventObj.instanceStatus;
     }
 }
 
+export async function createEventInstance(event: any, ref: DocumentReference) {
+    const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
-export async function deleteEvent(event: EventApi) {
-    const ref = event.extendedProps?._ref;
+    prepareEventRecord(eventObj);
+    eventObj.instanceStatus = true;
+    eventObj.recurrent = { gid: ref.id };
+
+    let batch = writeBatch(db);
+
+    return getDoc(ref).then((seriesDoc) => {
+        const seriesDocObj = seriesDoc.data();
+
+        if (!seriesDocObj || !seriesDocObj.recurrent) {
+            // not expected
+            throw new Error("Unexpected missing recurrent info on series event");
+        }
+        if (!seriesDocObj.recurrent.exclude) {
+            seriesDocObj.recurrent.exclude = [eventObj.date];
+        } else {
+            seriesDocObj.recurrent.exclude.push(eventObj.date);
+        }
+
+        const instanceRef = doc(collection(db, Collections.EVENT_COLLECTION));
+        batch.update(ref, { recurrent: seriesDocObj.recurrent });
+        batch.set(instanceRef, eventObj);
+        return batch.commit().then(
+            () => {
+                return {
+                    instance: { _ref: instanceRef, ...eventObj },
+                    series: { _ref: ref, ...seriesDocObj },
+                };
+            })
+
+    });
+}
+
+export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
+
     if (ref) {
-        return deleteDoc(ref);
+        if (deleteModifiedInstance) {
+            const q = query(collection(db, Collections.EVENT_COLLECTION), where("recurrent.gid", "==", ref.id));
+            return getDocs(q).then(instances => {
+                let batch = writeBatch(db);
+                const removedIDs: string[] = []
+                instances.docs.forEach(doc => {
+                    batch.delete(doc.ref)
+                    removedIDs.push(doc.ref.id)
+                });
+                batch.delete(ref)
+                removedIDs.push(ref.id)
+                return batch.commit().then(() => removedIDs);
+            })
+        }
+
+        return deleteDoc(ref).then(() => [ref.id]);
     }
+    return [];
 }
 
 export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {
@@ -169,8 +236,8 @@ async function _getCollection(collName: string, oBy?: string, order?: "asc" | "d
     return getDocs(query(colRef, ...constraints)).then((items) => {
         return items.docs.map(docObj => {
             let obj = docObj.data();
-            if (oBy)
-                obj._order = i++;
+            // if (oBy)
+            //     obj._order = i++;
 
 
             obj._ref = docObj.ref;

@@ -40,3 +40,15 @@ export interface NotificationMessage {
       path: string,
       _ref?:DocumentReference
   }
+
+  export interface RecurrentEventField {
+      freq: "daily" | "weekly" | "custom" | "none",
+      daysOfWeek?:number[],
+      gid?:string,
+      exclude?:string[]
+  }
+
+  export interface EditEvent {
+      event:any,
+      editAllSeries?: boolean
+  }
