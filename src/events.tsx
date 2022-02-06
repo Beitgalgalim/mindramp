@@ -4,9 +4,9 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg, EventApi } from '@fullcalendar/common'
+import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
 import { Fab } from '@mui/material';
-import { Add, Repeat, RepeatOn } from '@mui/icons-material';
+import { Add } from '@mui/icons-material';
 import AddEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
@@ -14,14 +14,7 @@ import { EditEvent, MediaResource, NewEvent } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { addRepeatIcon } from './elem';
 
-function getNewEvent(): NewEvent {
-    const d = dayjs().format(DateFormats.DATE);
-    return {
-        title: "",
-        start: dayjs(d).add(8, "hour").toDate(),
-        end: dayjs(d).add(9, "hour").toDate(),
-    }
-}
+
 
 
 export default function Events({ notify, connected, media }: { notify: any, connected: boolean, media: MediaResource[] }) {
@@ -35,27 +28,20 @@ export default function Events({ notify, connected, media }: { notify: any, conn
             return;
         api.getEvents().then(evts => setEvents(evts));
 
-
-
-        // Texting reccuring:
-        // if (calendarRef && calendarRef.current) {
-        //     const calendarApi = calendarRef.current.getApi();
-        //     calendarApi.addEvent({
-        //         startRecur:dayjs().format(DateFormats.DATE),
-        //         startTime: "08:00",
-        //         endTime:"14:00",
-        //         title:"פגישה חוזרת",
-        //         notes: "aaa",
-        //         daysOfWeek:[1,2,3,4,5],
-        //     });
-        // }
-
-
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connected]);
 
     const calendarApi = calendarRef?.current?.getApi();
+
+    function getNewEvent(): NewEvent {
+        const d =  calendarApi?calendarApi.getDate(): dayjs().format(DateFormats.DATE);
+        return {
+            title: "",
+            start: dayjs(d).add(8, "hour").toDate(),
+            end: dayjs(d).add(9, "hour").toDate(),
+        }
+    }
+
 
     useEffect(() => {
         const expEvents = explodeEvents(events);
@@ -218,7 +204,7 @@ export default function Events({ notify, connected, media }: { notify: any, conn
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
                 onSave={(editEvent: EditEvent, ref: DocumentReference) => {
-                    if (editEvent.editAllSeries == false && !editEvent.event.instanceStatus) {
+                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
                         //update instance only
                         api.createEventInstance(editEvent.event, ref).then(
                             (result) => {
@@ -253,7 +239,7 @@ export default function Events({ notify, connected, media }: { notify: any, conn
 
                 onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
                     // delete non-recurrent event
-                    api.deleteEvent(ref, editEvent.editAllSeries == true).then(
+                    api.deleteEvent(ref, editEvent.editAllSeries === true).then(
                         (removedIDs) => {
                             setEvents(evts => evts.filter(e => !removedIDs.includes(e._ref.id)));
                             setNewEvent(undefined);

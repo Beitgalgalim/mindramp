@@ -129,7 +129,9 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
 
                             <Spacer width={30} />
                             {recurrent && <ComboBox value={recurrent} items={["שבועי", "יומי"]}
-                                onSelect={(newValue: string) => setRecurrent(newValue)} />
+                                onSelect={(newValue: string) => setRecurrent(newValue)}  
+                                readOnly={true}                              
+                                />
                             }
                             <Spacer width={30} />
                         </HBox>

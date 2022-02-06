@@ -4,7 +4,6 @@ import * as api from './api'
 import { HourLines, VBox, Text, Spacer } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
-import { UserEventNode } from "./types";
 
 const logo = require("./logo.png");
 
@@ -14,18 +13,6 @@ const eventsGapBottom = 20;
 const footerSize = 60;
 
 const profiles = ["basic", "large"];
-
-function printTree(tree: any, indent: string): string {
-    let msg = "";
-    if (tree.item) {
-        msg += indent + tree.item.title + "\n";
-    }
-
-    tree.children.forEach((child: any) => {
-        msg += printTree(child, indent + "--");
-    })
-    return msg;
-}
 
 
 function Event(props: any) {
@@ -56,6 +43,10 @@ function Event(props: any) {
 }
 
 //----------
+
+// Inspired by https://stackoverflow.com/questions/11311410/visualization-of-calendar-events-algorithm-to-layout-events-with-maximum-width
+
+
 /// Pick the left and right positions of each event, such that there are no overlap.
 /// Step 3 in the algorithm.
 function layoutEvents(events: any[]): any[] {

@@ -1,12 +1,12 @@
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { setDateFunc } from "./types";
 import { HBox, Spacer, ClickableText, ComboBox } from './elem';
 import ReactDatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateFormats, day2DayName, getTimes, MonthMap, replaceDatePreserveTime2 } from './utils/date';
+import { DateFormats, day2DayName, getTimes, MonthMap, replaceDatePreserveTime2, validTime } from './utils/date';
 
 const dayjs = require('dayjs');
 
@@ -48,10 +48,18 @@ function calcDiff(d: Date | null | undefined, newTime: string) {
 
 export default function MyDatePicker({ start, end, setStart, setEnd }:
     { start: Date | null | undefined, end: Date | null | undefined, setStart: setDateFunc, setEnd: setDateFunc }) {
+    const [invalidStart, setInvalidStart] = useState(false);
+    const [invalidEnd, setInvalidEnd] = useState(false);
 
     let datePicker = useRef<ReactDatePicker | null>(null);
 
     const setStartTime = (newTime: string) => {
+        if (!validTime(newTime)) {
+            setInvalidStart(true);
+            return 
+        }
+        setInvalidStart(false);
+
         const diffMin = calcDiff(start, newTime);
         if (diffMin !== 0) {
             setStart(dayjs(start).add(diffMin, "min").toDate());
@@ -60,6 +68,12 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
     }
 
     const setEndTime = (newTime: string) => {
+        if (!validTime(newTime)) {
+            setInvalidEnd(true);
+            return 
+        }
+        setInvalidEnd(false);
+
         const diffMin = calcDiff(end, newTime);
         if (diffMin !== 0) {
             setEnd(dayjs(end).add(diffMin, "min").toDate());
@@ -89,14 +103,16 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
 
 
             <ComboBox value={getTime(start)} items={times}
-                onSelect={(newValue: string) => setStartTime(newValue)} />
-
-
+                onSelect={(newValue: string) => setStartTime(newValue)}
+                onChange={(newValue: string) => setStartTime(newValue)} 
+                invalid={invalidStart} />
             <Spacer />
             -
             <Spacer />
             <ComboBox value={getTime(end)} items={times}
-                onSelect={(newValue: string) => setEndTime(newValue)} />
+                onSelect={(newValue: string) => setEndTime(newValue)}
+                onChange={(newValue: string) => setEndTime(newValue)}
+                invalid={invalidEnd} />
 
         </HBox>
     );

@@ -141,3 +141,17 @@ export function replaceDatePreserveTime2(origin:Date | any | null, newDate:any):
 export function sortEvents(events:any[]):any[] {
     return events.sort((e1, e2)=>dayjs(e1.start).diff(e2.start, "minutes"));
 }
+
+
+
+export function validTime(timeStr:string):boolean {
+    if (!timeStr || timeStr.trim().length  == 0) {
+        return false;
+    }
+    timeStr = timeStr.replace("am", " am");
+    timeStr = timeStr.replace("pm", " pm");
+
+
+    const date = dayjs("2000-01-01 " + timeStr);
+    return date.isValid();
+}
