@@ -59,10 +59,9 @@ export const day2DayName: { [id: number]: string; } = {
     6: "שבת",
 };
 
+const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
+
 export function getDayDesc(date: Dayjs): string {
-
-    const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
-
 
     const now = toMidNight(dayjs());
     const diff = date.diff(toMidNight(now), "days");
@@ -96,15 +95,16 @@ export function getDayDesc(date: Dayjs): string {
  */
 export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30): any[] {
     const ret: any[] = [];
-    const today = dayjs();
+    const today = toMidNight(dayjs());
     events.forEach((event: any) => {
         if (event.recurrent && !event.instanceStatus) {
             const rec: RecurrentEventField = event.recurrent;
-            const weekDay = dayjs(event.start).day();
+            const start = toMidNight(dayjs(event.start));
+            const weekDay = start.day();
             for (let i = -daysBefore; i < daysAfter; i++) {
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
-                if (!rec.exclude?.includes(dateStr)) {
+                if (!rec.exclude?.includes(dateStr) && start.diff(date, "days") <= 0) {
                     if (rec.freq === "daily" || (rec.freq == "weekly" && date.day() == weekDay)) {
                         const eventObj = {...event}
                         adjustEvent(eventObj, date);
@@ -119,6 +119,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
     return ret;
 }
 
+
 function adjustEvent(evt: any, date: Dayjs) {
     evt.start = replaceDatePreserveTime(evt.start, date);
     evt.end = replaceDatePreserveTime(evt.end, date);
@@ -126,5 +127,9 @@ function adjustEvent(evt: any, date: Dayjs) {
 
 function replaceDatePreserveTime(origin: string, newDate: Dayjs): string {
     const origDate = dayjs(origin);
-    return newDate.format(DateFormats.DATE) + " " + origDate.format(DateFormats.TIME);
+    return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
+}
+
+export function sortEvents(events:any[]):any[] {
+    return events.sort((e1, e2)=>dayjs(e1.start).diff(e2.start, "minutes"));
 }

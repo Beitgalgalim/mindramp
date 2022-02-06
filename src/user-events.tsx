@@ -1,8 +1,8 @@
 import dayjs, { Dayjs } from "dayjs";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Children } from "react";
 import * as api from './api'
 import { HourLines, VBox, Text, Spacer } from "./elem";
-import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2 } from "./utils/date";
+import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const logo = require("./logo.png");
@@ -44,27 +44,75 @@ function Event(props: any) {
     );
 }
 
-function organizeEvents(events: any[]): any[][] {
-    const eventsArray: any[][] = [];
-    let eventsGroup = [];
-    for (let i = 0; i < events.length; i++) {
-        if (eventsGroup.length === 0) {
-            eventsGroup.push(events[i]);
-            eventsArray.push(eventsGroup);
-            continue;
-        }
 
-        //look for more events in this time window
-        if (events[i].start < eventsGroup[0].end) {
-            eventsGroup.push(events[i]);
-        } else {
-            // close the group
-            eventsGroup = [events[i]];
-            eventsArray.push(eventsGroup);
+function organizeEvents2(events: any[]): any {
+    if (!events || events.length == 0)
+        return [];
+
+
+
+
+    const isOverlapSubTree = (node: any, overlapFunction: any): boolean => {
+        if (node.item) {
+            if (overlapFunction(node.item)) {
+                return true;
+            }
         }
+        for (let i = 0; i < node.children.length; i++) {
+            if (isOverlapSubTree(node.children[i], overlapFunction)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    return eventsArray;
+    const sortByEnd = (e1: any, e2: any) => dayjs(e1.end).diff(e2.end, "minutes")
+
+    const root: any[] = [];
+
+    for (let i = 0; i < events.length; i++) {
+
+        const overlapFunc = (item: any) => {
+            // events[i].start overlaps with item
+            return events[i].start < item.end && events[i].end > item.start;
+        };
+
+        const newItem = { item: events[i], children: [] }
+        // walk throw the graph
+        let added = false;
+        for (let j = 0; j < root.length; j++) {
+            const overlap = isOverlapSubTree(root[j], overlapFunc);
+            if (overlap) {
+                // add to this subtree
+
+                let curArray = root[j].children;
+                while (!added) {
+                    let overlapCount = 0;
+                    const curArrayCount = curArray.length;
+                    for (let k = 0; k < curArray.length; k++) {
+                        if (!overlapFunc(curArray[k].item)) {
+                            curArray = curArray[k].children;
+                            break
+                        } else {
+                            overlapCount++;
+                        }
+                    }
+                    if (overlapCount === curArrayCount) {
+                        // all events overlap, add as sibling
+                        curArray.push(newItem);
+                        added = true;
+                    }
+                }
+
+                break;
+            }
+
+        }
+        if (!added) {
+            root.push({ item: undefined, children: [newItem] });
+        }
+    }
+    return root;
 }
 
 function getTimeOffset(event: any, showDate: Dayjs, startHour: number, sliceWidth: number, sliceEachHour: number) {
@@ -139,7 +187,7 @@ export default function UserEvents(props: any) {
     useEffect(() => {
         if (!props.connected)
             return;
-        api.getEvents().then(evts => setEvents(explodeEvents(evts)));
+        api.getEvents().then(evts => setEvents(sortEvents(explodeEvents(evts))));
     }, [props.connected]);
 
     useEffect(() => {
@@ -176,7 +224,31 @@ export default function UserEvents(props: any) {
     const showingEvents = events.filter(e => e.start >= showDate.format(DateFormats.DATE) &&
         e.start < showDate.add(1, "day").format(DateFormats.DATE));
 
-    const organizedEvents = organizeEvents(showingEvents);
+    const organizedEvents = //organizeEvents(showingEvents);
+        organizeEvents2(showingEvents);
+    const dfs = (res: any[], childrens: any[], width: number) => {
+        childrens.forEach((child, i) => {
+            if (child.item)
+                return res.push(<Event
+                    //key={g * 100 + i}
+                    top={width * i + eventsGapTop}
+                    height={width}
+                    right={getTimeOffset(child.item, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
+                    width={getTimeWidth(child.item, showDate, sliceWidth, sliceEachHour)}
+                    event={child.item}
+                    sliceWidth={sliceWidth}
+                />);
+        });
+
+        childrens.forEach((child) => {
+            dfs(res, child.children, width / child.children.length)
+        });
+    };
+
+    const eventsArray: any[] = [];
+    if (organizedEvents.length > 0) {
+        dfs(eventsArray, organizedEvents, (eventsHeight - eventsGapTop - eventsGapBottom));
+    }
 
     return <div dir="rtl" style={{ backgroundColor: "black", height: "100vh" }}>
         {/* Toolbar */}
@@ -232,24 +304,7 @@ export default function UserEvents(props: any) {
             position: "absolute", right: 0, top: headerSize, width: windowSize.w,
             backgroundColor: "green"
         }} >
-            {organizedEvents.map((group, g) => {
-                const groupEl = [];
-                for (let i = 0; i < group.length; i++) {
-
-
-                    groupEl.push(<Event
-                        key={g * 100 + i}
-                        top={(eventsHeight - eventsGapTop - eventsGapBottom) / group.length * i + eventsGapTop}
-                        height={(eventsHeight - eventsGapTop - eventsGapBottom) / group.length}
-                        right={getTimeOffset(group[i], showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
-                        width={getTimeWidth(group[i], showDate, sliceWidth, sliceEachHour)}
-                        event={group[i]}
-                        sliceWidth={sliceWidth}
-                    />
-                    );
-                }
-                return groupEl;
-            })}
+            {eventsArray}
         </div>
 
         {/*Now line */}
