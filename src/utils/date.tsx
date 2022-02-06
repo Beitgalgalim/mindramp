@@ -59,7 +59,7 @@ export const day2DayName: { [id: number]: string; } = {
     6: "שבת",
 };
 
-const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
+export const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
 
 export function getDayDesc(date: Dayjs): string {
 
@@ -105,7 +105,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 if (!rec.exclude?.includes(dateStr) && start.diff(date, "days") <= 0) {
-                    if (rec.freq === "daily" || (rec.freq == "weekly" && date.day() == weekDay)) {
+                    if (rec.freq === "daily" || (rec.freq === "weekly" && date.day() === weekDay)) {
                         const eventObj = {...event}
                         adjustEvent(eventObj, date);
                         ret.push(eventObj);
@@ -125,9 +125,17 @@ function adjustEvent(evt: any, date: Dayjs) {
     evt.end = replaceDatePreserveTime(evt.end, date);
 }
 
-function replaceDatePreserveTime(origin: string, newDate: Dayjs): string {
+export function replaceDatePreserveTime(origin: string, newDate: Dayjs): string {
     const origDate = dayjs(origin);
     return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
+}
+
+export function replaceDatePreserveTime2(origin:Date | any | null, newDate:any):Date {
+    if (origin) {
+        const origDate = dayjs(origin);
+        return dayjs(dayjs(newDate).format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME)).toDate();
+    }
+    return dayjs(newDate).toDate();
 }
 
 export function sortEvents(events:any[]):any[] {

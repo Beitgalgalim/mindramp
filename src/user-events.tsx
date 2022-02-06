@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
-import { useEffect, useState, useRef, Children } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from './api'
 import { HourLines, VBox, Text, Spacer } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
@@ -46,7 +46,7 @@ function Event(props: any) {
 
 
 function organizeEvents2(events: any[]): any {
-    if (!events || events.length == 0)
+    if (!events || events.length === 0)
         return [];
 
 
@@ -65,8 +65,6 @@ function organizeEvents2(events: any[]): any {
         }
         return false;
     }
-
-    const sortByEnd = (e1: any, e2: any) => dayjs(e1.end).diff(e2.end, "minutes")
 
     const root: any[] = [];
 
@@ -88,16 +86,24 @@ function organizeEvents2(events: any[]): any {
                 let curArray = root[j].children;
                 while (!added) {
                     let overlapCount = 0;
+                    let bestCandidate = undefined;
                     const curArrayCount = curArray.length;
                     for (let k = 0; k < curArray.length; k++) {
-                        if (!overlapFunc(curArray[k].item)) {
+                        if (!isOverlapSubTree(curArray[k], overlapFunc)) {
+                            // best option - take it
                             curArray = curArray[k].children;
+                            bestCandidate = undefined;
                             break
+                        } else if (!overlapFunc(curArray[k].item)) {
+                            //suite-able option - wait for a better
+                            bestCandidate = bestCandidate || curArray[k].children;
                         } else {
                             overlapCount++;
                         }
                     }
-                    if (overlapCount === curArrayCount) {
+                    if (bestCandidate) {
+                        curArray = bestCandidate
+                    } else if (overlapCount === curArrayCount) {
                         // all events overlap, add as sibling
                         curArray.push(newItem);
                         added = true;
@@ -141,6 +147,7 @@ export default function UserEvents(props: any) {
     const [now, setNow] = useState<Dayjs>(getDebugNow(dayjs()));
     const [profile, setProfile] = useState<number>(0);
     const [startHour, setStartHour] = useState<number>(8);
+    // eslint-disable-next-line no-unused-vars
     const [endHour, setEndHour] = useState<number>(16);
     const [workingHours, setWorkingHours] = useState<string[]>([]);
 
@@ -190,18 +197,20 @@ export default function UserEvents(props: any) {
         api.getEvents().then(evts => setEvents(sortEvents(explodeEvents(evts))));
     }, [props.connected]);
 
+    const updateNow = useCallback(() => {
+        // For debugging, the Now is the time of the displayed day (and not the current date)
+        setNow(getDebugNow(showDate));
+        //setNow(dayjs());
+    },[showDate]);
+
     useEffect(() => {
         let intervalId = setInterval(updateNow, 2 * 1000)
         return (() => {
             clearInterval(intervalId)
         })
-    }, [])
+    }, [updateNow])
 
-    const updateNow = () => {
-        // For debugging, the Now is the time of the displayed day (and not the current date)
-        setNow(getDebugNow(showDate));
-        //setNow(dayjs());
-    }
+    
 
     //updateNow()
 
@@ -224,14 +233,14 @@ export default function UserEvents(props: any) {
     const showingEvents = events.filter(e => e.start >= showDate.format(DateFormats.DATE) &&
         e.start < showDate.add(1, "day").format(DateFormats.DATE));
 
-    const organizedEvents = //organizeEvents(showingEvents);
-        organizeEvents2(showingEvents);
-    const dfs = (res: any[], childrens: any[], width: number) => {
-        childrens.forEach((child, i) => {
+    const organizedEvents = organizeEvents2(showingEvents);
+    let key = 0;
+    const dfs = (res: any[], children: any[], width: number, offset: number) => {
+        children.forEach((child, i) => {
             if (child.item)
                 return res.push(<Event
-                    //key={g * 100 + i}
-                    top={width * i + eventsGapTop}
+                    key={key++}
+                    top={width * offset + width * i + eventsGapTop}
                     height={width}
                     right={getTimeOffset(child.item, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
                     width={getTimeWidth(child.item, showDate, sliceWidth, sliceEachHour)}
@@ -240,15 +249,15 @@ export default function UserEvents(props: any) {
                 />);
         });
 
-        childrens.forEach((child) => {
-            dfs(res, child.children, width / child.children.length)
+
+        children.forEach((child, i) => {
+            dfs(res, child.children, width / child.children.length, offset + i)
         });
     };
 
     const eventsArray: any[] = [];
-    if (organizedEvents.length > 0) {
-        dfs(eventsArray, organizedEvents, (eventsHeight - eventsGapTop - eventsGapBottom));
-    }
+    organizedEvents.forEach((oe:any) => dfs(eventsArray, oe.children, (eventsHeight - eventsGapTop - eventsGapBottom)/oe.children.length, 0));
+
 
     return <div dir="rtl" style={{ backgroundColor: "black", height: "100vh" }}>
         {/* Toolbar */}

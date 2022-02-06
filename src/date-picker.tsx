@@ -1,12 +1,12 @@
 
-import {  useRef } from 'react';
+import { useRef } from 'react';
 
 import { setDateFunc } from "./types";
 import { HBox, Spacer, ClickableText, ComboBox } from './elem';
 import ReactDatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateFormats, day2DayName, getTimes, MonthMap } from './utils/date';
+import { DateFormats, day2DayName, getTimes, MonthMap, replaceDatePreserveTime2 } from './utils/date';
 
 const dayjs = require('dayjs');
 
@@ -66,12 +66,17 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
         }
     }
 
+    const setDate = (newDate: string) => {
+        setStart(replaceDatePreserveTime2(start, newDate));
+        setEnd(replaceDatePreserveTime2(end, newDate));
+    }
+
     return (
         <HBox>
             <ReactDatePicker
                 ref={datePicker}
                 selected={start}
-                onChange={(d: any) => setStart(dayjs(d).toDate())}
+                onChange={(d: any) => setDate(d)}
                 shouldCloseOnSelect={true}
                 customInput={
                     <ClickableText
