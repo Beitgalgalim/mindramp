@@ -4,6 +4,7 @@ import * as api from './api'
 import { HourLines, VBox, Text, Spacer } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
+import { UserEventNode } from "./types";
 
 const logo = require("./logo.png");
 
@@ -14,7 +15,17 @@ const footerSize = 60;
 
 const profiles = ["basic", "large"];
 
+function printTree(tree: any, indent: string): string {
+    let msg = "";
+    if (tree.item) {
+        msg += indent + tree.item.title + "\n";
+    }
 
+    tree.children.forEach((child: any) => {
+        msg += printTree(child, indent + "--");
+    })
+    return msg;
+}
 
 
 function Event(props: any) {
@@ -44,81 +55,94 @@ function Event(props: any) {
     );
 }
 
+//----------
+/// Pick the left and right positions of each event, such that there are no overlap.
+/// Step 3 in the algorithm.
+function layoutEvents(events: any[]): any[] {
 
-function organizeEvents2(events: any[]): any {
-    if (!events || events.length === 0)
-        return [];
+    let columns: any[][] = [];
+    let lastEventEnding: any = null;
 
+    //sort events first by start, then by end time
+    events.sort((e1, e2) => {
+        if (e1.start < e2.start) return -1;
+        if (e1.start > e2.start) return 1;
+        if (e1.end < e2.end) return -1;
 
+        return 1;
+    });
 
-
-    const isOverlapSubTree = (node: any, overlapFunction: any): boolean => {
-        if (node.item) {
-            if (overlapFunction(node.item)) {
-                return true;
-            }
+    events.forEach((ev) => {
+        if (lastEventEnding !== null && ev.start >= lastEventEnding) {
+            PackEvents(columns);
+            columns = [];
+            lastEventEnding = null;
         }
-        for (let i = 0; i < node.children.length; i++) {
-            if (isOverlapSubTree(node.children[i], overlapFunction)) {
-                return true;
-            }
-        }
-        return false;
-    }
+        let placed = false;
+        for (let i = 0; i < columns.length; i++) {
+            const col = columns[i];
 
-    const root: any[] = [];
-
-    for (let i = 0; i < events.length; i++) {
-
-        const overlapFunc = (item: any) => {
-            // events[i].start overlaps with item
-            return events[i].start < item.end && events[i].end > item.start;
-        };
-
-        const newItem = { item: events[i], children: [] }
-        // walk throw the graph
-        let added = false;
-        for (let j = 0; j < root.length; j++) {
-            const overlap = isOverlapSubTree(root[j], overlapFunc);
-            if (overlap) {
-                // add to this subtree
-
-                let curArray = root[j].children;
-                while (!added) {
-                    let overlapCount = 0;
-                    let bestCandidate = undefined;
-                    const curArrayCount = curArray.length;
-                    for (let k = 0; k < curArray.length; k++) {
-                        if (!isOverlapSubTree(curArray[k], overlapFunc)) {
-                            // best option - take it
-                            curArray = curArray[k].children;
-                            bestCandidate = undefined;
-                            break
-                        } else if (!overlapFunc(curArray[k].item)) {
-                            //suite-able option - wait for a better
-                            bestCandidate = bestCandidate || curArray[k].children;
-                        } else {
-                            overlapCount++;
-                        }
-                    }
-                    if (bestCandidate) {
-                        curArray = bestCandidate
-                    } else if (overlapCount === curArrayCount) {
-                        // all events overlap, add as sibling
-                        curArray.push(newItem);
-                        added = true;
-                    }
-                }
-
+            if (!CollidesWith(col[col.length - 1], ev)) {
+                col.push(ev);
+                placed = true;
                 break;
             }
+        }
 
+        if (!placed) {
+            columns.push([ev]);
         }
-        if (!added) {
-            root.push({ item: undefined, children: [newItem] });
+        if (lastEventEnding == null || ev.end > lastEventEnding) {
+            lastEventEnding = ev.end;
         }
+    });
+
+    if (columns.length > 0) {
+        PackEvents(columns);
     }
-    return root;
+    return events;
+}
+
+function CollidesWith(ev1: any, ev2: any) {
+    return ev1.start < ev2.end && ev1.end > ev2.start;
+}
+
+/// Set the left and right positions for each event in the connected group.
+/// Step 4 in the algorithm.
+function PackEvents(columns: any[][]) {
+    let numColumns = columns.length;
+    let iColumn = 0;
+
+    columns.forEach(col => {
+        col.forEach((ev) => {
+            let colSpan = ExpandEvent(ev, iColumn, columns);
+            ev._left = iColumn / numColumns;
+            ev._right = (iColumn + colSpan) / numColumns;
+            ev._cols = numColumns;
+        });
+
+        iColumn++;
+    });
+}
+
+/// Checks how many columns the event can expand into, without colliding with
+/// other events.
+/// Step 5 in the algorithm.
+function ExpandEvent(ev: any, iColumn: number, columns: any[][]): number {
+    let colSpan = 1;
+
+    const iterOn = columns.slice(iColumn + 1);
+    for (let i=0;i<iterOn.length;i++) {
+        const col = iterOn[i];
+        for (let j=0;j<col.length;j++) {
+            const ev1 = col[j];
+            if (CollidesWith(ev1, ev)) {
+                return colSpan;
+            }
+        }
+        colSpan++;
+    }
+    return colSpan;
 }
 
 function getTimeOffset(event: any, showDate: Dayjs, startHour: number, sliceWidth: number, sliceEachHour: number) {
@@ -147,7 +171,7 @@ export default function UserEvents(props: any) {
     const [now, setNow] = useState<Dayjs>(getDebugNow(dayjs()));
     const [profile, setProfile] = useState<number>(0);
     const [startHour, setStartHour] = useState<number>(8);
-    
+
     // eslint-disable-next-line no-unused-vars
     const [endHour, setEndHour] = useState<number>(16);
     const [workingHours, setWorkingHours] = useState<string[]>([]);
@@ -202,7 +226,7 @@ export default function UserEvents(props: any) {
         // For debugging, the Now is the time of the displayed day (and not the current date)
         setNow(getDebugNow(showDate));
         //setNow(dayjs());
-    },[showDate]);
+    }, [showDate]);
 
     useEffect(() => {
         let intervalId = setInterval(updateNow, 2 * 1000)
@@ -211,7 +235,7 @@ export default function UserEvents(props: any) {
         })
     }, [updateNow])
 
-    
+
 
     //updateNow()
 
@@ -234,31 +258,26 @@ export default function UserEvents(props: any) {
     const showingEvents = events.filter(e => e.start >= showDate.format(DateFormats.DATE) &&
         e.start < showDate.add(1, "day").format(DateFormats.DATE));
 
-    const organizedEvents = organizeEvents2(showingEvents);
-    let key = 0;
-    const dfs = (res: any[], children: any[], width: number, offset: number) => {
-        children.forEach((child, i) => {
-            if (child.item)
-                return res.push(<Event
-                    key={key++}
-                    top={width * offset + width * i + eventsGapTop}
-                    height={width}
-                    right={getTimeOffset(child.item, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
-                    width={getTimeWidth(child.item, showDate, sliceWidth, sliceEachHour)}
-                    event={child.item}
-                    sliceWidth={sliceWidth}
-                />);
-        });
+    const layouted = layoutEvents(showingEvents);
+
+//     let msg = ""
+//     layouted.forEach(ev => {
+//         msg += `(${ev._left},${ev._right}, ${ev._cols}) ${ev.title} 
+// `;
+//     })
+//     console.log("-----Tree----\n", msg)
+    const slotWidth = (eventsHeight - eventsGapTop - eventsGapBottom) ;
 
 
-        children.forEach((child, i) => {
-            dfs(res, child.children, width / child.children.length, offset + i)
-        });
-    };
-
-    const eventsArray: any[] = [];
-    organizedEvents.forEach((oe:any) => dfs(eventsArray, oe.children, (eventsHeight - eventsGapTop - eventsGapBottom)/oe.children.length, 0));
-
+    const eventsArray = layouted.map((ev, key)=>(<Event
+            key={key}
+            top={eventsGapTop + ev._left * slotWidth }
+            height={(ev._right - ev._left) * slotWidth}
+            right={getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
+            width={getTimeWidth(ev, showDate, sliceWidth, sliceEachHour)}
+            event={ev}
+            sliceWidth={sliceWidth}
+        />));
 
     return <div dir="rtl" style={{ backgroundColor: "black", height: "100vh" }}>
         {/* Toolbar */}
