@@ -3,7 +3,7 @@ import {
     getFirestore, Firestore, collection, getDocs, doc,
     DocumentData,
     query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
-    where, QueryDocumentSnapshot
+    where
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -13,7 +13,7 @@ import {
     signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { EventApi } from '@fullcalendar/common'
+// import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
 import { Collections, MediaResource } from './types';
@@ -86,7 +86,7 @@ export function getMedia(): Promise<MediaResource[]> {
 export async function upsertEvent(event: any, ref: DocumentReference) {
     const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
-    prepareEventRecord(eventObj);
+    prepareAndValidateEventRecord(eventObj);
 
     if (ref) {
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
@@ -102,10 +102,19 @@ export async function upsertEvent(event: any, ref: DocumentReference) {
     }
 }
 
-function prepareEventRecord(eventObj: any) {
+function prepareAndValidateEventRecord(eventObj: any) {
     eventObj.date = dayjs(eventObj.start).format(DateFormats.DATE);
     eventObj.start = dayjs(eventObj.start).format(DateFormats.DATE_TIME);
     eventObj.end = dayjs(eventObj.end).format(DateFormats.DATE_TIME);
+
+    if (eventObj.end <= eventObj.start) {
+        throw new Error("זמן סיום חייב להיות מאוחר מזמן התחלה");
+    }
+
+    if (!eventObj.title || eventObj.title.length === 0) {
+        throw new Error("חסר כותרת לאירוע");
+    }
+
     if (!eventObj.notes) {
         delete eventObj.notes;
     }
@@ -125,7 +134,7 @@ function prepareEventRecord(eventObj: any) {
 export async function createEventInstance(event: any, ref: DocumentReference) {
     const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
-    prepareEventRecord(eventObj);
+    prepareAndValidateEventRecord(eventObj);
     eventObj.instanceStatus = true;
     eventObj.recurrent = { gid: ref.id };
 
@@ -232,7 +241,7 @@ async function _getCollection(collName: string, oBy?: string, order?: "asc" | "d
         constraints.push(order ? orderBy(oBy, order) : orderBy(oBy));
     }
 
-    let i = 1;
+    //let i = 1;
     return getDocs(query(colRef, ...constraints)).then((items) => {
         return items.docs.map(docObj => {
             let obj = docObj.data();

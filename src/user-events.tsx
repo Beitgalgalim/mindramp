@@ -147,6 +147,7 @@ export default function UserEvents(props: any) {
     const [now, setNow] = useState<Dayjs>(getDebugNow(dayjs()));
     const [profile, setProfile] = useState<number>(0);
     const [startHour, setStartHour] = useState<number>(8);
+    
     // eslint-disable-next-line no-unused-vars
     const [endHour, setEndHour] = useState<number>(16);
     const [workingHours, setWorkingHours] = useState<string[]>([]);
