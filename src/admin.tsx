@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as api from './api'
 
-import { Text, ResponsiveTab, TabPanel } from './elem';
+import { ResponsiveTab, TabPanel } from './elem';
 import Events from './events';
 
 import { Tabs } from '@material-ui/core';

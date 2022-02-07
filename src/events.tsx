@@ -7,10 +7,12 @@ import interactionPlugin from '@fullcalendar/interaction'
 import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
 import { Fab } from '@mui/material';
 import { Add } from '@mui/icons-material';
+import {Event} from './event';
+
 import AddEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEvent, EventsProps, MediaResource, NewEvent } from './types';
+import { EditEvent, EventsProps } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { addRepeatIcon } from './elem';
 
@@ -19,7 +21,7 @@ import { addRepeatIcon } from './elem';
 
 export default function Events({connected, notify, media}:EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
@@ -33,7 +35,7 @@ export default function Events({connected, notify, media}:EventsProps) {
 
     const calendarApi = calendarRef?.current?.getApi();
 
-    function getNewEvent(): NewEvent {
+    function getNewEvent(): any {
         const d =  calendarApi?calendarApi.getDate(): dayjs().format(DateFormats.DATE);
         return {
             title: "",
@@ -66,7 +68,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                 {
                     caption: "כל הסדרה",
                     callback: () => {
-                        const evt = events.find(e => e._ref.id === gid);
+                        const evt = events.find(e => e._ref?.id === gid);
                         if (evt) {
                             setNewEvent({ event: evt, editAllSeries: true })
                         }
@@ -74,7 +76,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                 },
                 {
                     caption: "מופע נוכחי",
-                    callback: () => setNewEvent({ event: eventClickArg.event, editAllSeries: false })
+                    callback: () => setNewEvent({ event: Event.fromEventAny(eventClickArg.event), editAllSeries: false })
                 },
                 {
                     caption: "בטל",
@@ -82,7 +84,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                 },
             ])
         } else {
-            setNewEvent({ event: eventClickArg.event });
+            setNewEvent({ event: Event.fromEventAny(eventClickArg.event) });
         }
     }
 
@@ -90,11 +92,12 @@ export default function Events({connected, notify, media}:EventsProps) {
         console.log("click", dateSelectArgs.startStr);
         if (dateSelectArgs.view.type === 'timeGridDay' || dateSelectArgs.view.type === 'timeGridWeek') {
             setNewEvent({
-                event: {
+                event: Event.fromAny({
                     title: "",
-                    start: dateSelectArgs.start,
-                    end: dateSelectArgs.end
-                }
+                    start: dayjs(dateSelectArgs.start),
+                    end: dayjs(dateSelectArgs.end),
+                    date:dayjs(dateSelectArgs.start).format(DateFormats.DATE)
+                })
             });
         } else {
             calendarApi && calendarApi.gotoDate(dateSelectArgs.startStr);
@@ -124,7 +127,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                                 notify.success("נשמר בהצלחה");
 
                                 setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref.id !== result.series._ref.id)
+                                    const newEvents = evts.filter(e => e._ref?.id !== result.series._ref?.id)
                                     newEvents.push(result.series);
                                     newEvents.push(result.instance);
                                     return newEvents;
@@ -145,7 +148,7 @@ export default function Events({connected, notify, media}:EventsProps) {
             api.upsertEvent(eventChangedArg.event, eventChangedArg.event.extendedProps?._ref).then(
                 (newDoc) => {
                     notify.success("נשמר בהצלחה");
-                    setEvents(evts => [...evts.filter(e => e._ref.id !== newDoc._ref.id), newDoc]);
+                    setEvents(evts => [...evts.filter(e => e._ref?.id !== newDoc._ref?.id), newDoc]);
                 },
                 (err) => {
                     notify.error(err.message);
@@ -211,7 +214,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                                 notify.success("נשמר בהצלחה");
 
                                 setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref.id !== result.series._ref.id)
+                                    const newEvents = evts.filter(e => e._ref?.id !== result.series._ref?.id)
                                     newEvents.push(result.series);
                                     newEvents.push(result.instance);
                                     return newEvents;
@@ -226,7 +229,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                                 notify.success("נשמר בהצלחה");
 
                                 setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref.id !== ref?.id)
+                                    const newEvents = evts.filter(e => e._ref?.id !== ref?.id)
                                     newEvents.push(evt2);
                                     return newEvents;
                                 })
@@ -241,7 +244,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                     // delete non-recurrent event
                     api.deleteEvent(ref, editEvent.editAllSeries === true).then(
                         (removedIDs) => {
-                            setEvents(evts => evts.filter(e => !removedIDs.includes(e._ref.id)));
+                            setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
                             setNewEvent(undefined);
                         },
                         (err: Error) => notify.error(err.message)

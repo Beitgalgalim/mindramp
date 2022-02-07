@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
-import { RecurrentEventField } from "../types";
+import { RecurrentEventField } from "../event";
 
 export const DateFormats = {
     DATE_TIME: "YYYY-MM-DDTHH:mm",
@@ -130,12 +130,12 @@ export function replaceDatePreserveTime(origin: string, newDate: Dayjs): string 
     return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
 }
 
-export function replaceDatePreserveTime2(origin:Date | any | null, newDate:any):Date {
+export function replaceDatePreserveTime2(origin:string, newDate:any):string {
     if (origin) {
         const origDate = dayjs(origin);
-        return dayjs(dayjs(newDate).format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME)).toDate();
+        return dayjs(dayjs(newDate).format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME)).format(DateFormats.DATE_TIME);
     }
-    return dayjs(newDate).toDate();
+    return dayjs(newDate).format(DateFormats.DATE_TIME);
 }
 
 export function sortEvents(events:any[]):any[] {

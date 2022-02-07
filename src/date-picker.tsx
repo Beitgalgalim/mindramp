@@ -1,7 +1,7 @@
 
 import { useRef, useState } from 'react';
 
-import { setDateFunc } from "./types";
+import { DatePickerProps } from "./types";
 import { HBox, Spacer, ClickableText, ComboBox } from './elem';
 import ReactDatePicker from "react-datepicker";
 
@@ -15,7 +15,7 @@ const dayjs = require('dayjs');
 
 const times = getTimes();
 
-function getNiceDate(d: Date | null | undefined): string {
+function getNiceDate(d: string): string {
     if (!d)
         return "";
 
@@ -27,7 +27,7 @@ function getNiceDate(d: Date | null | undefined): string {
     return res;
 }
 
-function getTime(d: Date | null | undefined): string {
+function getTime(d: string): string {
     if (!d)
         return "";
 
@@ -35,19 +35,18 @@ function getTime(d: Date | null | undefined): string {
     return djs.format(DateFormats.TIME_AM_PM);
 }
 
-function calcDiff(d: Date | null | undefined, newTime: string) {
+function calcDiff(d: string, newTime: string) {
     if (!d) {
         return 0;
     }
     newTime = newTime.replace("am", " am");
     newTime = newTime.replace("pm", " pm");
     const newStart = dayjs(dayjs(d).format(DateFormats.DATE) + " " + newTime);
-    return newStart.diff(d, 'min', true);
+    return newStart.diff(dayjs(d), 'minutes', true);
 }
 
 
-export default function MyDatePicker({ start, end, setStart, setEnd }:
-    { start: Date | null | undefined, end: Date | null | undefined, setStart: setDateFunc, setEnd: setDateFunc }) {
+export default function MyDatePicker({ start, end, setStart, setEnd }: DatePickerProps) {
     const [invalidStart, setInvalidStart] = useState(false);
     const [invalidEnd, setInvalidEnd] = useState(false);
 
@@ -62,8 +61,8 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
 
         const diffMin = calcDiff(start, newTime);
         if (diffMin !== 0) {
-            setStart(dayjs(start).add(diffMin, "min").toDate());
-            setEnd(dayjs(end).add(diffMin, "min").toDate());
+            setStart(dayjs(start).add(diffMin, "minutes").format(DateFormats.DATE_TIME));
+            setEnd(dayjs(end).add(diffMin, "minutes").format(DateFormats.DATE_TIME));
         }
     }
 
@@ -76,7 +75,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
 
         const diffMin = calcDiff(end, newTime);
         if (diffMin !== 0) {
-            setEnd(dayjs(end).add(diffMin, "min").toDate());
+            setEnd(dayjs(end).add(diffMin, "minutes").format(DateFormats.DATE_TIME));
         }
     }
 
@@ -89,8 +88,8 @@ export default function MyDatePicker({ start, end, setStart, setEnd }:
         <HBox>
             <ReactDatePicker
                 ref={datePicker}
-                selected={start}
-                onChange={(d: any) => setDate(d)}
+                selected={dayjs(start).toDate()}
+                onChange={(d: Date) => setDate(dayjs(d).format(DateFormats.DATE))}
                 shouldCloseOnSelect={true}
                 customInput={
                     <ClickableText

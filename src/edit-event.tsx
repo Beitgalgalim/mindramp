@@ -1,49 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Button, TextField } from '@mui/material';
 import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
-import { DateFormats } from './utils/date';
-import { EventApi } from '@fullcalendar/common'
 
 
-import { EditEvent, EditEventsProps, MediaResource, NewEvent, RecurrentEventField } from './types';
+import {  EditEventsProps, MediaResource } from './types';
 import { AccessTime, Edit, Image, Notes, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, FormControlLabel, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
+import { Event } from './event';
+import { DateFormats } from './utils/date';
 
 const dayjs = require('dayjs');
 
 export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }: EditEventsProps){
-    const [title, setTitle] = useState<string>();
+    const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
-    const [start, setStart] = useState<Date | null>();
-    const [end, setEnd] = useState<Date | null>();
-    const [imageUrl, setImageUrl] = useState<string>("");
+    const [start, setStart] = useState<string>(inEvent.event.start);
+    const [end, setEnd] = useState<string>(inEvent.event.end);
+    const [imageUrl, setImageUrl] = useState<string>();
     const [ref, setRef] = useState<DocumentReference | undefined>();
-    const [instanceStatus, setInstanceStatus] = useState<DocumentReference | null>();
+    const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
     const [recurrent, setRecurrent] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        const extProps = inEvent.event?.extendedProps || inEvent.event;
-        const ref = extProps?._ref;
-        const notes = extProps?.notes;
-        const imgUrl = extProps?.imageUrl;
-        const recu: RecurrentEventField = extProps?.recurrent;
-        setInstanceStatus(extProps?.instanceStatus);
+        const event = Event.fromEventAny(inEvent.event);
+        const recu = event.recurrent;
+        setInstanceStatus(event.instanceStatus);
 
-        if (ref) {
-            setRef(ref);
+        if (event._ref) {
+            setRef(event._ref);
         }
         if (inEvent.editAllSeries && recu) {
             setRecurrent(recu.freq === "weekly" ? "שבועי" : recu.freq === "daily" ? "יומי" : "");
         }
-        setStart(dayjs(inEvent.event.start).toDate());
-        setEnd(dayjs(inEvent.event.end).toDate());
-        setTitle(inEvent.event.title);
-        setNotes(notes);
-        setImageUrl(imgUrl)
+        setNotes(event.notes);
+        setImageUrl(event.imageUrl);
     }, [inEvent]);
 
 
@@ -75,8 +69,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
                         <MyDatePicker start={start} end={end}
-                            setStart={(d: Date) => setStart(d)}
-                            setEnd={(d: Date) => setEnd(d)}
+                            setStart={(d) => setStart(d)}
+                            setEnd={(d) => setEnd(d)}
                         />
                     </Grid>
                 </Grid>
@@ -139,19 +133,19 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                 <Button variant="outlined" onClick={() => {
 
                     const recurrentField = inEvent.event.recurrent || {};
-                    recurrentField.freq = recurrent == "שבועי" ? "weekly" : recurrent == "יומי" ? "daily" : "";
+                    recurrentField.freq = recurrent === "שבועי" ? "weekly" : recurrent === "יומי" ? "daily" : "none";
 
                     onSave(
                         {
-                            event: {
+                            event: Event.fromAny({
                                 title,
                                 start,
                                 end,
                                 notes,
                                 imageUrl,
-                                instanceStatus,
-                                recurrent: recurrent ? recurrentField : undefined,
-                            },
+                                ...(instanceStatus && {instanceStatus}),
+                                ...(recurrent && {recurrent: recurrentField}),
+                            }), 
                             editAllSeries: inEvent.editAllSeries
                         },
                         ref);

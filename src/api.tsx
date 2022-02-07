@@ -13,12 +13,13 @@ import {
     signInWithEmailAndPassword,
 } from "firebase/auth";
 
-// import { EventApi } from '@fullcalendar/common'
+import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
 import { Collections, MediaResource } from './types';
+import { Event } from './event';
+
 import { DateFormats } from './utils/date';
-import dayjs from 'dayjs';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -68,8 +69,9 @@ export async function getUserInfo(user: string, pwd: string) {
 //     return undefined;
 // }
 
-export function getEvents(): Promise<DocumentData[]> {
-    return _getCollection(Collections.EVENT_COLLECTION, "start", "asc");
+
+export function getEvents(): Promise<Event[]> {
+    return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -83,61 +85,42 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: any, ref: DocumentReference | undefined) {
-    const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
+export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined):Promise<Event> {
+    const eventObj = Event.fromEventAny(event)
 
-    prepareAndValidateEventRecord(eventObj);
+    let dbDoc = eventObj.toDbObj();
 
     if (ref) {
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
             eventObj.recurrent.gid = ref.id;
         }
-        return updateDoc(ref, eventObj).then(() => ({ _ref: ref, ...eventObj }));
+        return updateDoc(ref, dbDoc).then(() => {
+            eventObj._ref = ref;
+            return eventObj;
+        });
     } else {
         const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
-            eventObj.recurrent.gid = docRef.id;
+            dbDoc.recurrent.gid = docRef.id;
         }
-        return setDoc(docRef, eventObj).then(() => ({ _ref: docRef, ...eventObj }));
+        return setDoc(docRef, dbDoc).then(() => {
+            eventObj._ref = ref;
+            return eventObj;
+        });
     }
 }
 
-function prepareAndValidateEventRecord(eventObj: any) {
-    eventObj.date = dayjs(eventObj.start).format(DateFormats.DATE);
-    eventObj.start = dayjs(eventObj.start).format(DateFormats.DATE_TIME);
-    eventObj.end = dayjs(eventObj.end).format(DateFormats.DATE_TIME);
 
-    if (eventObj.end <= eventObj.start) {
-        throw new Error("זמן סיום חייב להיות מאוחר מזמן התחלה");
-    }
+export async function createEventInstance(evt: Event | EventApi, ref: DocumentReference | undefined):
+    Promise<{ instance: Event, series: Event }> {
 
-    if (!eventObj.title || eventObj.title.length === 0) {
-        throw new Error("חסר כותרת לאירוע");
-    }
-
-    if (!eventObj.notes) {
-        delete eventObj.notes;
-    }
-    if (!eventObj.imageUrl) {
-        delete eventObj.imageUrl;
-    }
-    if (!eventObj.recurrent) {
-        delete eventObj.recurrent;
-    }
-    delete eventObj._ref;
-
-    if (!eventObj.instanceStatus) {
-        delete eventObj.instanceStatus;
-    }
-}
-
-export async function createEventInstance(event: any, ref: DocumentReference | undefined) {
     if (!ref) {
         throw new Error("Ref must be valid");
     }
-    const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
-    prepareAndValidateEventRecord(eventObj);
+    const event = Event.fromEventAny(evt);
+    const eventObj = event.toDbObj();
+
     eventObj.instanceStatus = true;
     eventObj.recurrent = { gid: ref.id };
 
@@ -161,12 +144,14 @@ export async function createEventInstance(event: any, ref: DocumentReference | u
         batch.set(instanceRef, eventObj);
         return batch.commit().then(
             () => {
+                event._ref = instanceRef
+                const seriesEvent = Event.fromDbObj(seriesDocObj);
+                seriesEvent._ref = ref;
                 return {
-                    instance: { _ref: instanceRef, ...eventObj },
-                    series: { _ref: ref, ...seriesDocObj },
+                    instance: event,
+                    series: seriesEvent,
                 };
             })
-
     });
 }
 

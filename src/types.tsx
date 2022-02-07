@@ -1,5 +1,5 @@
-import { DocumentData, DocumentReference } from "@firebase/firestore/dist/lite";
-
+import { DocumentReference } from "@firebase/firestore/dist/lite";
+import { Event } from './event';
 export const Collections = {
     EVENT_COLLECTION: "event",
     MEDIA_COLLECTION: "media",
@@ -10,8 +10,6 @@ export interface MsgButton {
     caption: string,
     callback: CallableFunction
 }
-
-
 
 export interface NotificationMessage {
     title?: string,
@@ -24,14 +22,7 @@ export interface NotificationMessage {
     severity?: "success" | "error" | "info";
 }
 
-export interface NewEvent {
-    title: string,
-    start: Date,
-    end: Date,
-    extendedProps?: any,
-}
-
-export type setDateFunc = (d: Date) => void;
+export type setDateFunc = (d: string) => void;
 
 export interface MediaResource {
     name: string,
@@ -41,15 +32,9 @@ export interface MediaResource {
     _ref?: DocumentReference
 }
 
-export interface RecurrentEventField {
-    freq: "daily" | "weekly" | "custom" | "none",
-    daysOfWeek?: number[],
-    gid?: string,
-    exclude?: string[]
-}
 
 export interface EditEvent {
-    event: any,
+    event: Event,
     editAllSeries?: boolean
 }
 
@@ -92,6 +77,12 @@ export interface EditEventsProps extends WithMedia {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
-    onDelete?: (editEvent: EditEvent, ref: DocumentReference)=>void;
+    onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
 }
 
+export interface DatePickerProps {
+    start: string;
+    end: string;
+    setStart: setDateFunc;
+    setEnd: setDateFunc;
+}
