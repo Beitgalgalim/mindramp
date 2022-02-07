@@ -22,8 +22,7 @@ import { EventMountArg } from '@fullcalendar/common'
 
 export const ResponsiveTab = withStyles({
     root: {
-        minWidth: 65,
-        width: 65
+        minWidth: 150
     },
     selected: {
 

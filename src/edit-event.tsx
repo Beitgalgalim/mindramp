@@ -5,7 +5,7 @@ import { DateFormats } from './utils/date';
 import { EventApi } from '@fullcalendar/common'
 
 
-import { EditEvent, MediaResource, NewEvent, RecurrentEventField } from './types';
+import { EditEvent, EditEventsProps, MediaResource, NewEvent, RecurrentEventField } from './types';
 import { AccessTime, Edit, Image, Notes, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, FormControlLabel, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
@@ -14,17 +14,13 @@ import { DocumentReference } from '@firebase/firestore/dist/lite';
 
 const dayjs = require('dayjs');
 
-export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
-    {
-        inEvent: EditEvent, onSave: CallableFunction,
-        onCancel: CallableFunction, onDelete?: CallableFunction, media: MediaResource[]
-    }) {
+export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }: EditEventsProps){
     const [title, setTitle] = useState<string>();
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<Date | null>();
     const [end, setEnd] = useState<Date | null>();
     const [imageUrl, setImageUrl] = useState<string>("");
-    const [ref, setRef] = useState<DocumentReference | null>();
+    const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<DocumentReference | null>();
     const [editImage, setEditImage] = useState(false);
     const [recurrent, setRecurrent] = useState<string | undefined>(undefined);

@@ -4,6 +4,7 @@ import * as api from './api'
 import { HourLines, VBox, Text, Spacer } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
+import { UserEventsProps } from "./types";
 
 const logo = require("./logo.png");
 
@@ -35,7 +36,6 @@ function Event(props: any) {
                 <Text textAlign="center" fontSize={font2}>{dayjs(props.event.start).format(DateFormats.TIME) + " - " + dayjs(props.event.end).format(DateFormats.TIME)}</Text>
                 <Spacer height={25} />
                 <Text textAlign="center" fontSize={font3}>{props.event.notes || ""}</Text>
-
             </VBox>
 
         </div>
@@ -155,8 +155,7 @@ function getDebugNow(date: Dayjs) {
     return dayjs(date.format(DateFormats.DATE) + " " + dayjs().format(DateFormats.TIME));
 }
 
-export default function UserEvents(props: any) {
-    const { windowSize } = props;
+export default function UserEvents({windowSize, connected}:UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [now, setNow] = useState<Dayjs>(getDebugNow(dayjs()));
@@ -208,10 +207,10 @@ export default function UserEvents(props: any) {
 
 
     useEffect(() => {
-        if (!props.connected)
+        if (!connected)
             return;
         api.getEvents().then(evts => setEvents(sortEvents(explodeEvents(evts))));
-    }, [props.connected]);
+    }, [connected]);
 
     const updateNow = useCallback(() => {
         // For debugging, the Now is the time of the displayed day (and not the current date)

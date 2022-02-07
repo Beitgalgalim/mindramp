@@ -7,10 +7,10 @@ import Events from './events';
 import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
-import { MediaResource } from './types';
+import { AdminProps, MediaResource } from './types';
 
 
-export default function Admin(props: any) {
+export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
@@ -39,18 +39,16 @@ export default function Admin(props: any) {
                 }
             }}
         >
-            <ResponsiveTab label={"אירועים"} />
-            <ResponsiveTab label={"תבנית אירועים"} />
-            <ResponsiveTab label={"מדיה"} />
+            <ResponsiveTab label={"יומן"} />
+            
+            <ResponsiveTab label={"ספריית מדיה"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
             <Events connected={props.connected} notify={props.notify} media={media}/>
         </TabPanel>
+        
         <TabPanel key={"1"} value={adminTab} index={1} >
-            {adminTab === 1 && <Text>הי</Text>}
-        </TabPanel>
-        <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Media connected={props.connected} notify={props.notify} media={media}/>}
+            {adminTab === 1 && <Media connected={props.connected} notify={props.notify} media={media}/>}
         </TabPanel>
 
     </div>);

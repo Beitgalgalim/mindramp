@@ -83,7 +83,7 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: any, ref: DocumentReference) {
+export async function upsertEvent(event: any, ref: DocumentReference | undefined) {
     const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
     prepareAndValidateEventRecord(eventObj);
@@ -131,7 +131,10 @@ function prepareAndValidateEventRecord(eventObj: any) {
     }
 }
 
-export async function createEventInstance(event: any, ref: DocumentReference) {
+export async function createEventInstance(event: any, ref: DocumentReference | undefined) {
+    if (!ref) {
+        throw new Error("Ref must be valid");
+    }
     const eventObj = event.toPlainObject ? event.toPlainObject({ collapseExtendedProps: true }) : event;
 
     prepareAndValidateEventRecord(eventObj);

@@ -10,14 +10,14 @@ import { Add } from '@mui/icons-material';
 import AddEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEvent, MediaResource, NewEvent } from './types';
+import { EditEvent, EventsProps, MediaResource, NewEvent } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { addRepeatIcon } from './elem';
 
 
 
 
-export default function Events({ notify, connected, media }: { notify: any, connected: boolean, media: MediaResource[] }) {
+export default function Events({connected, notify, media}:EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<any[]>([]);
 
@@ -203,7 +203,7 @@ export default function Events({ notify, connected, media }: { notify: any, conn
                 media={media}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
-                onSave={(editEvent: EditEvent, ref: DocumentReference) => {
+                onSave={(editEvent: EditEvent, ref: DocumentReference | undefined) => {
                     if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
                         //update instance only
                         api.createEventInstance(editEvent.event, ref).then(
