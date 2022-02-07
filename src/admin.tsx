@@ -48,7 +48,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
         
         <TabPanel key={"1"} value={adminTab} index={1} >
-            {adminTab === 1 && <Media connected={props.connected} notify={props.notify} media={media}/>}
+            {adminTab === 1 && <Media notify={props.notify} media={media}/>}
         </TabPanel>
 
     </div>);

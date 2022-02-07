@@ -119,10 +119,10 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
     }
 
     const event = Event.fromEventAny(evt);
-    const eventObj = event.toDbObj();
+    event.instanceStatus = true;
+    event.recurrent = { gid: ref.id };
 
-    eventObj.instanceStatus = true;
-    eventObj.recurrent = { gid: ref.id };
+    const eventObj = event.toDbObj();
 
     let batch = writeBatch(db);
 

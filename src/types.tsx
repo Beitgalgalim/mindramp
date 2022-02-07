@@ -73,6 +73,8 @@ export interface Notifying {
 export interface AdminProps extends Connected, Notifying, WithUser { }
 export interface EventsProps extends Connected, Notifying, WithMedia { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
+export interface MediaProps extends Notifying, WithMedia { }
+
 export interface EditEventsProps extends WithMedia {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;

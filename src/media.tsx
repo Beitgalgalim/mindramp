@@ -1,5 +1,5 @@
 import {  useRef } from 'react';
-import { MediaResource } from './types';
+import { MediaProps, MediaResource } from './types';
 
 import { Text, HBoxSB, Spacer } from './elem';
 import * as api from './api'
@@ -7,7 +7,7 @@ import { Button } from '@material-ui/core';
 
 
 
-export default function Media({ connected, media, notify }: { connected: boolean, media: MediaResource[], notify: any }) {
+export default function Media({ media, notify }: MediaProps) {
 
     const inputEl = useRef<HTMLInputElement | null>(null);
     return (<div>
