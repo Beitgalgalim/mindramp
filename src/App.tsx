@@ -8,7 +8,7 @@ import { Text, HBox, Spacer } from './elem';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { Collapse } from '@material-ui/core';
-import { Button, LinearProgress  } from '@mui/material';
+import { Button, LinearProgress } from '@mui/material';
 
 import { MsgButton, NotificationMessage } from './types';
 import UserEvents from './user-events';
