@@ -8,7 +8,7 @@ import { Text, HBox, Spacer } from './elem';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { Collapse } from '@material-ui/core';
-import { Button } from '@mui/material';
+import { Button, LinearProgress } from '@mui/material';
 
 import { MsgButton, NotificationMessage } from './types';
 import UserEvents from './user-events';
@@ -22,6 +22,7 @@ function App(props: any) {
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [synced, setSynced] = useState(false);
 
 
   useEffect(() => {
@@ -49,7 +50,9 @@ function App(props: any) {
     clear: () => {
       setMsg(undefined);
     },
-    inProgress: () => setMsg({ progress: true, open: true }),
+    inProgress: () => {
+      setMsg({ progress: true, open: true })
+    },
   }
 
   useEffect(() => {
@@ -58,6 +61,7 @@ function App(props: any) {
       (user) => {
         console.log("user:", JSON.stringify(user));
         setUser(user?.email);
+        setSynced(true);
       });
     if (success) {
       setConnected(true);
@@ -93,6 +97,9 @@ function App(props: any) {
       <BrowserRouter>
         <Routes>
           <Route path="/admin" element={
+            // ---- Loading bar ----
+            !synced ? <LinearProgress /> 
+                    :
             // ---- Login -----
             !user ? <Login
               onLogin={(u:User) => {}}
