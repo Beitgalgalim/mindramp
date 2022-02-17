@@ -18,8 +18,13 @@ export class Event {
     end: string = "";
     notes?: string;
     imageUrl?: string;
+    audioUrl?: string;
+    audioPath?: string;
+    audioBlob?: Blob;
     recurrent?: RecurrentEventField;
     instanceStatus?: boolean;
+
+    clearAudio?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
 
@@ -43,11 +48,15 @@ export class Event {
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "recurrent", doc);
         assignIfExists(evt, "instanceStatus", doc);
+        assignIfExists(evt, "audioUrl", doc);
+        assignIfExists(evt, "audioPath", doc);
+        assignIfExists(evt, "audioBlob", doc);
+        assignIfExists(evt, "clearAudio", doc);
 
         return evt;
     }
 
-    static fromAny(obj:any) {
+    static fromAny(obj: any) {
         return Event.fromDbObj(obj);
     }
 
@@ -75,9 +84,18 @@ export class Event {
             delete eventObj.recurrent;
         }
         delete eventObj._ref;
+        delete eventObj.audioBlob;
+        delete eventObj.clearAudio;
+
 
         if (!eventObj.instanceStatus) {
             delete eventObj.instanceStatus;
+        }
+        if (!eventObj.audioUrl) {
+            delete eventObj.audioUrl;
+        }
+        if (!eventObj.audioPath) {
+            delete eventObj.audioPath;
         }
         return eventObj;
     }

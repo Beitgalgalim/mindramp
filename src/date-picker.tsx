@@ -46,7 +46,7 @@ function calcDiff(d: string, newTime: string) {
 }
 
 
-export default function MyDatePicker({ start, end, setStart, setEnd }: DatePickerProps) {
+export default function MyDatePicker({ start, end, setStart, setEnd, style }: DatePickerProps) {
     const [invalidStart, setInvalidStart] = useState(false);
     const [invalidEnd, setInvalidEnd] = useState(false);
 
@@ -55,7 +55,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd }: DatePicke
     const setStartTime = (newTime: string) => {
         if (!validTime(newTime)) {
             setInvalidStart(true);
-            return 
+            return
         }
         setInvalidStart(false);
 
@@ -69,7 +69,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd }: DatePicke
     const setEndTime = (newTime: string) => {
         if (!validTime(newTime)) {
             setInvalidEnd(true);
-            return 
+            return
         }
         setInvalidEnd(false);
 
@@ -85,30 +85,36 @@ export default function MyDatePicker({ start, end, setStart, setEnd }: DatePicke
     }
 
     return (
-        <HBox>
-            <ReactDatePicker
-                ref={datePicker}
-                selected={dayjs(start).toDate()}
-                onChange={(d: Date) => setDate(dayjs(d).format(DateFormats.DATE))}
-                shouldCloseOnSelect={true}
-                customInput={
-                    <ClickableText
-                        onClick={() => datePicker?.current?.setOpen(true)}>
-                        {getNiceDate(start)}
-                    </ClickableText>
-                }
-            />
-            <Spacer width={40} />
+        <HBox style={style}>
+            <div style={{ width: "35%" }}>
+                <ReactDatePicker
+                    ref={datePicker}
+
+                    selected={dayjs(start).toDate()}
+                    onChange={(d: Date) => setDate(dayjs(d).format(DateFormats.DATE))}
+                    shouldCloseOnSelect={true}
+                    customInput={
+                        <ClickableText
+                            onClick={() => datePicker?.current?.setOpen(true)}>
+                            {getNiceDate(start)}
+                        </ClickableText>
+                    }
+                />
+            </div>
+            <Spacer width={"5%"} />
 
 
             <ComboBox value={getTime(start)} items={times}
+                style={{ width: "28%" }}
                 onSelect={(newValue: string) => setStartTime(newValue)}
-                onChange={(newValue: string) => setStartTime(newValue)} 
+                onChange={(newValue: string) => setStartTime(newValue)}
                 invalid={invalidStart} />
-            <Spacer />
+            <Spacer width={"2%"} />
             -
-            <Spacer />
+            <Spacer width={"2%"} />
+
             <ComboBox value={getTime(end)} items={times}
+                style={{ width: "28%" }}
                 onSelect={(newValue: string) => setEndTime(newValue)}
                 onChange={(newValue: string) => setEndTime(newValue)}
                 invalid={invalidEnd} />

@@ -3,6 +3,7 @@ import { RecurrentEventField } from "../event";
 
 export const DateFormats = {
     DATE_TIME: "YYYY-MM-DDTHH:mm",
+    DATE_TIME_TS: "YYYY-MM-DDTHH:mm.SSS",
     DATE: "YYYY-MM-DD",
     TIME_AM_PM: "hh:mma",
     TIME: "HH:mm"
@@ -145,7 +146,7 @@ export function sortEvents(events:any[]):any[] {
 
 
 export function validTime(timeStr:string):boolean {
-    if (!timeStr || timeStr.trim().length  == 0) {
+    if (!timeStr || timeStr.trim().length  === 0) {
         return false;
     }
     timeStr = timeStr.replace("am", " am");

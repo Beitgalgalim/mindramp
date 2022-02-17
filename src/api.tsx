@@ -85,7 +85,7 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined):Promise<Event> {
+export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
     const eventObj = Event.fromEventAny(event)
 
     let dbDoc = eventObj.toDbObj();
@@ -207,20 +207,44 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
     });
 }
 
-export async function deleteMedia(path: string, docRef: DocumentReference) {
-    // First delete record
-    return deleteDoc(docRef).then(
-        () => {
-            if (path !== "") {
-                const storage = getStorage(app);
-                const docToDeleteRef = ref(storage, path);
-                return deleteObject(docToDeleteRef);
-            }
-        }
-    )
+export async function addAudio(name: string, data: Blob): Promise<MediaResource> {
+    // First upload to storage
+    const storage = getStorage(app);
+    const storageRef = ref(storage);
+    const mediaRef = ref(storageRef, 'media');
+    const folderRef = ref(mediaRef, "audio");
+    const resourceRef = ref(folderRef, name);
 
+    /** @type {any} */
+    const metadata = {
+        contentType: "audio/wav",
+    };
+
+    // Upload the file and metadata
+    const uploadTask = uploadBytes(resourceRef, data, metadata);
+    return uploadTask.then(val => {
+        return getDownloadURL(val.ref).then(url => {
+            return ({
+                name,
+                type: "audio",
+                url,
+                path: val.ref.fullPath,
+            });
+        })
+    });
 }
 
+export async function deleteMedia(path: string, docRef: DocumentReference) {
+    return deleteDoc(docRef).then(() => deleteFile(path));
+}
+
+export async function deleteFile(path: string) {
+    if (path !== "") {
+        const storage = getStorage(app);
+        const docToDeleteRef = ref(storage, path);
+        return deleteObject(docToDeleteRef);
+    }
+}
 
 async function _getCollection(collName: string, oBy?: string, order?: "asc" | "desc"): Promise<DocumentData[]> {
     let colRef = collection(db, collName);

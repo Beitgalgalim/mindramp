@@ -7,7 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
 import { Fab } from '@mui/material';
 import { Add } from '@mui/icons-material';
-import {Event} from './event';
+import { Event } from './event';
 
 import AddEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
@@ -19,7 +19,7 @@ import { addRepeatIcon } from './elem';
 
 
 
-export default function Events({connected, notify, media}:EventsProps) {
+export default function Events({ connected, notify, media }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -36,7 +36,7 @@ export default function Events({connected, notify, media}:EventsProps) {
     const calendarApi = calendarRef?.current?.getApi();
 
     function getNewEvent(): any {
-        const d =  calendarApi?calendarApi.getDate(): dayjs().format(DateFormats.DATE);
+        const d = calendarApi ? calendarApi.getDate() : dayjs().format(DateFormats.DATE);
         return {
             title: "",
             start: dayjs(d).add(8, "hour").toDate(),
@@ -96,7 +96,7 @@ export default function Events({connected, notify, media}:EventsProps) {
                     title: "",
                     start: dayjs(dateSelectArgs.start),
                     end: dayjs(dateSelectArgs.end),
-                    date:dayjs(dateSelectArgs.start).format(DateFormats.DATE)
+                    date: dayjs(dateSelectArgs.start).format(DateFormats.DATE)
                 })
             });
         } else {
@@ -203,14 +203,42 @@ export default function Events({connected, notify, media}:EventsProps) {
         />
         {
             newEvent && <AddEvent
+                notify={notify}
                 media={media}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
-                onSave={(editEvent: EditEvent, ref: DocumentReference | undefined) => {
+                onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {
+
+                    //Saves new Audio if needed:
+                    let audioPathToDelete:string | undefined = undefined;
+                    if (editEvent.event.audioBlob != null) {
+                        // mark previous audio file if existed, for deletion
+                        audioPathToDelete = editEvent.event.audioPath
+
+                        //saves new audio
+                        try {
+                            const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", editEvent.event.audioBlob)
+                            editEvent.event.audioPath = newMedia.path;
+                            editEvent.event.audioUrl = newMedia.url;
+                        } catch (err: any) {
+                            notify.error(err.message);
+                            return;
+                        }
+                    } else if (editEvent.event.clearAudio) {
+                        // Need to delete the current audio file
+                        audioPathToDelete = editEvent.event.audioPath;
+
+                        editEvent.event.audioPath = undefined;
+                        editEvent.event.audioUrl = undefined;
+                    }
+
                     if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
                         //update instance only
                         api.createEventInstance(editEvent.event, ref).then(
                             (result) => {
+                                if (audioPathToDelete) {
+                                    api.deleteFile(audioPathToDelete);
+                                }
                                 notify.success("נשמר בהצלחה");
 
                                 setEvents(evts => {
@@ -226,6 +254,9 @@ export default function Events({connected, notify, media}:EventsProps) {
                     } else {
                         api.upsertEvent(editEvent.event, ref).then(
                             (evt2) => {
+                                if (audioPathToDelete) {
+                                    api.deleteFile(audioPathToDelete);
+                                }
                                 notify.success("נשמר בהצלחה");
 
                                 setEvents(evts => {

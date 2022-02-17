@@ -27,7 +27,7 @@ export type setDateFunc = (d: string) => void;
 export interface MediaResource {
     name: string,
     url: string,
-    type: "icon" | "photo",
+    type: "icon" | "photo" | "audio",
     path: string,
     _ref?: DocumentReference
 }
@@ -60,14 +60,16 @@ export interface WithWindowSize {
     windowSize: WindowSize;
 };
 
+interface Notify {
+    success(body: string, title?: string): void;
+    error(body: string, title?: string): void;
+    ask(body: string, title: string | undefined, buttons: MsgButton[], details?: string): void;
+    clear(): void;
+    inProgress(): void;
+}
+
 export interface Notifying {
-    notify: {
-        success(body: string, title?: string): void;
-        error(body: string, title?: string): void;
-        ask(body: string, title: string | undefined, buttons: MsgButton[], details?: string): void;
-        clear(): void;
-        inProgress(): void;
-    }
+    notify: Notify;
 }
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
@@ -75,7 +77,7 @@ export interface EventsProps extends Connected, Notifying, WithMedia { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
 export interface MediaProps extends Notifying, WithMedia { }
 
-export interface EditEventsProps extends WithMedia {
+export interface EditEventsProps extends WithMedia, Notifying {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
@@ -87,4 +89,17 @@ export interface DatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
+    style?:any
+}
+
+export interface RecorderProps {
+    notify?:Notify;
+    buttonSize?:number;
+    showRecordButton:boolean;
+    showPlayButton:boolean;
+    showClearButton?:boolean;
+    audioUrl?:string;
+    audioBlob?:Blob;
+    onCapture?: (blob: Blob) => void;
+    onClear?: Callback;
 }

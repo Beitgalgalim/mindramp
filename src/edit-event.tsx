@@ -3,23 +3,27 @@ import { Button, TextField } from '@mui/material';
 import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
-import {  EditEventsProps, MediaResource } from './types';
-import { AccessTime, Edit, Image, Notes, Repeat, Title } from '@mui/icons-material';
-import { Checkbox, FormControlLabel, Grid } from '@material-ui/core';
+import { EditEventsProps, MediaResource } from './types';
+import { AccessTime, Edit, Image, Mic, Notes, Repeat, Title } from '@mui/icons-material';
+import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event } from './event';
-import { DateFormats } from './utils/date';
 
-const dayjs = require('dayjs');
+import AudioPlayerRecorder from './AudioRecorderPlayer';
 
-export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }: EditEventsProps){
+
+export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, notify }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<string>(inEvent.event.start);
     const [end, setEnd] = useState<string>(inEvent.event.end);
     const [imageUrl, setImageUrl] = useState<string>();
+    const [audioUrl, setAudioUrl] = useState<string>();
+    const [audioPath, setAudioPath] = useState<string>();
+    const [audioBlob, setAudioBlob] = useState<any>();
+    const [clearAudio, setClearAudio] = useState<boolean>(false);
     const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
@@ -38,9 +42,13 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
         }
         setNotes(event.notes);
         setImageUrl(event.imageUrl);
+        setAudioUrl(event.audioUrl);
+        setAudioPath(event.audioPath);
     }, [inEvent]);
 
 
+
+    
     return (
         <div dir="rtl" style={{ position: 'absolute', top: 0, height: "100vh", width: '100%', backgroundColor: 'white', zIndex: 500 }}>
             <h1>{ref ? "עדכון ארוע" : "ארוע חדש"}</h1>
@@ -52,31 +60,33 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                 onCancel={() => setEditImage(false)}
             />
             }
+            
             <VBox style={{ margin: "10%" }}>
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
-                    <Grid container item xs={2} spacing={2} >
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Title />
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
                         <TextField variant="standard" helperText="כותרת" onChange={(e => setTitle(e.currentTarget.value))} value={title || ""} />
                     </Grid>
                 </Grid>
-                <Spacer height={20} />
+                <Spacer height={30} />
 
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
-                    <Grid container item xs={2} spacing={2} >
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <AccessTime />
                     </Grid>
-                    <Grid container item xs={9} spacing={2} >
+                    <Grid container item xs={11} spacing={2} >
                         <MyDatePicker start={start} end={end}
                             setStart={(d) => setStart(d)}
                             setEnd={(d) => setEnd(d)}
+                            //style={{width:"100%"}}
                         />
                     </Grid>
                 </Grid>
-                <Spacer height={20} />
+                <Spacer height={30} />
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
-                    <Grid container item xs={2} spacing={2} >
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Notes />
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
@@ -84,52 +94,84 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                             onChange={(e => setNotes(e.currentTarget.value))} value={notes || ""} />
                     </Grid>
                 </Grid>
-                <Spacer height={20} />
+                <Spacer height={30} />
 
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
-                    <Grid container item xs={2} spacing={2} >
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <Image />
                     </Grid>
-                    <Grid container item xs={9} spacing={2} >
+                    <Grid container item xs={4} spacing={2} >
                         <HBoxSB>
-                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: 100, height: 100 }} /> : <Text>אין תמונה</Text>}
+                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: 30, height: 30 }} /> : <Text>אין תמונה</Text>}
                             <Edit onClick={() => setEditImage(true)} />
                         </HBoxSB>
                     </Grid>
                 </Grid>
-                <Spacer height={20} />
+                <Spacer height={30} />
 
+                {/* Audio recording */}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
-                    <Grid container item xs={2} spacing={2} >
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
+                        <Mic />
+                    </Grid>
+                    <Grid container item xs={9} spacing={2} >
+                        <HBoxSB>
+                            {(audioUrl || audioBlob) && !clearAudio ? <Text width={"60%"}>יש שמע</Text> : <Text>אין שמע</Text>}
+                            <AudioPlayerRecorder notify={notify} showRecordButton={true} showClearButton={audioUrl || audioBlob} 
+                            showPlayButton={audioUrl || audioBlob} onCapture={(blob) => {
+                                setAudioBlob(blob)
+                                setClearAudio(false);
+                            }} onClear={() => {
+                                if (audioBlob) {
+                                    setAudioBlob(undefined);
+                                } else if (audioUrl) {
+                                    setClearAudio(true);
+                                }
+                            }}
+                             audioBlob={audioBlob} audioUrl={clearAudio?undefined:audioUrl}
+                            buttonSize={35}/>
+                        </HBoxSB>
+                    </Grid>
+                </Grid>
+                <Spacer height={30} />
+
+                {/* Recurrence */}
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <Repeat />
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
-                            <FormControlLabel control={
-                                <Checkbox onChange={(evt) => {
-                                    if (evt.currentTarget.checked) {
-                                        setRecurrent("שבועי");
-                                    } else {
-                                        setRecurrent(undefined);
-                                    }
-                                }} checked={recurrent !== undefined} disabled={inEvent.editAllSeries === false} />
-                            } label="חוזר" />
+                            {/* <FormControlLabel 
+                            style={{ justifyContent: "flex-start" }}
+                                control={ */}
+                            <Checkbox onChange={(evt) => {
+                                if (evt.currentTarget.checked) {
+                                    setRecurrent("שבועי");
+                                } else {
+                                    setRecurrent(undefined);
+                                }
+                            }} checked={recurrent !== undefined}
+                                disabled={inEvent.editAllSeries === false}
+                                style={{ paddingRight: 0 }} />
+                            <Text fontSize={13}>חוזר</Text>
+                            {/* } label="חוזר" /> */}
 
 
-                            <Spacer width={30} />
+                            <Spacer width={25} />
                             {recurrent && <ComboBox value={recurrent} items={["שבועי", "יומי"]}
-                                onSelect={(newValue: string) => setRecurrent(newValue)}  
-                                readOnly={true}                              
-                                />
+                                onSelect={(newValue: string) => setRecurrent(newValue)}
+                                readOnly={true}
+                            />
                             }
-                            <Spacer width={30} />
+                            <Spacer width={25} />
                         </HBox>
                     </Grid>
                 </Grid>
             </VBox>
 
-            <HBoxC style={{ position: "absolute", bottom: "10%" }}>
+            <HBoxC style={{ position: "absolute", bottom: "2%" }}>
                 <Button variant="outlined" onClick={() => {
 
                     const recurrentField = inEvent.event.recurrent || {};
@@ -143,14 +185,18 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media }:
                                 end,
                                 notes,
                                 imageUrl,
-                                ...(instanceStatus && {instanceStatus}),
-                                ...(recurrent && {recurrent: recurrentField}),
-                            }), 
+                                audioUrl,
+                                audioPath,
+                                clearAudio,
+                                ...(audioBlob != null && { audioBlob: audioBlob }),
+                                ...(instanceStatus && { instanceStatus }),
+                                ...(recurrent && { recurrent: recurrentField }),
+                            }),
                             editAllSeries: inEvent.editAllSeries
                         },
                         ref);
                 }}>שמור</Button>
-                <Spacer width={30} />
+                <Spacer width={25} />
                 {ref && onDelete && <Button variant="outlined" onClick={() => onDelete(inEvent, ref)}>מחק</Button>}
                 <Button variant="outlined" onClick={() => onCancel()} >בטל</Button>
 

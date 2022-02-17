@@ -5,7 +5,7 @@ import { HourLines, VBox, Text, Spacer } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserEventsProps } from "./types";
-
+import AudioPlayerRecorder from "./AudioRecorderPlayer";
 const logo = require("./logo.png");
 
 const headerSize = 60;
@@ -14,6 +14,7 @@ const eventsGapBottom = 20;
 const footerSize = 60;
 
 const profiles = ["basic", "large"];
+
 
 
 function Event(props: any) {
@@ -32,6 +33,23 @@ function Event(props: any) {
         }}>
             <VBox>
                 {props.event.imageUrl && <img src={props.event.imageUrl} style={{ maxWidth: props.width / 1.5, maxHeight: props.height / 2.5, padding: 10 }} alt="תמונה" />}
+                {props.event.audioUrl && 
+                 <AudioPlayerRecorder showRecordButton={false} showClearButton={false} 
+                 showPlayButton={props.event.audioUrl} 
+                 audioUrl={props.event.audioUrl}
+                 buttonSize={35}/>
+                // <Media>
+                //     <div className="media">
+                //         <div className="media-player">
+                //             <Player src={props.event.audioUrl} />
+                //         </div>
+                //         <div className="media-controls">
+                //             <PlayButton />
+                //         </div>
+                //     </div>
+                // </Media>
+                
+                }
                 <Text textAlign="center" fontSize={font1}>{props.event.title}</Text>
                 <Text textAlign="center" fontSize={font2}>{dayjs(props.event.start).format(DateFormats.TIME) + " - " + dayjs(props.event.end).format(DateFormats.TIME)}</Text>
                 <Spacer height={25} />
@@ -123,9 +141,9 @@ function ExpandEvent(ev: any, iColumn: number, columns: any[][]): number {
     let colSpan = 1;
 
     const iterOn = columns.slice(iColumn + 1);
-    for (let i=0;i<iterOn.length;i++) {
+    for (let i = 0; i < iterOn.length; i++) {
         const col = iterOn[i];
-        for (let j=0;j<col.length;j++) {
+        for (let j = 0; j < col.length; j++) {
             const ev1 = col[j];
             if (CollidesWith(ev1, ev)) {
                 return colSpan;
@@ -155,7 +173,7 @@ function getDebugNow(date: Dayjs) {
     return dayjs(date.format(DateFormats.DATE) + " " + dayjs().format(DateFormats.TIME));
 }
 
-export default function UserEvents({windowSize, connected}:UserEventsProps) {
+export default function UserEvents({ windowSize, connected }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [now, setNow] = useState<Dayjs>(getDebugNow(dayjs()));
@@ -250,24 +268,24 @@ export default function UserEvents({windowSize, connected}:UserEventsProps) {
 
     const layouted = layoutEvents(showingEvents);
 
-//     let msg = ""
-//     layouted.forEach(ev => {
-//         msg += `(${ev._left},${ev._right}, ${ev._cols}) ${ev.title} 
-// `;
-//     })
-//     console.log("-----Tree----\n", msg)
-    const slotWidth = (eventsHeight - eventsGapTop - eventsGapBottom) ;
+    //     let msg = ""
+    //     layouted.forEach(ev => {
+    //         msg += `(${ev._left},${ev._right}, ${ev._cols}) ${ev.title} 
+    // `;
+    //     })
+    //     console.log("-----Tree----\n", msg)
+    const slotWidth = (eventsHeight - eventsGapTop - eventsGapBottom);
 
 
-    const eventsArray = layouted.map((ev, key)=>(<Event
-            key={key}
-            top={eventsGapTop + ev._left * slotWidth }
-            height={(ev._right - ev._left) * slotWidth}
-            right={getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
-            width={getTimeWidth(ev, showDate, sliceWidth, sliceEachHour)}
-            event={ev}
-            sliceWidth={sliceWidth}
-        />));
+    const eventsArray = layouted.map((ev, key) => (<Event
+        key={key}
+        top={eventsGapTop + ev._left * slotWidth}
+        height={(ev._right - ev._left) * slotWidth}
+        right={getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
+        width={getTimeWidth(ev, showDate, sliceWidth, sliceEachHour)}
+        event={ev}
+        sliceWidth={sliceWidth}
+    />));
 
     return <div dir="rtl" style={{ backgroundColor: "black", height: "100vh" }}>
         {/* Toolbar */}

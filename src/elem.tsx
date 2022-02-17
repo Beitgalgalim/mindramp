@@ -64,8 +64,9 @@ export function VBox(props: any) {
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
     const { onClick, onChange, onBlur, invalid } = props;
     return (
-        <HBoxC  onClick={onClick} ><input
-            style={{ borderWidth:0, backgroundColor: (invalid ? "red" : "transparent"), width: 80 }}
+        <HBoxC onClick={onClick} style={{ width:"100%"}}>
+            <input
+            style={{width:"80%", borderWidth: 0, backgroundColor: (invalid ? "red" : "transparent")}}
             type="text"
             ref={ref}
             readOnly={props.readOnly === true}
@@ -74,14 +75,14 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
             onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
             onChange={(e) => onChange && onChange(e.currentTarget.value)}
             value={props.value}
-            />
+        />
 
-            <ExpandMore />
+            <ExpandMore style={{width:"20%"}}/>
         </HBoxC>);
 });
 
 export function ComboBox(props: any) {
-    const { items, value } = props;
+    const { items, value, style } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
 
@@ -103,7 +104,7 @@ export function ComboBox(props: any) {
     }, [props.value])
 
     const renderItem = ({ index, style }: { index: number, style: any }) => (
-        <ListItem style={{ ...style, padding: 0 }} key={index} selected={currentIndex === index} >
+        <ListItem style={{ padding: 0, ...style }} key={index} selected={currentIndex === index} >
             <ListItemButton style={{ padding: 0 }}
                 onClick={() => props.onSelect(items[index])}>
                 <ListItemText
@@ -117,18 +118,20 @@ export function ComboBox(props: any) {
 
 
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
-        <div>
-            {!props.elRef && <ClickableText
-                ref={localElRef}
-                onClick={() => {
-                    setOpen(true)
-                }}
-                onChange={(newVal: string) => setLocalValue(newVal)}
-                onBlur={(newVal: string) => props.onChange && props.onChange(newVal)}
-                value={localValue}
-                readOnly={props.readOnly === true} 
-                invalid={props.invalid}
-            />
+        <div style={{ display: "flex", ...style }}>
+            {!props.elRef &&
+                <ClickableText
+                    style={{width:"70%"}}
+                    ref={localElRef}
+                    onClick={() => {
+                        setOpen(true)
+                    }}
+                    onChange={(newVal: string) => setLocalValue(newVal)}
+                    onBlur={(newVal: string) => props.onChange && props.onChange(newVal)}
+                    value={localValue}
+                    readOnly={props.readOnly === true}
+                    invalid={props.invalid}
+                />
             }
             <Popper
                 open={open}
@@ -157,7 +160,7 @@ export const HBoxSB = (props: any) => (<HBox style={{ alignItems: "center", just
 
 export function HBox(props: any) {
     return <Box style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', ...props.style }}
-            onClick={props.onClick}>
+        onClick={props.onClick}>
         {props.children}
     </Box>
 }
