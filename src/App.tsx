@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import * as api from './api'
 
 import './App.css';
-import { Alert, AlertTitle } from '@material-ui/lab';
+import { Alert, AlertTitle } from '@mui/material'
 import { Text, HBox, Spacer } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";

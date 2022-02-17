@@ -5,7 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
-import { Fab } from '@mui/material';
+import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 import { Event } from './event';
 
@@ -36,11 +36,18 @@ export default function Events({ connected, notify, media }: EventsProps) {
     const calendarApi = calendarRef?.current?.getApi();
 
     function getNewEvent(): any {
-        const d = calendarApi ? calendarApi.getDate() : dayjs().format(DateFormats.DATE);
+        let d = calendarApi ? dayjs(calendarApi.getDate()) : dayjs(dayjs().format(DateFormats.DATE) + " 08:00 AM");
+        if (d.hour() === 0) {
+            d = d.add(8, "hours");
+        }
+        if (d.minute() !== 0 && d.minute() !== 30) {
+            d = d.subtract(d.minute(), "minutes");
+        }
+
         return {
             title: "",
-            start: dayjs(d).add(8, "hour").toDate(),
-            end: dayjs(d).add(9, "hour").toDate(),
+            start: d.format(DateFormats.DATE_TIME),
+            end: d.add(30, "minutes").format(DateFormats.DATE_TIME),
         }
     }
 
@@ -159,11 +166,21 @@ export default function Events({ connected, notify, media }: EventsProps) {
     }
 
     return (<div>
-        {!newEvent && <div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
-            <Fab >
+        {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
+            <Fab 
+            color="primary" aria-label="הוסף"
+            variant="circular"
+            style={{
+                position: "fixed",
+                bottom: 50,
+                right: 50,
+                zIndex: 1000,
+                borderRadius:'50%'
+              }}
+              >
                 <Add onClick={() => { setNewEvent({ event: getNewEvent() }) }} />
             </Fab>
-        </div>
+        //</div>
         }
         <FullCalendar
             ref={calendarRef}

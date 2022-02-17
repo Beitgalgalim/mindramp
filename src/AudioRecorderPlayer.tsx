@@ -7,6 +7,9 @@ const recColor = '#F50257';
 const playColor = '#00C702';
 const sampleRate = 44100;
 
+// Written using example from here: https://gist.github.com/meziantou/edb7217fddfbb70e899e
+
+
 const Button = (props: any) => (<div style={{ backgroundColor: props.bg, borderRadius: props.size ? props.size / 2 : 25, height: props.size || 50, width: props.size || 50, alignItems: 'center', display: 'flex', justifyContent: 'center' }}>
     {props.children}
 </div>)
