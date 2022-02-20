@@ -103,3 +103,11 @@ export interface RecorderProps {
     onCapture?: (blob: Blob) => void;
     onClear?: Callback;
 }
+
+export interface HourLinesProps extends WithWindowSize {
+     sliceWidth: number;
+     height: number;
+     hours: string[];
+     sliceEachHour: number;
+     vertical: boolean;
+}

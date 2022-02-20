@@ -1,7 +1,7 @@
 import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import * as api from './api'
-import { HourLines, VBox, Text, Spacer } from "./elem";
+import { HourLines, VBox, Text, Spacer, NowLine } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserEventsProps } from "./types";
@@ -9,9 +9,11 @@ import AudioPlayerRecorder from "./AudioRecorderPlayer";
 const logo = require("./logo.png");
 
 const headerSize = 60;
-const eventsGapTop = 30;
-const eventsGapBottom = 20;
-const footerSize = 60;
+const eventsGapTop = 20;
+const eventsGapRight = 45;
+const eventsGapEnd = 5;
+const footerSize = 40;
+const mainBGColor = "black";
 
 const profiles = ["basic", "large"];
 
@@ -30,33 +32,33 @@ function Event(props: any) {
             borderWidth: borderWidth,
             borderColor: "yellow",
             opacity: 0.8,
+            zIndex: 100
         }}>
-            <VBox>
+            <div style={{
+                display: 'flex', flexDirection: props.vertical ? 'row' : 'column', alignItems: 'center',
+                height: "100%",
+                width: "100%"
+            }}>
                 {props.event.imageUrl && <img src={props.event.imageUrl} style={{ maxWidth: props.width / 1.5, maxHeight: props.height / 2.5, padding: 10 }} alt="תמונה" />}
-                {props.event.audioUrl && 
-                 <AudioPlayerRecorder showRecordButton={false} showClearButton={false} 
-                 showPlayButton={props.event.audioUrl} 
-                 audioUrl={props.event.audioUrl}
-                 buttonSize={35}/>
-                // <Media>
-                //     <div className="media">
-                //         <div className="media-player">
-                //             <Player src={props.event.audioUrl} />
-                //         </div>
-                //         <div className="media-controls">
-                //             <PlayButton />
-                //         </div>
-                //     </div>
-                // </Media>
-                
-                }
-                <Text textAlign="center" fontSize={font1}>{props.event.title}</Text>
-                <Text textAlign="center" fontSize={font2}>{dayjs(props.event.start).format(DateFormats.TIME) + " - " + dayjs(props.event.end).format(DateFormats.TIME)}</Text>
-                <Spacer height={25} />
-                <Text textAlign="center" fontSize={font3}>{props.event.notes || ""}</Text>
-            </VBox>
+                {props.event.audioUrl &&
+                    <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
+                        showPlayButton={props.event.audioUrl}
+                        audioUrl={props.event.audioUrl}
+                        buttonSize={props.vertical ? 25 : 35} />
 
-        </div>
+                }
+                <div style={{
+                    display: 'flex', flexDirection: 'column',
+                    width: "35%"
+                }} >
+                    <Text textAlign="center" fontSize={font1}>{props.event.title}</Text>
+                    <Text textAlign="center" fontSize={font2}>{dayjs(props.event.start).format(DateFormats.TIME) + " - " + dayjs(props.event.end).format(DateFormats.TIME)}</Text>
+                </div>
+                <Spacer height={25} />
+                <Text width={"35%"} textAlign="center" fontSize={font3}>{props.event.notes || ""}</Text>
+            </div>
+
+        </div >
     );
 }
 
@@ -162,7 +164,7 @@ function getTimeOffset(event: any, showDate: Dayjs, startHour: number, sliceWidt
     return (diffMin / minPerSlice) * sliceWidth;
 }
 
-function getTimeWidth(event: any, showDate: Dayjs, sliceWidth: number, sliceEachHour: number) {
+function getTimeWidth(event: any, sliceWidth: number, sliceEachHour: number) {
     const start = dayjs(event.start);
     const diffMin = - start.diff(event.end, "minutes");
     const minPerSlice = 60 / sliceEachHour;
@@ -258,11 +260,11 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     }
 
 
-
+    const vertical = windowSize.w < windowSize.h;
     const sliceEachHour = 2;
-    const sliceWidth = windowSize.w / (workingHours.length * sliceEachHour);
-    const eventsHeight = windowSize.h - headerSize - footerSize;
-
+    const availableHeight = windowSize.h - headerSize - footerSize;
+    const sliceWidth = (vertical ? availableHeight : windowSize.w) / (workingHours.length * sliceEachHour);
+    const eventsGapStart = vertical ? eventsGapRight : eventsGapTop
     const showingEvents = events.filter(e => e.start >= showDate.format(DateFormats.DATE) &&
         e.start < showDate.add(1, "day").format(DateFormats.DATE));
 
@@ -274,24 +276,33 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     // `;
     //     })
     //     console.log("-----Tree----\n", msg)
-    const slotWidth = (eventsHeight - eventsGapTop - eventsGapBottom);
+    const slotSize = (vertical ? windowSize.w : availableHeight) - eventsGapStart - eventsGapEnd;;
 
+    //eventsGapStart = 0;
+    const eventsArray = layouted.map((ev, key) => {
+        const vTOPhRIGHT = getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2;
+        const vRIGHThTOP = ev._left * slotSize;
+        const vWIDTHhHeight = (ev._right - ev._left) * slotSize;
+        const vHEIGHThWIDTH = getTimeWidth(ev, sliceWidth, sliceEachHour);
+        return <Event
+            key={key}
+            top={vertical ? vTOPhRIGHT : vRIGHThTOP + eventsGapStart}
+            height={vertical ? vHEIGHThWIDTH : vWIDTHhHeight}
+            right={vertical ? vRIGHThTOP + eventsGapStart : vTOPhRIGHT}
+            width={vertical ? vWIDTHhHeight : vHEIGHThWIDTH}
+            event={ev}
+            sliceWidth={sliceWidth}
+            vertical={vertical}
+        />
+    });
 
-    const eventsArray = layouted.map((ev, key) => (<Event
-        key={key}
-        top={eventsGapTop + ev._left * slotWidth}
-        height={(ev._right - ev._left) * slotWidth}
-        right={getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
-        width={getTimeWidth(ev, showDate, sliceWidth, sliceEachHour)}
-        event={ev}
-        sliceWidth={sliceWidth}
-    />));
-
-    return <div dir="rtl" style={{ backgroundColor: "black", height: "100vh" }}>
+    return <div dir="rtl" style={{ backgroundColor: mainBGColor, height: "100vh" }}>
         {/* Toolbar */}
         <div style={{
             display: "flex", flexDirection: "row",
-            height: headerSize, width: "100%",
+            maxHeight: headerSize,
+            height: headerSize,
+            width: "100%",
             alignContent: "center"
         }}>
             <div style={{ display: "flex", alignContent: "flex-start", width: "33%" }}>
@@ -307,17 +318,21 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
 
         {/* Grid */}
         <HourLines
-            height={eventsHeight}
+            height={availableHeight}
             sliceWidth={sliceWidth}
             hours={workingHours}
             sliceEachHour={sliceEachHour}
+            vertical={vertical}
+            windowSize={windowSize}
         />
 
         {/*Footer */}
         <div style={{
             display: "flex", flexDirection: "row",
-            height: headerSize, width: "100%",
-            alignContent: "center"
+            height: footerSize, width: "100%",
+            alignContent: "center",
+            backgroundColor: mainBGColor,
+            zIndex: 1000
         }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "33%" }}>
                 <div style={{ display: "flex", alignContent: "center", justifyContent: "center", height: 24, width: 130, border: 1, borderColor: "white", borderRadius: 12, borderStyle: 'outset', color: "white" }}
@@ -338,25 +353,17 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
 
         {/* Event */}
         <div dir="rtl" style={{
-            position: "absolute", right: 0, top: headerSize, width: windowSize.w,
-            backgroundColor: "green"
+            position: "absolute", right: 0, top: headerSize, left: 0, height: 0
         }} >
             {eventsArray}
         </div>
 
         {/*Now line */}
-        <div dir="rtl" style={{
-            position: "absolute",
-            right: getTimeOffset({ start: now }, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1,
-            top: headerSize,
-            width: 5,
-            border: 0,
-            borderLeft: 5,
-            height: eventsHeight,
-            borderStyle: "solid",
-            borderColor: "white",
-            zIndex: 1500,
-            opacity: 0.7,
-        }} />
+        <NowLine 
+            vertical={vertical} 
+            start={vertical? headerSize:headerSize}
+            length={vertical? windowSize.w: availableHeight}
+            offset={getTimeOffset({ start: now }, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
+        />
     </div>
 }

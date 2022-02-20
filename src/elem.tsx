@@ -19,6 +19,7 @@ import {
 import { FixedSizeList } from 'react-window';
 import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
+import { HourLinesProps } from './types';
 
 export const ResponsiveTab = withStyles({
     root: {
@@ -64,20 +65,20 @@ export function VBox(props: any) {
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
     const { onClick, onChange, onBlur, invalid } = props;
     return (
-        <HBoxC onClick={onClick} style={{ width:"100%"}}>
+        <HBoxC onClick={onClick} style={{ width: "100%" }}>
             <input
-            style={{width:"80%", borderWidth: 0, backgroundColor: (invalid ? "red" : "transparent")}}
-            type="text"
-            ref={ref}
-            readOnly={props.readOnly === true}
-            onMouseOver={(e) => { if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray' }}
-            onMouseLeave={(e) => { if (!invalid) e.currentTarget.style.backgroundColor = 'transparent' }}
-            onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
-            onChange={(e) => onChange && onChange(e.currentTarget.value)}
-            value={props.value}
-        />
+                style={{ width: "80%", borderWidth: 0, backgroundColor: (invalid ? "red" : "transparent") }}
+                type="text"
+                ref={ref}
+                readOnly={props.readOnly === true}
+                onMouseOver={(e) => { if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray' }}
+                onMouseLeave={(e) => { if (!invalid) e.currentTarget.style.backgroundColor = 'transparent' }}
+                onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
+                onChange={(e) => onChange && onChange(e.currentTarget.value)}
+                value={props.value}
+            />
 
-            <ExpandMore style={{width:"20%"}}/>
+            <ExpandMore style={{ width: "20%" }} />
         </HBoxC>);
 });
 
@@ -121,7 +122,7 @@ export function ComboBox(props: any) {
         <div style={{ display: "flex", ...style }}>
             {!props.elRef &&
                 <ClickableText
-                    style={{width:"70%"}}
+                    style={{ width: "70%" }}
                     ref={localElRef}
                     onClick={() => {
                         setOpen(true)
@@ -211,11 +212,39 @@ export function Text(props: any) {
     >{props.children}</div>
 }
 
+export function NowLine({ offset, length, start, vertical }: { offset: number, length: number, start:number, vertical: boolean }) {
+    const borderStyle = vertical ?
+        "solid none none" :
+        "none none none solid"
 
-export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
-    { sliceWidth: number, height: number, hours: string[], sliceEachHour: number }) {
+    return <div dir="rtl" style={{
+        position: "absolute",
+        right: vertical ? 0: offset,
+        top: vertical ? start+offset: start,
+        width: vertical? length : 5,
+        borderWidth: 5,
+        borderStyle,
+        borderColor: "white",
+        height: vertical? 5: length,
+        zIndex: 1500,
+        opacity: 0.7,
+    }} />
+}
+
+
+export function HourLines({ sliceWidth, height, hours, sliceEachHour, vertical, windowSize }: HourLinesProps) {
 
     const items: JSX.Element[] = [];
+    if (vertical) {
+        //swap height and width
+        const t = height;
+        height = sliceWidth;
+        sliceWidth = t;
+    }
+    const borderStyle = vertical ?
+        "solid none none" :
+        "none none none solid"
+
 
     hours.forEach((h, i) => {
         for (let j = 0; j < sliceEachHour; j++) {
@@ -223,7 +252,7 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
                 display: "flex",
                 width: sliceWidth,
                 height,
-                flexDirection: "column",
+                flexDirection: vertical ? "row" : "column",
                 alignItems: "center",
                 color: "white",
                 opacity: 1,
@@ -233,8 +262,11 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
             >
                 {j % sliceEachHour === 0 ? h : <Spacer height={20} />}
                 <div style={{
-                    border: 0, borderLeft: 2, borderStyle: "solid",
-                    borderColor: "white", height: window.innerHeight - 20, width: 1
+                    borderWidth: 1,
+                    borderStyle,
+                    borderColor: "white",
+                    height: vertical ? 1 : windowSize.h - 20,
+                    width: vertical ? windowSize.w - 20 : 1,
                 }} />
 
             </div>);
@@ -242,7 +274,7 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour }:
     });
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", backgroundColor: "gray", opacity: 0.4 }}>
+        <div style={{ display: "flex", flexDirection: vertical ? "column" : "row", backgroundColor: "gray", opacity: 0.4 }}>
             {items}
         </div>
     );
