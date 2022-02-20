@@ -30,7 +30,8 @@ function App(props: any) {
       setWindowSize({ w: window.innerWidth, h: window.innerHeight })
     }
 
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
 
   }, [])
 
