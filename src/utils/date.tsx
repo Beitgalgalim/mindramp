@@ -107,7 +107,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const dateStr = date.format(DateFormats.DATE);
                 if (!rec.exclude?.includes(dateStr) && start.diff(date, "days") <= 0) {
                     if (rec.freq === "daily" || (rec.freq === "weekly" && date.day() === weekDay)) {
-                        const eventObj = {...event}
+                        const eventObj = { ...event }
                         adjustEvent(eventObj, date);
                         ret.push(eventObj);
                     }
@@ -131,7 +131,7 @@ export function replaceDatePreserveTime(origin: string, newDate: Dayjs): string 
     return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
 }
 
-export function replaceDatePreserveTime2(origin:string, newDate:any):string {
+export function replaceDatePreserveTime2(origin: string, newDate: any): string {
     if (origin) {
         const origDate = dayjs(origin);
         return dayjs(dayjs(newDate).format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME)).format(DateFormats.DATE_TIME);
@@ -139,20 +139,112 @@ export function replaceDatePreserveTime2(origin:string, newDate:any):string {
     return dayjs(newDate).format(DateFormats.DATE_TIME);
 }
 
-export function sortEvents(events:any[]):any[] {
-    return events.sort((e1, e2)=>dayjs(e1.start).diff(e2.start, "minutes"));
+export function sortEvents(events: any[]): any[] {
+    return events.sort((e1, e2) => dayjs(e1.start).diff(e2.start, "minutes"));
 }
 
-
-
-export function validTime(timeStr:string):boolean {
-    if (!timeStr || timeStr.trim().length  === 0) {
-        return false;
+function getDateFromTime(timeStr: string):Dayjs {
+    if (!timeStr || timeStr.trim().length === 0) {
+        throw new Error("Not a valid time");
     }
     timeStr = timeStr.replace("am", " am");
     timeStr = timeStr.replace("pm", " pm");
 
 
-    const date = dayjs("2000-01-01 " + timeStr);
+    return dayjs("2000-01-01 " + timeStr);
+
+}
+
+export function validTime(timeStr: string): boolean {
+    if (!timeStr || timeStr.trim().length === 0) {
+        return false;
+    }
+    const date = getDateFromTime(timeStr);
     return date.isValid();
+}
+
+export function timeRange2Text(timeStr1: string, timeStr2: string): string {
+    return time2Text(timeStr1, timeStr2) + " עד " + time2Text(timeStr2)
+}
+
+export function time2Text(timeStr: string, omitAmPmIfSame:string | undefined = undefined): string {
+    const d = getDateFromTime(timeStr);
+    let omitAmPm = false;
+    let result = "";
+    let pm = d.hour() > 11;
+
+    if (omitAmPmIfSame) {
+        const d2 = getDateFromTime(omitAmPmIfSame);
+        if (d2.hour() > 11 && pm) {
+            omitAmPm = true;
+        }
+    }
+
+    if (d.hour() <= 12) {
+        result += number2Text(d.hour(), true);
+    } else {
+        result += number2Text(d.hour() - 12, true);
+    }
+
+    if (d.minute() > 0) {
+        if (d.minute() < 10) {
+            result += " ו" + number2Text(d.minute(), false) + " דקות";
+        } else if (d.minute() % 10 == 0) {
+            result += " ו" + number2Text(d.minute(), false);
+        } else {
+            result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false) ;
+        }
+    }
+    if (pm && !omitAmPm) {
+        result += " אחר הצהריים"
+    }
+
+    return result;
+}
+
+function number2Text(num: number, isHour: boolean): string {
+    switch (num) {
+        case 0:
+            return "אפס";
+            break;
+        case 1:
+            return "אחת";
+            break;
+        case 2:
+            return "שתיים";
+            break;
+        case 3:
+            return "שלוש";
+        case 4:
+            return "ארבע";
+        case 5:
+            return "חמש";
+        case 6:
+            return "שש";
+        case 7:
+            return "שבע";
+        case 8:
+            return "שמונה";
+            break;
+        case 9:
+            return "תשע";
+            break;
+        case 10:
+            return "עשר";
+            break;
+        case 11:
+            return "אחת עשרה";
+            break;
+        case 12:
+            return "שתיים עשרה";
+        case 20:
+            return "עשרים";
+        case 30:
+            return "שלושים";
+        case 40:
+            return "ארבעים";
+        case 50:
+            return "חמישים";
+    }
+    return "";
 }

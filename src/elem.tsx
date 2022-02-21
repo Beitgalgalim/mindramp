@@ -194,38 +194,43 @@ export function TabPanel(props: any) {
 
 
 export function Text(props: any) {
-    return <div style={{
-        width: props.width || '100%',
-        textAlign: props.textAlign || 'right',
-        alignSelf: props.alignSelf || undefined,
-        fontSize: props.fontSize || 12,
-        fontWeight: props.fontWeight,
-        textDecoration: props.textDecoration,
-        lineHeight: props.lineHeight,
-        marginTop: props.marginTop,
-        padding: 0,
-        backgroundColor: props.backgroundColor,
-        color: props.color,
-        transform: props.transform || undefined
-    }}
+    return <div
+        role={props.role}
+        aria-label={props["aria-label"]}
+        aria-hidden={props["aria-hidden"]}
+        style={{
+            width: props.width || '100%',
+            textAlign: props.textAlign || 'right',
+            alignSelf: props.alignSelf || undefined,
+            fontSize: props.fontSize || 12,
+            fontWeight: props.fontWeight,
+            textDecoration: props.textDecoration,
+            lineHeight: props.lineHeight,
+            marginTop: props.marginTop,
+            padding: 0,
+            backgroundColor: props.backgroundColor,
+            color: props.color,
+            transform: props.transform || undefined
+        }
+        }
         onClick={props.onClick}
-    >{props.children}</div>
+    > {props.children}</div >
 }
 
-export function NowLine({ offset, length, start, vertical }: { offset: number, length: number, start:number, vertical: boolean }) {
+export function NowLine({ offset, length, start, vertical }: { offset: number, length: number, start: number, vertical: boolean }) {
     const borderStyle = vertical ?
         "solid none none" :
         "none none none solid"
 
-    return <div dir="rtl" style={{
+    return <div aria-hidden="true" dir="rtl" style={{
         position: "absolute",
-        right: vertical ? 0: offset,
-        top: vertical ? start+offset: start,
-        width: vertical? length : 5,
+        right: vertical ? 0 : offset,
+        top: vertical ? start + offset : start,
+        width: vertical ? length : 5,
         borderWidth: 5,
         borderStyle,
         borderColor: "white",
-        height: vertical? 5: length,
+        height: vertical ? 5 : length,
         zIndex: 1500,
         opacity: 0.7,
     }} />
@@ -274,7 +279,8 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour, vertical, 
     });
 
     return (
-        <div style={{ display: "flex", flexDirection: vertical ? "column" : "row", backgroundColor: "gray", opacity: 0.4 }}>
+        <div style={{ display: "flex", flexDirection: vertical ? "column" : "row", backgroundColor: "gray", opacity: 0.4 }}
+            aria-hidden="true">
             {items}
         </div>
     );
@@ -302,3 +308,12 @@ export function addRepeatIcon(info: EventMountArg) {
         timeDiv[0].setAttribute("style", "display: flex; flex-direction: row;")
     }
 }
+
+
+export const Style = {
+    hidden: {
+        position: "fixed",
+        left: -1000,
+        width: 10
+    } as React.CSSProperties
+};

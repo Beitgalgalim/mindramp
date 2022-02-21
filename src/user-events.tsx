@@ -1,11 +1,12 @@
 import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import * as api from './api'
-import { HourLines, VBox, Text, Spacer, NowLine } from "./elem";
-import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents } from "./utils/date";
+import { HourLines, VBox, Text, Spacer, NowLine, HBox } from "./elem";
+import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents, time2Text, timeRange2Text } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserEventsProps } from "./types";
 import AudioPlayerRecorder from "./AudioRecorderPlayer";
+import { Style } from "./elem"
 const logo = require("./logo.png");
 
 const headerSize = 60;
@@ -24,6 +25,9 @@ function Event(props: any) {
     const font1 = props.sliceWidth / 3;
     const font2 = props.sliceWidth / 4;
     const font3 = props.sliceWidth / 5;
+
+    const t1 = dayjs(props.event.start).format(DateFormats.TIME)
+    const t2 = dayjs(props.event.end).format(DateFormats.TIME)
     return (
         <div style={{
             position: "absolute", right: props.right, width: props.width - (2 * borderWidth), height: props.height - (2 * borderWidth), top: props.top,
@@ -41,21 +45,24 @@ function Event(props: any) {
             }}>
                 {props.event.imageUrl && <img src={props.event.imageUrl} style={{ maxWidth: props.width / 1.5, maxHeight: props.height / 2.5, padding: 10 }} alt="תמונה" />}
                 {props.event.audioUrl &&
+                <div style={{position:"absolute", right:0, bottom:5}}>
                     <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
                         showPlayButton={props.event.audioUrl}
                         audioUrl={props.event.audioUrl}
                         buttonSize={props.vertical ? 25 : 35} />
+                </div>
 
                 }
                 <div style={{
                     display: 'flex', flexDirection: 'column',
-                    width: "35%"
+                    width: props.vertical?"35%":"100%"
                 }} >
-                    <Text textAlign="center" fontSize={font1}>{props.event.title}</Text>
-                    <Text textAlign="center" fontSize={font2}>{dayjs(props.event.start).format(DateFormats.TIME) + " - " + dayjs(props.event.end).format(DateFormats.TIME)}</Text>
+                    <Text role="text" textAlign="center" fontSize={font1}>{props.event.title}</Text>
+                    <div role="text" style={Style.hidden}>{timeRange2Text(t1, t2)}</div>
+                    <Text aria-hidden="true" textAlign="center" fontSize={font2}>{t1 + " - " + t2}</Text>
                 </div>
                 <Spacer height={25} />
-                <Text width={"35%"} textAlign="center" fontSize={font3}>{props.event.notes || ""}</Text>
+                <Text width={props.vertical?"35%":"100%"} textAlign="right" fontSize={font3}>{props.event.notes || ""}</Text>
             </div>
 
         </div >
@@ -296,6 +303,8 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         />
     });
 
+    console.log("13:05", time2Text("13:55"));
+
     return <div dir="rtl" style={{ backgroundColor: mainBGColor, height: "100vh" }}>
         {/* Toolbar */}
         <div style={{
@@ -306,13 +315,13 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
             alignContent: "center"
         }}>
             <div style={{ display: "flex", alignContent: "flex-start", width: "33%" }}>
-                <img onClick={() => changeProfile()} src={logo} style={{ height: headerSize - 20, }} alt={"לוגו של בית הגלגלים"} />
+                <img onClick={() => changeProfile()} src={logo} style={{ height: headerSize - 20, }} alt={"לוגו של בית הגלגלים"} aria-hidden="true" />
             </div>
-            <Text color="white" textAlign="center" alignSelf="center" fontSize={20}>
+            <Text color="white" textAlign="center" alignSelf="center" fontSize={20} aria-label="תאריך">
                 {`${getDayDesc(showDate)}: יום ${day2DayName[showDate.day()]}, ${showDate.date()} ב${MonthMap2[showDate.month()]}`}
             </Text>
-            <div style={{ display: "flex", alignContent: "flex-end", width: "33%" }}>
-                <Text color="white" textAlign="left" alignSelf="center" fontSize={20}>{now.format(DateFormats.TIME_AM_PM)}</Text>
+            <div style={{ display: "flex", alignContent: "flex-end", width: "33%" }} aria-label={time2Text(now.format(DateFormats.TIME_AM_PM))}>
+                <Text aria-hidden="true" color="white" textAlign="left" alignSelf="center" fontSize={20}>{now.format(DateFormats.TIME_AM_PM)}</Text>
             </div>
         </div>
 
@@ -326,6 +335,13 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
             windowSize={windowSize}
         />
 
+         {/* Event */}
+         <div dir="rtl" style={{
+            position: "absolute", right: 0, top: headerSize, left: 0, height: 0
+        }} >
+            {eventsArray}
+        </div>
+
         {/*Footer */}
         <div style={{
             display: "flex", flexDirection: "row",
@@ -334,35 +350,30 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
             backgroundColor: mainBGColor,
             zIndex: 1000
         }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "33%" }}>
+            <div role="button"  
+                style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "33%" }}
+                onClick={() => goBack()}>
                 <div style={{ display: "flex", alignContent: "center", justifyContent: "center", height: 24, width: 130, border: 1, borderColor: "white", borderRadius: 12, borderStyle: 'outset', color: "white" }}
-                    onClick={() => goBack()}>&rarr;  אתמול</div>
+                    >&rarr;  אתמול</div>
             </div>
             <div style={{ display: "flex", width: "33%" }}>
                 {/* <Text color="white" textAlign="center" alignSelf="center" fontSize={20}>
                     {`היום: יום ${day2DayName[showDate.day()]}, ${showDate.date()} ב${MonthMap2[showDate.month()]}`}
                 </Text> */}
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", width: "33%" }}>
+            <div role="button" 
+                style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", width: "33%" }}
+                onClick={() => goForward()}>
                 <div style={{ display: "flex", alignContent: "center", justifyContent: "center", height: 24, width: 130, border: 1, borderColor: "white", borderRadius: 12, borderStyle: 'outset', color: "white" }}
-                    onClick={() => goForward()}>מחר  &larr;</div>
+                    >מחר  &larr;</div>
             </div>
         </div>
 
-
-
-        {/* Event */}
-        <div dir="rtl" style={{
-            position: "absolute", right: 0, top: headerSize, left: 0, height: 0
-        }} >
-            {eventsArray}
-        </div>
-
         {/*Now line */}
-        <NowLine 
-            vertical={vertical} 
-            start={vertical? headerSize:headerSize}
-            length={vertical? windowSize.w: availableHeight}
+        <NowLine
+            vertical={vertical}
+            start={vertical ? headerSize : headerSize}
+            length={vertical ? windowSize.w : availableHeight}
             offset={getTimeOffset({ start: now }, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
         />
     </div>
