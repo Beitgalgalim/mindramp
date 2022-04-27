@@ -4,7 +4,7 @@ import { HBoxC, Spacer } from "./elem";
 import { RecorderProps } from './types'
 
 const recColor = '#F50257';
-const playColor = '#00C702';
+const playColor = '#6F9CB6';
 const sampleRate = 44100;
 
 // Written using example from here: https://gist.github.com/meziantou/edb7217fddfbb70e899e
@@ -228,7 +228,7 @@ export default function AudioPlayerRecorder({
             <Spacer />
             {showPlayButton && !recording && !paused &&
                 <Button size={size} bg={playColor}>
-                    <PlayArrow style={{ color: 'white', fontSize: 25 }} onClick={() => play()} />
+                    <PlayArrow style={{ color: 'white', fontSize: size/1.3 }} onClick={() => play()} />
                 </Button>
             }
             <Spacer />

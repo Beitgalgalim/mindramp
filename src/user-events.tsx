@@ -1,13 +1,19 @@
 import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import * as api from './api'
-import { HourLines, VBox, Text, Spacer, NowLine, HBox } from "./elem";
+import { HourLines, VBox, Text, Spacer, NowLine, HBox, EventsMain, HBoxSB, HBoxC, VBoxC, EventProgress } from "./elem";
 import { DateFormats, day2DayName, explodeEvents, getDayDesc, getTimes, MonthMap2, sortEvents, time2Text, timeRange2Text } from "./utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserEventsProps } from "./types";
 import AudioPlayerRecorder from "./AudioRecorderPlayer";
 import { Style } from "./elem"
+import EventsHeader from "./events-header";
+import EventsNavigation from "./events-navigation";
+import Events from "./events";
+import { AccessTime, PermIdentity, Timer } from "@mui/icons-material";
+
 const logo = require("./logo.png");
+
 
 const headerSize = 60;
 const eventsGapTop = 20;
@@ -18,53 +24,81 @@ const mainBGColor = "black";
 
 const profiles = ["basic", "large"];
 
-
+const multipleFactor = .7;
+const buttonSize = 50;
 
 function Event(props: any) {
-    const borderWidth = 4
-    const font1 = props.sliceWidth / 3;
-    const font2 = props.sliceWidth / 4;
-    const font3 = props.sliceWidth / 5;
-
     const t1 = dayjs(props.event.start).format(DateFormats.TIME)
     const t2 = dayjs(props.event.end).format(DateFormats.TIME)
+    const baseWidth = window.innerWidth;
+
+    const titleAndRoom = <div style={{
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: "flex-start",
+        paddingRight: 15,
+    }} >
+        <Text role="text">{props.event.title}</Text>
+        <Spacer height={2} />
+        <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text>
+    </div>
+
+    const isSingle = !!props.single;
     return (
         <div style={{
-            position: "absolute", right: props.right, width: props.width - (2 * borderWidth), height: props.height - (2 * borderWidth), top: props.top,
+            flex: "0 0 auto",
+            width: (isSingle ? baseWidth : baseWidth * multipleFactor) - 48,
+            height: isSingle ? 150 : 230,
             background: "white",
-            borderStyle: "groove",
-            borderWidth: borderWidth,
-            borderColor: "yellow",
-            opacity: 0.8,
-            zIndex: 100
+            borderRadius: 10,
+            marginRight: props.secondInGroup ? 0 : 24,
+            marginLeft: 24,
+            marginBottom: 30,
+            marginTop: 1,
         }}>
             <div style={{
-                display: 'flex', flexDirection: props.vertical ? 'row' : 'column', alignItems: 'center',
-                height: "100%",
-                width: "100%"
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: "flex-start",
+                height: 78,
+                paddingTop: 10,
+                paddingRight:10,
+                paddingLeft:10,
+                justifyContent:isSingle?"flex-start": props.event.imageUrl? "space-between":"flex-end",
             }}>
-                {props.event.imageUrl && <img src={props.event.imageUrl} style={{ maxWidth: props.width / 1.5, maxHeight: props.height / 2.5, padding: 10 }} alt="תמונה" />}
-                {props.event.audioUrl &&
-                <div style={{position:"absolute", right:0, bottom:5}}>
-                    <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
-                        showPlayButton={props.event.audioUrl}
-                        audioUrl={props.event.audioUrl}
-                        buttonSize={props.vertical ? 25 : 35} />
-                </div>
-
+                {
+                    props.event.imageUrl && <div style={{ width: 78 }}>
+                        <img src={props.event.imageUrl} style={{ maxWidth: 78, maxHeight: 78}} alt="תמונה" />
+                    </div>
                 }
-                <div style={{
-                    display: 'flex', flexDirection: 'column',
-                    width: props.vertical?"35%":"100%"
-                }} >
-                    <Text role="text" textAlign="center" fontSize={font1}>{props.event.title}</Text>
-                    <div role="text" style={Style.hidden}>{timeRange2Text(t1, t2)}</div>
-                    <Text aria-hidden="true" textAlign="center" fontSize={font2}>{t1 + " - " + t2}</Text>
-                </div>
-                <Spacer height={25} />
-                <Text width={props.vertical?"35%":"100%"} textAlign="right" fontSize={font3}>{props.event.notes || ""}</Text>
+                {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />}
+                {isSingle && titleAndRoom}
             </div>
-
+            <Spacer height={5} />
+            {!isSingle && titleAndRoom}
+            {!isSingle && <Spacer height={25} />}
+            <HBoxSB style={{width:undefined, paddingRight:10, paddingLeft:10 }}>
+                <VBox style={{width:"75%"}}>
+                    <HBox style={{ alignItems: "flex-start", width:"100%" }}>
+                        <AccessTime style={{ color: "#6F9CB6" }} />
+                        <Spacer />
+                        <Text aria-hidden="true" fontSize="0.7em">{t1 + " - " + t2}</Text>
+                    </HBox>
+                    <Spacer />
+                    <EventProgress progress={0.6} event={props.event} />
+                </VBox>
+                <HBox>
+                    {
+                        props.event.audioUrl && <div style={{ height: buttonSize, width: buttonSize, display: "flex" }}>
+                            <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
+                                showPlayButton={props.event.audioUrl}
+                                audioUrl={props.event.audioUrl}
+                                buttonSize={buttonSize} />
+                        </div>
+                    }
+                    {!!props.single && <PermIdentity style={{ fontSize: buttonSize }} />}
+                </HBox>
+            </HBoxSB>
         </div >
     );
 }
@@ -256,17 +290,6 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
 
     //updateNow()
 
-
-    const goBack = () => {
-        navigate("#" + showDate.add(-1, "day").format(DateFormats.DATE))
-        //        setShowDate(sd=>sd.add(-1, "day"));
-    }
-    const goForward = () => {
-        navigate("#" + showDate.add(1, "day").format(DateFormats.DATE))
-        //      setShowDate(sd=>sd.add(1, "day"));
-    }
-
-
     const vertical = windowSize.w < windowSize.h;
     const sliceEachHour = 2;
     const availableHeight = windowSize.h - headerSize - footerSize;
@@ -283,98 +306,63 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     // `;
     //     })
     //     console.log("-----Tree----\n", msg)
-    const slotSize = (vertical ? windowSize.w : availableHeight) - eventsGapStart - eventsGapEnd;;
 
     //eventsGapStart = 0;
-    const eventsArray = layouted.map((ev, key) => {
-        const vTOPhRIGHT = getTimeOffset(ev, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2;
-        const vRIGHThTOP = ev._left * slotSize;
-        const vWIDTHhHeight = (ev._right - ev._left) * slotSize;
-        const vHEIGHThWIDTH = getTimeWidth(ev, sliceWidth, sliceEachHour);
-        return <Event
-            key={key}
-            top={vertical ? vTOPhRIGHT : vRIGHThTOP + eventsGapStart}
-            height={vertical ? vHEIGHThWIDTH : vWIDTHhHeight}
-            right={vertical ? vRIGHThTOP + eventsGapStart : vTOPhRIGHT}
-            width={vertical ? vWIDTHhHeight : vHEIGHThWIDTH}
-            event={ev}
-            sliceWidth={sliceWidth}
-            vertical={vertical}
-        />
-    });
+    const eventsArray: any[][] = [];
 
-    console.log("13:05", time2Text("13:55"));
+    let groupCount = 0;
+    let eventGroupIndex = -1;
+    for (let i = 0; i < layouted.length; i++) {
+        const ev = layouted[i];
 
-    return <div dir="rtl" style={{ backgroundColor: mainBGColor, height: "100vh" }}>
-        {/* Toolbar */}
-        <div style={{
-            display: "flex", flexDirection: "row",
-            maxHeight: headerSize,
-            height: headerSize,
-            width: "100%",
-            alignContent: "center"
-        }}>
-            <div style={{ display: "flex", alignContent: "flex-start", width: "33%" }}>
-                <img onClick={() => changeProfile()} src={logo} style={{ height: headerSize - 20, }} alt={"לוגו של בית הגלגלים"} aria-hidden="true" />
-            </div>
-            <Text color="white" textAlign="center" alignSelf="center" fontSize={20} aria-label="תאריך">
-                {`${getDayDesc(showDate)}: יום ${day2DayName[showDate.day()]}, ${showDate.date()} ב${MonthMap2[showDate.month()]}`}
-            </Text>
-            <div style={{ display: "flex", alignContent: "flex-end", width: "33%" }} aria-label={time2Text(now.format(DateFormats.TIME_AM_PM))}>
-                <Text aria-hidden="true" color="white" textAlign="left" alignSelf="center" fontSize={20}>{now.format(DateFormats.TIME_AM_PM)}</Text>
-            </div>
-        </div>
+        if (groupCount === 0) {
+            //Previous group finished
 
-        {/* Grid */}
-        <HourLines
-            height={availableHeight}
-            sliceWidth={sliceWidth}
-            hours={workingHours}
-            sliceEachHour={sliceEachHour}
-            vertical={vertical}
-            windowSize={windowSize}
-        />
+            eventGroupIndex++;
+            //look ahead to group all events in same time slot
+            for (let j = i + 1; j < layouted.length; j++) {
+                if (layouted[j].start < ev.end) {
+                    groupCount++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            groupCount--;
+        }
 
-         {/* Event */}
-         <div dir="rtl" style={{
-            position: "absolute", right: 0, top: headerSize, left: 0, height: 0
-        }} >
-            {eventsArray}
-        </div>
+        if (eventsArray.length == eventGroupIndex) {
+            eventsArray.push([]);
+        }
+        eventsArray[eventGroupIndex].push(ev);
+    }
 
-        {/*Footer */}
-        <div style={{
-            display: "flex", flexDirection: "row",
-            height: footerSize, width: "100%",
-            alignContent: "center",
-            backgroundColor: mainBGColor,
-            zIndex: 1000
-        }}>
-            <div role="button"  
-                style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", width: "33%" }}
-                onClick={() => goBack()}>
-                <div style={{ display: "flex", alignContent: "center", justifyContent: "center", height: 24, width: 130, border: 1, borderColor: "white", borderRadius: 12, borderStyle: 'outset', color: "white" }}
-                    >&rarr;  אתמול</div>
-            </div>
-            <div style={{ display: "flex", width: "33%" }}>
-                {/* <Text color="white" textAlign="center" alignSelf="center" fontSize={20}>
-                    {`היום: יום ${day2DayName[showDate.day()]}, ${showDate.date()} ב${MonthMap2[showDate.month()]}`}
-                </Text> */}
-            </div>
-            <div role="button" 
-                style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", width: "33%" }}
-                onClick={() => goForward()}>
-                <div style={{ display: "flex", alignContent: "center", justifyContent: "center", height: 24, width: 130, border: 1, borderColor: "white", borderRadius: 12, borderStyle: 'outset', color: "white" }}
-                    >מחר  &larr;</div>
-            </div>
-        </div>
+    //console.log("13:05", time2Text("13:55"));
 
-        {/*Now line */}
-        <NowLine
-            vertical={vertical}
-            start={vertical ? headerSize : headerSize}
-            length={vertical ? windowSize.w : availableHeight}
-            offset={getTimeOffset({ start: now }, showDate, startHour, sliceWidth, sliceEachHour) + sliceWidth / 2 + 1}
-        />
+    return <div dir={"rtl"} style={{
+        backgroundColor: "#3962B0",
+        fontSize: 24, //default text size for whole page
+        color: "#495D68", //default text color
+    }}>
+
+        <EventsHeader />
+        <EventsMain >
+            <EventsNavigation />
+            {eventsArray.map((evGroup, i) => (<HBox
+                style={{
+                    width: "100vw",
+                    overflowX: evGroup.length > 1 ? "auto" : "hidden",
+                    flexWrap: "nowrap",
+                }}
+                key={i}>
+                {
+                    evGroup.map((ev, j, ar) => (<Event key={j} single={ar.length === 1} secondInGroup={j > 0} event={ev} />))
+                }
+            </HBox>))}
+            {eventsArray.length === 0 && <VBoxC style={{height:"50vh"}}>
+                <Text textAlign={"center"} fontSize={"2em"}>אין אירועים</Text>
+            </VBoxC>}
+        </EventsMain>
+
     </div>
 }

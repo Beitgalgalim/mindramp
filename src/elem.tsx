@@ -202,7 +202,7 @@ export function Text(props: any) {
             width: props.width || '100%',
             textAlign: props.textAlign || 'right',
             alignSelf: props.alignSelf || undefined,
-            fontSize: props.fontSize || 12,
+            fontSize: props.fontSize,
             fontWeight: props.fontWeight,
             textDecoration: props.textDecoration,
             lineHeight: props.lineHeight,
@@ -215,6 +215,50 @@ export function Text(props: any) {
         }
         onClick={props.onClick}
     > {props.children}</div >
+}
+
+export function EventsMain({ children }: { children: any }) {
+    return <div style={{
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundColor: "#EBF0F2",
+        borderTopRightRadius: 40,
+        borderTopLeftRadius: 40,
+    }}>
+        {children}
+    </div>
+}
+
+export function EventProgress(props: any) {
+    const pastColor = "#6F9CB6";
+    const futureColor = "#CCDEE9";
+
+    const progress = Math.min(props.progress, 1);
+
+    return <div style={{width: "100%", display:"flex", flexDirection:"row", alignItems:"center"}}>
+        <div aria-hidden="true" dir="rtl" style={{
+            width: (progress * 100) + "%",
+            height: 5,
+            borderTopRightRadius:5,
+            borderBottomRightRadius: 5,
+            backgroundColor: pastColor
+        }} />
+        <Spacer width={2}/>
+        <div aria-hidden="true" dir="rtl" style={{
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: pastColor
+        }} />
+        <Spacer width={2}/>
+        <div aria-hidden="true" dir="rtl" style={{
+            width: ((1-progress) * 100) + "%",
+            height: 5,
+            borderTopLeftRadius:5,
+            borderBottomLeftRadius: 5,
+            backgroundColor: futureColor
+        }} />
+    </div >
 }
 
 export function NowLine({ offset, length, start, vertical }: { offset: number, length: number, start: number, vertical: boolean }) {
