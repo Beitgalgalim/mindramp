@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Text } from './elem';
 
 
 export default function EventsHeader(props: any) {
     return <div style={{
-        height: 100,
+        height: props.height,
         fontSize: 32,
         color: "white",
         display:"flex",

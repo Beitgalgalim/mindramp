@@ -98,7 +98,7 @@ export function ComboBox(props: any) {
         if (props.elRef && props.elRef.current != null) {
             props.elRef.current.onclick = handleElClick;
         }
-    }, [props?.elRef?.current])
+    }, [props.elRef])
 
     useEffect(() => {
         setLocalValue(props.value);
@@ -217,15 +217,30 @@ export function Text(props: any) {
     > {props.children}</div >
 }
 
-export function EventsMain({ children }: { children: any }) {
+export function EventsMain({ children, height }: { children: any, height: string }) {
     return <div style={{
         width: window.innerWidth,
-        height: window.innerHeight,
+        height,
         backgroundColor: "#EBF0F2",
         borderTopRightRadius: 40,
         borderTopLeftRadius: 40,
+
     }}>
         {children}
+    </div>
+}
+
+export function EventsContainer(props: any) {
+    return <div style={{
+        width: "100%",
+        height: props.height,
+        backgroundColor: "#EBF0F2",
+        borderTopRightRadius: 40,
+        borderTopLeftRadius: 40,
+        overflowY: "auto",
+        flexWrap: "nowrap",
+    }}>
+        {props.children}
     </div>
 }
 
@@ -235,26 +250,26 @@ export function EventProgress(props: any) {
 
     const progress = Math.min(props.progress, 1);
 
-    return <div style={{width: "100%", display:"flex", flexDirection:"row", alignItems:"center"}}>
+    return <div style={{ width: "100%", display: "flex", flexDirection: "row", alignItems: "center" }}>
         <div aria-hidden="true" dir="rtl" style={{
             width: (progress * 100) + "%",
             height: 5,
-            borderTopRightRadius:5,
+            borderTopRightRadius: 5,
             borderBottomRightRadius: 5,
             backgroundColor: pastColor
         }} />
-        <Spacer width={2}/>
+        <Spacer width={2} />
         <div aria-hidden="true" dir="rtl" style={{
             width: 10,
             height: 10,
             borderRadius: 5,
             backgroundColor: pastColor
         }} />
-        <Spacer width={2}/>
+        <Spacer width={2} />
         <div aria-hidden="true" dir="rtl" style={{
-            width: ((1-progress) * 100) + "%",
+            width: ((1 - progress) * 100) + "%",
             height: 5,
-            borderTopLeftRadius:5,
+            borderTopLeftRadius: 5,
             borderBottomLeftRadius: 5,
             backgroundColor: futureColor
         }} />

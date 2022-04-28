@@ -140,7 +140,13 @@ export function replaceDatePreserveTime2(origin: string, newDate: any): string {
 }
 
 export function sortEvents(events: any[]): any[] {
-    return events.sort((e1, e2) => dayjs(e1.start).diff(e2.start, "minutes"));
+    return events.sort((e1, e2) => {
+        if (e1.start < e2.start) return -1;
+        if (e1.start > e2.start) return 1;
+        if (e1.end < e2.end) return -1;
+
+        return 1;
+    });
 }
 
 function getDateFromTime(timeStr: string):Dayjs {
@@ -189,7 +195,7 @@ export function time2Text(timeStr: string, omitAmPmIfSame:string | undefined = u
     if (d.minute() > 0) {
         if (d.minute() < 10) {
             result += " ו" + number2Text(d.minute(), false) + " דקות";
-        } else if (d.minute() % 10 == 0) {
+        } else if (d.minute() % 10 === 0) {
             result += " ו" + number2Text(d.minute(), false);
         } else {
             result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false) ;
@@ -206,13 +212,10 @@ function number2Text(num: number, isHour: boolean): string {
     switch (num) {
         case 0:
             return "אפס";
-            break;
         case 1:
             return "אחת";
-            break;
         case 2:
             return "שתיים";
-            break;
         case 3:
             return "שלוש";
         case 4:
@@ -225,16 +228,12 @@ function number2Text(num: number, isHour: boolean): string {
             return "שבע";
         case 8:
             return "שמונה";
-            break;
         case 9:
             return "תשע";
-            break;
         case 10:
             return "עשר";
-            break;
         case 11:
             return "אחת עשרה";
-            break;
         case 12:
             return "שתיים עשרה";
         case 20:
