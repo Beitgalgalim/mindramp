@@ -102,6 +102,7 @@ export interface RecorderProps {
     audioBlob?:Blob;
     onCapture?: (blob: Blob) => void;
     onClear?: Callback;
+    onPlayProgress?:(percent:number)=>void;
 }
 
 export interface HourLinesProps extends WithWindowSize {

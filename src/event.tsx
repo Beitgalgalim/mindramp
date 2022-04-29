@@ -1,5 +1,4 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
-import { Dayjs } from "dayjs";
 import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
 import dayjs from 'dayjs';
@@ -27,6 +26,7 @@ export class Event {
     clearAudio?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
+    tag?:string;
 
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
@@ -84,6 +84,7 @@ export class Event {
             delete eventObj.recurrent;
         }
         delete eventObj._ref;
+        delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
 

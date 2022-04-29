@@ -20,6 +20,7 @@ import { FixedSizeList } from 'react-window';
 import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
+import { Colors } from './theme';
 
 export const ResponsiveTab = withStyles({
     root: {
@@ -221,7 +222,7 @@ export function EventsMain({ children, height }: { children: any, height: string
     return <div style={{
         width: window.innerWidth,
         height,
-        backgroundColor: "#EBF0F2",
+        backgroundColor: Colors.EventBackground,
         borderTopRightRadius: 40,
         borderTopLeftRadius: 40,
 

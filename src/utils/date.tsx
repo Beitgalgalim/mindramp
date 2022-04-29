@@ -94,9 +94,12 @@ export function getDayDesc(date: Dayjs): string {
     when exploding, we explode from *daysBefore* today until *daysAfter* today
  }
  */
-export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30): any[] {
+export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30, startDate?: string): any[] {
     const ret: any[] = [];
-    const today = toMidNight(dayjs());
+    const today = startDate && startDate != "" ?
+        toMidNight(dayjs(startDate)):
+        toMidNight(dayjs());
+        
     events.forEach((event: any) => {
         if (event.recurrent && !event.instanceStatus) {
             const rec: RecurrentEventField = event.recurrent;
@@ -149,7 +152,7 @@ export function sortEvents(events: any[]): any[] {
     });
 }
 
-function getDateFromTime(timeStr: string):Dayjs {
+function getDateFromTime(timeStr: string): Dayjs {
     if (!timeStr || timeStr.trim().length === 0) {
         throw new Error("Not a valid time");
     }
@@ -173,7 +176,7 @@ export function timeRange2Text(timeStr1: string, timeStr2: string): string {
     return time2Text(timeStr1, timeStr2) + " עד " + time2Text(timeStr2)
 }
 
-export function time2Text(timeStr: string, omitAmPmIfSame:string | undefined = undefined): string {
+export function time2Text(timeStr: string, omitAmPmIfSame: string | undefined = undefined): string {
     const d = getDateFromTime(timeStr);
     let omitAmPm = false;
     let result = "";
@@ -198,7 +201,7 @@ export function time2Text(timeStr: string, omitAmPmIfSame:string | undefined = u
         } else if (d.minute() % 10 === 0) {
             result += " ו" + number2Text(d.minute(), false);
         } else {
-            result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false) ;
+            result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false);
         }
     }
     if (pm && !omitAmPm) {

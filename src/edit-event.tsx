@@ -12,6 +12,7 @@ import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event } from './event';
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
+import { Colors } from './theme';
 
 
 export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, notify }: EditEventsProps) {
@@ -48,9 +49,19 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
 
 
 
-    
+
     return (
-        <div dir="rtl" style={{ position: 'absolute', top: 0, height: "100vh", width: '100%', backgroundColor: 'white', zIndex: 500 }}>
+        <div dir="rtl" style={{
+            position: 'absolute',
+            top: "10vh",
+            left: "10vw",
+            height: "80vh",
+            width: '80vw',
+            backgroundColor: Colors.EditorBackground,
+            zIndex: 500,
+            borderRadius: 15,
+            boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
+        }}>
             <h1>{ref ? "עדכון ארוע" : "ארוע חדש"}</h1>
             {editImage && <MediaPicker media={media}
                 onSelect={(rm: MediaResource) => {
@@ -60,7 +71,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                 onCancel={() => setEditImage(false)}
             />
             }
-            
+
             <VBox style={{ margin: "10%" }}>
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
@@ -80,7 +91,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                         <MyDatePicker start={start} end={end}
                             setStart={(d) => setStart(d)}
                             setEnd={(d) => setEnd(d)}
-                            //style={{width:"100%"}}
+                        //style={{width:"100%"}}
                         />
                     </Grid>
                 </Grid>
@@ -101,7 +112,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                         <Image />
                     </Grid>
                     <Grid container item xs={4} spacing={2} >
-                        <HBoxSB>
+                        <HBoxSB >
                             {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: 30, height: 30 }} /> : <Text>אין תמונה</Text>}
                             <Edit onClick={() => setEditImage(true)} />
                         </HBoxSB>
@@ -114,22 +125,22 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Mic />
                     </Grid>
-                    <Grid container item xs={9} spacing={2} >
-                        <HBoxSB>
-                            {(audioUrl || audioBlob) && !clearAudio ? <Text width={"60%"}>יש שמע</Text> : <Text>אין שמע</Text>}
-                            <AudioPlayerRecorder notify={notify} showRecordButton={true} showClearButton={audioUrl || audioBlob} 
-                            showPlayButton={audioUrl || audioBlob} onCapture={(blob) => {
-                                setAudioBlob(blob)
-                                setClearAudio(false);
-                            }} onClear={() => {
-                                if (audioBlob) {
-                                    setAudioBlob(undefined);
-                                } else if (audioUrl) {
-                                    setClearAudio(true);
-                                }
-                            }}
-                             audioBlob={audioBlob} audioUrl={clearAudio?undefined:audioUrl}
-                            buttonSize={35}/>
+                    <Grid container item xs={4} spacing={2} >
+                        <HBoxSB >
+                            {(audioUrl || audioBlob) && !clearAudio ? <Text >יש שמע</Text> : <Text >אין שמע</Text>}
+                            <AudioPlayerRecorder notify={notify} showRecordButton={true} showClearButton={audioUrl || audioBlob}
+                                showPlayButton={audioUrl || audioBlob} onCapture={(blob) => {
+                                    setAudioBlob(blob)
+                                    setClearAudio(false);
+                                }} onClear={() => {
+                                    if (audioBlob) {
+                                        setAudioBlob(undefined);
+                                    } else if (audioUrl) {
+                                        setClearAudio(true);
+                                    }
+                                }}
+                                audioBlob={audioBlob} audioUrl={clearAudio ? undefined : audioUrl}
+                                buttonSize={35} />
                         </HBoxSB>
                     </Grid>
                 </Grid>
@@ -172,7 +183,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
             </VBox>
 
             <HBoxC style={{ position: "absolute", bottom: "2%" }}>
-                <Button variant="outlined" onClick={() => {
+                <Button variant="contained" onClick={() => {
 
                     const recurrentField = inEvent.event.recurrent || {};
                     recurrentField.freq = recurrent === "שבועי" ? "weekly" : recurrent === "יומי" ? "daily" : "none";
@@ -197,8 +208,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                         ref);
                 }}>שמור</Button>
                 <Spacer width={25} />
-                {ref && onDelete && <Button variant="outlined" onClick={() => onDelete(inEvent, ref)}>מחק</Button>}
-                <Button variant="outlined" onClick={() => onCancel()} >בטל</Button>
+                {ref && onDelete && <Button variant="contained" onClick={() => onDelete(inEvent, ref)}>מחק</Button>}
+                <Button variant="contained" onClick={() => onCancel()} >בטל</Button>
 
             </HBoxC>
         </div >

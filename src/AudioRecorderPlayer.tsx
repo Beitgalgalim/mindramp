@@ -1,6 +1,6 @@
 import { Clear, Mic, Pause, PlayArrow, Stop } from "@mui/icons-material";
 import { useEffect, useState } from "react";
-import { HBoxC, Spacer } from "./elem";
+import { HBoxC, HBox, Spacer } from "./elem";
 import { RecorderProps } from './types'
 
 const recColor = '#F50257';
@@ -208,7 +208,7 @@ export default function AudioPlayerRecorder({
     }
 
     return (<div>
-        <HBoxC style={{ width: '100%', height: '100%' }}>
+        <HBox style={{ width: '100%', height: '100%', alignItems:"flex-end" }}>
             
             {showRecordButton && !recording && !paused &&
                 <Button bg={recColor} size={size}>
@@ -237,7 +237,7 @@ export default function AudioPlayerRecorder({
                     <Clear style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
                 </Button>
             }
-        </HBoxC >
+        </HBox >
 
 
 

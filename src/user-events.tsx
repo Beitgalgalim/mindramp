@@ -1,16 +1,15 @@
 import dayjs, { Dayjs } from "dayjs";
-import {  useEffect, useState } from "react";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
 import * as api from './api'
-import {  VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
+import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
 import { DateFormats, explodeEvents, sortEvents } from "./utils/date";
 import { useLocation } from "react-router-dom";
 import { UserEventsProps } from "./types";
-import AudioPlayerRecorder from "./AudioRecorderPlayer";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 import { Event } from './event';
 
-import { AccessTime, PermIdentity } from "@mui/icons-material";
+import { AccessTime, Mic, PermIdentity } from "@mui/icons-material";
 
 const multipleFactor = .7;
 const buttonSize = 50;
@@ -54,7 +53,15 @@ function getBeforeTimeText(minutes: number): string {
 }
 
 
-function EventElement({ event, single, firstInGroup, now }: { event: Event, single: boolean, firstInGroup: boolean, now: Dayjs }) {
+function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, stopTimer }:
+    {
+        event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
+        audioRef: MutableRefObject<HTMLAudioElement>,
+        startTimer: (callback: () => void, delay: number) => void,
+        stopTimer: () => void,
+    }
+) {
+    const [playProgress, setPlayProgress] = useState(-1);
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
 
@@ -66,6 +73,14 @@ function EventElement({ event, single, firstInGroup, now }: { event: Event, sing
     const minutesBefore = now.isBefore(event.start) ? -now.diff(event.start, "minutes") : 0;
 
     const baseWidth = window.innerWidth;
+
+    useEffect(() => {
+        console.log(event.title, "mounted")
+        return ()=> {
+            console.log(event.title, "unmounted")
+            audioRef.current.src = ""
+        }
+    }, [])
 
     const titleAndRoom = <div style={{
         display: 'flex',
@@ -84,14 +99,58 @@ function EventElement({ event, single, firstInGroup, now }: { event: Event, sing
             flex: "0 0 auto",
             width: (isSingle ? baseWidth : baseWidth * multipleFactor) - 48,
             height: isSingle ? 150 : 230,
-            background: "white",
+            background: playProgress >= 0 ?
+                `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
+                "white",
             borderRadius: 10,
             marginRight: firstInGroup ? 24 : 0,
             marginLeft: 24,
             marginBottom: 30,
             marginTop: 1,
             boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)", //rgb(46 66 77 / 15%)"
-        }}>
+        }}
+            onClick={(e: any) => {
+                const timerHandler = () => {
+                    const { currentTime, duration } = audioRef.current;
+                    const prog = Math.floor(currentTime / duration * 100);
+                    setPlayProgress(prog)
+                }
+
+                // plays the audio if exists
+                if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
+                    console.log(e.detail)
+                    if (!audioRef.current.paused) {
+                        audioRef.current.pause();
+                        stopTimer();
+                        return;
+                    } else if (audioRef.current.currentTime > 0) {
+                        audioRef.current.play()
+                        startTimer(timerHandler, 200)
+                        return;
+                    }
+
+                    audioRef.current.src = event.audioUrl;
+                    audioRef.current.onended = () => {
+                        stopTimer();
+                        console.log("ended")
+                        setPlayProgress(-1);
+                    }
+                    audioRef.current.play();
+                    startTimer(timerHandler, 200);
+                }
+            }}
+
+        >
+            {/* {playProgress > -1 && <div style={{
+                backgroundColor: 'green',
+                float:"right",
+                position:"relative",
+                left:0,
+                height:"100%",
+                width: playProgress*100 + "%"
+            }} />} */}
+
+
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -126,10 +185,13 @@ function EventElement({ event, single, firstInGroup, now }: { event: Event, sing
                 <HBox>
                     {
                         event.audioUrl && <div style={{ height: buttonSize, width: buttonSize, display: "flex" }}>
-                            <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
+                            {/* <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
                                 showPlayButton={event.audioUrl !== ""}
                                 audioUrl={event.audioUrl}
-                                buttonSize={buttonSize - 5} />
+                                buttonSize={buttonSize - 5} 
+                                onPlayProgress={()=>{}}
+                                /> */}
+                            <Mic style={{ fontSize: buttonSize }} />
                         </div>
                     }
                     {isSingle && <PermIdentity style={{ fontSize: buttonSize }} />}
@@ -163,6 +225,26 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
+    const [startDate, setStartDate] = useState<string>("");
+
+    const audioRef = useRef<HTMLAudioElement>(new Audio());
+    const intervalRef = useRef<NodeJS.Timer>();
+
+    const startTimer = (callback: () => void, delay: number) => {
+        // Clear any timers already running
+        if (intervalRef.current)
+            clearInterval(intervalRef.current);
+
+        intervalRef.current = setInterval(() => {
+            callback()
+        }, delay);
+    }
+
+    const stopTimer = () => {
+        if (intervalRef.current)
+            clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+    }
 
     const location = useLocation();
     let showDateTime: Dayjs;
@@ -178,15 +260,26 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         showDateTime = dayjs(showDateTime.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
     }
 
+    if (startDate !== showDateTime.format(DateFormats.DATE)) {
+        setStartDate(showDateTime.format(DateFormats.DATE))
+    }
+
     useEffect(() => {
-        if (!connected)
+        if (!connected || startDate === "")
             return;
-        api.getEvents().then(evts => setEvents(sortEvents(explodeEvents(evts))));
-    }, [connected]);
+
+        api.getEvents().then(evts => {
+            const evtsWithId = evts.map((e, i) => {
+                e.tag = "" + i
+                return e;
+            })
+            setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
+        })
+    }, [connected, startDate]);
 
 
     useEffect(() => {
-        let intervalId = setInterval(()=>setReload(old => old + 1), 2 * 1000)
+        let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)
         return (() => {
             clearInterval(intervalId)
         })
@@ -238,7 +331,6 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         height: "100vh",
 
     }}
-        key={reload}
     >
 
         <EventsHeader height={"12vh"} />
@@ -251,9 +343,14 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                         overflowX: evGroup.length > 1 ? "auto" : "hidden",
                         flexWrap: "nowrap",
                     }}
-                    key={i}>
+                    key={evGroup.length > 0 ? evGroup[0].tag : i}>
                     {
-                        evGroup.map((ev, j, ar) => (<EventElement key={j} single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime} />))
+                        evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                            single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
+                            audioRef={audioRef}
+                            startTimer={startTimer}
+                            stopTimer={stopTimer}
+                        />))
                     }
                 </HBox>))}
                 {eventsArray.length === 0 && <VBoxC style={{ height: "50vh" }}>
