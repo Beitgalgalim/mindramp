@@ -9,11 +9,12 @@ export const DateFormats = {
     TIME: "HH:mm"
 };
 
-export function getTimes(start: number = 0, end: number = 48, jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
+export function getTimes(base:Dayjs =  toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
     const ret: string[] = [];
-    const base = dayjs("2000-01-01 00:00");
-    for (let i = start; i < end; i++) {
-        ret.push(base.add(i * jump, "minutes").format(fmt));
+    let endTime = base;
+    while(endTime.day() == base.day()) {
+        endTime = endTime.add(jump, "minutes")
+        ret.push(endTime.format(fmt));
     }
     return ret;
 }
@@ -99,7 +100,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
     const today = startDate && startDate != "" ?
         toMidNight(dayjs(startDate)):
         toMidNight(dayjs());
-        
+
     events.forEach((event: any) => {
         if (event.recurrent && !event.instanceStatus) {
             const rec: RecurrentEventField = event.recurrent;

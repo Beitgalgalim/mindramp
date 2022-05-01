@@ -12,7 +12,7 @@ import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event } from './event';
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
-import { Colors } from './theme';
+import { Colors, Design } from './theme';
 
 
 export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, notify }: EditEventsProps) {
@@ -57,10 +57,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
             left: "10vw",
             height: "80vh",
             width: '80vw',
-            backgroundColor: Colors.EditorBackground,
+            backgroundColor: Colors.PopupBackground,
             zIndex: 500,
             borderRadius: 15,
-            boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
+            boxShadow: Design.popUpboxShadow,
         }}>
             <h1>{ref ? "עדכון ארוע" : "ארוע חדש"}</h1>
             {editImage && <MediaPicker media={media}

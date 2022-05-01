@@ -90,7 +90,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
     }} >
         <Text role="text">{event.title}</Text>
         <Spacer height={2} />
-        <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text>
+        {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
     </div>
 
     const isSingle = !!single;
@@ -166,7 +166,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                         <img src={event.imageUrl} style={{ maxWidth: 78, maxHeight: 78 }} alt="תמונה" />
                     </div>
                 }
-                {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />}
+                {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
                 {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
@@ -194,7 +194,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                             <Mic style={{ fontSize: buttonSize }} />
                         </div>
                     }
-                    {isSingle && <PermIdentity style={{ fontSize: buttonSize }} />}
+                    {/* {isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
                 </HBox>
             </HBoxSB>
 

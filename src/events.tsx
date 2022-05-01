@@ -167,20 +167,20 @@ export default function Events({ connected, notify, media }: EventsProps) {
 
     return (<div>
         {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
-            <Fab 
-            color="primary" aria-label="הוסף"
-            variant="circular"
-            style={{
-                position: "fixed",
-                bottom: 50,
-                right: 50,
-                zIndex: 1000,
-                borderRadius:'50%'
-              }}
-              >
+            <Fab
+                color="primary" aria-label="הוסף"
+                variant="circular"
+                style={{
+                    position: "fixed",
+                    bottom: 50,
+                    right: 50,
+                    zIndex: 1000,
+                    borderRadius: '50%'
+                }}
+            >
                 <Add onClick={() => { setNewEvent({ event: getNewEvent() }) }} />
             </Fab>
-        //</div>
+            //</div>
         }
         <FullCalendar
             ref={calendarRef}
@@ -227,7 +227,8 @@ export default function Events({ connected, notify, media }: EventsProps) {
                 onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {
 
                     //Saves new Audio if needed:
-                    let audioPathToDelete:string | undefined = undefined;
+                    let audioPathToDelete: string | undefined = undefined;
+                    let currentPathIsNew = false;
                     if (editEvent.event.audioBlob != null) {
                         // mark previous audio file if existed, for deletion
                         audioPathToDelete = editEvent.event.audioPath
@@ -237,6 +238,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                             const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", editEvent.event.audioBlob)
                             editEvent.event.audioPath = newMedia.path;
                             editEvent.event.audioUrl = newMedia.url;
+                            currentPathIsNew = true;
                         } catch (err: any) {
                             notify.error(err.message);
                             return;
@@ -266,7 +268,13 @@ export default function Events({ connected, notify, media }: EventsProps) {
                                 })
                                 setNewEvent(undefined);
                             },
-                            (err) => notify.error(err.message)
+                            (err) => {
+                                notify.error(err.message);
+                                if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
+                                    //delete the file that was uploaded
+                                    api.deleteFile(editEvent.event.audioPath);
+                                }
+                            }
                         );
                     } else {
                         api.upsertEvent(editEvent.event, ref).then(
@@ -283,7 +291,13 @@ export default function Events({ connected, notify, media }: EventsProps) {
                                 })
                                 setNewEvent(undefined);
                             },
-                            (err) => notify.error(err.message)
+                            (err) => {
+                                notify.error(err.message);
+                                if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
+                                    //delete the file that was uploaded
+                                    api.deleteFile(editEvent.event.audioPath);
+                                }
+                            }
                         )
                     }
                 }}

@@ -1,1 +1,5 @@
-- In play button, change to pause, when playing in user-events
+
+- Reset playing sound event after pause
+- In admin
+  - close list on second click on down arrow
+

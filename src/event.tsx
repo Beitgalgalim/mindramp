@@ -67,11 +67,11 @@ export class Event {
         eventObj.end = dayjs(this.end).format(DateFormats.DATE_TIME);
 
         if (eventObj.end <= eventObj.start) {
-            throw new Error("זמן סיום חייב להיות מאוחר מזמן התחלה");
+            throw ("זמן סיום חייב להיות מאוחר מזמן התחלה");
         }
 
         if (!eventObj.title || eventObj.title.length === 0) {
-            throw new Error("חסר כותרת לאירוע");
+            throw ("חסר כותרת לאירוע");
         }
 
         if (!eventObj.notes) {
