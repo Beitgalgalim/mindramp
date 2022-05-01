@@ -24,17 +24,18 @@ import { Colors } from './theme';
 
 export const ResponsiveTab = withStyles({
     root: {
-        minWidth: 150
+        minWidth: 150,
     },
     selected: {
 
     },
     textColorPrimary: {
         color: "#737373",
+        fontSize:25,
         '&$selected': {
-            color: "#3D95EE",
-            FontFace: "bold",
-            textDecoration: "underline"
+            backgroundColor:"#A8A8A8",
+            //FontFace: "bold",
+            //textDecoration: "underline"
         }
     },
 })(Tab);

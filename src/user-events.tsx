@@ -256,6 +256,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         showDateTime = dayjs();
     }
 
+    const dateTimeNoOffset = showDateTime;
     if (daysOffset > 0) {
         showDateTime = dayjs(showDateTime.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
     }
@@ -333,7 +334,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     }}
     >
 
-        <EventsHeader height={"12vh"} />
+        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset}/>
         <EventsMain height={"88vh"}>
             <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />
             <EventsContainer height={"78vh"}>

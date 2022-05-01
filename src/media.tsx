@@ -1,20 +1,21 @@
 import {  useRef } from 'react';
 import { MediaProps, MediaResource } from './types';
 
-import { Text, HBoxSB, Spacer } from './elem';
+import { Text, HBox, Spacer } from './elem';
 import * as api from './api'
 import { Button } from '@material-ui/core';
+import "./admin.css"
 
 
 
 export default function Media({ media, notify }: MediaProps) {
 
     const inputEl = useRef<HTMLInputElement | null>(null);
-    return (<div>
+    return (<div  dir="rtl">
         {media.map((m, i) => (
-            <HBoxSB key={i}>
-                <Text>{m.name}</Text>
+            <HBox key={i}>
                 <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
+                <Text width={"50vw"} textAlign="right">{m.name}</Text>
                 <Spacer />
                 <Button variant={"outlined"}
                     onClick={()=>notify.ask("האם למחוק?", undefined, [
@@ -35,11 +36,12 @@ export default function Media({ media, notify }: MediaProps) {
                             }
                         ])
                     }>מחק</Button>
-            </HBoxSB>
+            </HBox>
         ))}
 
-        <input type="file" ref={inputEl} />
-        <Button onClick={() => {
+        <input className="custom-file-input" type="file" ref={inputEl} />
+        <Spacer width={20}/>
+        <Button variant={"contained"} onClick={() => {
             const files = inputEl?.current?.files;
             if (files && files.length > 0) {
                 api.addMedia(files[0].name, "photo", files[0]).then(

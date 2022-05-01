@@ -8,6 +8,7 @@ import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
 import { AdminProps, MediaResource } from './types';
+import { Colors } from './theme';
 
 
 export default function Admin(props: AdminProps) {
@@ -32,7 +33,7 @@ export default function Admin(props: AdminProps) {
             textColor="primary"
             scrollButtons="auto"
             centered
-            style={{ marginTop: 5 }}
+            style={{ marginTop: 5, backgroundColor:Colors.EventBackground, fontSize:25 }}
             TabIndicatorProps={{
                 style: {
                     display: "none"
