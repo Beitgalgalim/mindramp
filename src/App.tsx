@@ -15,6 +15,7 @@ import UserEvents from './user-events';
 import Admin from './admin';
 import { User } from '@firebase/auth';
 import  Login  from './login';
+import { Close } from '@mui/icons-material';
 
 function App(props: any) {
 
@@ -74,9 +75,20 @@ function App(props: any) {
 
 
   return (
-    <div className="App">
-      {msg && <Collapse in={msg.open} timeout={500} style={{ position: 'absolute', top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000 }} >
-        <Alert severity={msg.severity}>
+    <div className="App" dir="rtl">
+      {msg && <Collapse in={msg.open} timeout={500} style={{ 
+          position: 'absolute', 
+          display:"flex", justifyContent:"center",
+          top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000 }} >
+        <Alert style={{
+            fontSize:22, 
+            width:"70vw", 
+            borderRadius:15,
+            borderStyle:"solid",
+            borderWidth:1,
+            borderColor:"gray",
+          }} severity={msg.severity}>
+            <div style={{position:"absolute", left:"14vw", top:"1vh"}}><Close onClick={()=>setMsg(undefined)}/></div>
           {msg.title ? <AlertTitle>{msg.title}</AlertTitle> : null}
           <Text>{msg.body}</Text>
           {msg.details ? msg.details.split("\n").map(d => <Text fontSize={15}>{d}</Text>) : null}

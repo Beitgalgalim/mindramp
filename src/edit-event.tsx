@@ -113,8 +113,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     </Grid>
                     <Grid container item xs={4} spacing={2} >
                         <HBoxSB >
-                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: 30, height: 30 }} /> : <Text>אין תמונה</Text>}
-                            <Edit onClick={() => setEditImage(true)} />
+                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: Design.eventImageSize, height:  Design.eventImageSize }} /> : <Text>אין תמונה</Text>}
+                            <Edit onClick={() => setEditImage(true)} style={{fontSize:35}}/>
                         </HBoxSB>
                     </Grid>
                 </Grid>
@@ -128,7 +128,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={4} spacing={2} >
                         <HBoxSB >
                             {(audioUrl || audioBlob) && !clearAudio ? <Text >יש שמע</Text> : <Text >אין שמע</Text>}
-                            <AudioPlayerRecorder notify={notify} showRecordButton={true} showClearButton={audioUrl || audioBlob}
+                            <AudioPlayerRecorder notify={notify}
+                            showRecordButton={true} showClearButton={audioUrl || audioBlob}
                                 showPlayButton={audioUrl || audioBlob} onCapture={(blob) => {
                                     setAudioBlob(blob)
                                     setClearAudio(false);

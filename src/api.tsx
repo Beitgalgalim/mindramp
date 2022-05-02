@@ -19,8 +19,6 @@ import { firebaseConfig } from './config';
 import { Collections, MediaResource } from './types';
 import { Event } from './event';
 
-import { DateFormats } from './utils/date';
-
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
@@ -115,7 +113,7 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
     Promise<{ instance: Event, series: Event }> {
 
     if (!ref) {
-        throw new Error("Ref must be valid");
+        throw ("Ref must be valid");
     }
 
     const event = Event.fromEventAny(evt);
@@ -131,7 +129,7 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
 
         if (!seriesDocObj || !seriesDocObj.recurrent) {
             // not expected
-            throw new Error("Unexpected missing recurrent info on series event");
+            throw ("Unexpected missing recurrent info on series event");
         }
         if (!seriesDocObj.recurrent.exclude) {
             seriesDocObj.recurrent.exclude = [eventObj.date];

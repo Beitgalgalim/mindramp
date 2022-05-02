@@ -157,7 +157,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             }}>
                 {
                     event.imageUrl && <div style={{ width: 78 }}>
-                        <img src={event.imageUrl} style={{ maxWidth: 78, maxHeight: 78 }} alt="תמונה" />
+                        <img src={event.imageUrl} style={{ maxWidth: Design.eventImageSize, maxHeight: Design.eventImageSize }} alt="תמונה" />
                     </div>
                 }
                 {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}

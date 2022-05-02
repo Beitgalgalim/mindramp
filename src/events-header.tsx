@@ -1,7 +1,7 @@
 import { Cancel, Check } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { HBox, HBoxC, Spacer, Text, VBox } from './elem';
+import { HBoxC, Spacer, Text, VBox } from './elem';
 const logo = require("./logo-small.png");
 
 function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: CallableFunction, delay = 250) {
@@ -20,7 +20,7 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
 
         return () => clearTimeout(timer);
 
-    }, [click]);
+    }, [click, delay, onClick, onDoubleClick]);
 
     return () => setClick(prev => prev + 1);
 }

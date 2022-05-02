@@ -141,7 +141,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                                 })
                                 setNewEvent(undefined);
                             },
-                            (err) => notify.error(err.message)
+                            (err) => notify.error(err)
                         );
 
                     }
@@ -158,7 +158,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                     setEvents(evts => [...evts.filter(e => e._ref?.id !== newDoc._ref?.id), newDoc]);
                 },
                 (err) => {
-                    notify.error(err.message);
+                    notify.error(err);
                     eventChangedArg.revert();
                 }
             );
@@ -240,7 +240,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                             editEvent.event.audioUrl = newMedia.url;
                             currentPathIsNew = true;
                         } catch (err: any) {
-                            notify.error(err.message);
+                            notify.error(err);
                             return;
                         }
                     } else if (editEvent.event.clearAudio) {
@@ -269,7 +269,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                                 setNewEvent(undefined);
                             },
                             (err) => {
-                                notify.error(err.message);
+                                notify.error(err);
                                 if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
                                     //delete the file that was uploaded
                                     api.deleteFile(editEvent.event.audioPath);
@@ -292,7 +292,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                                 setNewEvent(undefined);
                             },
                             (err) => {
-                                notify.error(err.message);
+                                notify.error(err);
                                 if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
                                     //delete the file that was uploaded
                                     api.deleteFile(editEvent.event.audioPath);
@@ -309,7 +309,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
                             setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
                             setNewEvent(undefined);
                         },
-                        (err: Error) => notify.error(err.message)
+                        (err: any) => notify.error(err)
                     );
                 }}
             />

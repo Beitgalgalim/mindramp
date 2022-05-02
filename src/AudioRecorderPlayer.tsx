@@ -208,15 +208,18 @@ export default function AudioPlayerRecorder({
     }
 
     return (<div>
-        <HBox style={{ width: '100%', height: '100%', alignItems:"flex-end" }}>
-            
+        <HBox style={{ width: '100%', height: '100%', alignItems: "flex-end" }}>
+
             {showRecordButton && !recording && !paused &&
-                <Button bg={recColor} size={size}>
+                [<Spacer key={2} />,
+                <Button key={1} bg={recColor} size={size}>
                     <Mic style={{ color: 'white', fontSize: 25 }} onClick={() => start()} />
-                </Button>
+                </Button>,
+                ]
             }
             {showRecordButton && recording &&
                 <HBoxC>
+                    <Spacer />
                     <Button bg={recColor} size={size}>
                         <Stop style={{ color: 'white' }} onClick={() => stop()} />
                     </Button>
@@ -225,17 +228,20 @@ export default function AudioPlayerRecorder({
                     {paused && <Button size={size} bg={recColor}><PlayArrow style={{ color: 'white' }} onClick={() => resume()} /></Button>}
                 </HBoxC>
             }
-            <Spacer />
+
             {showPlayButton && !recording && !paused &&
-                <Button size={size} bg={playColor}>
-                    <PlayArrow style={{ color: 'white', fontSize: size/1.3 }} onClick={() => play()} />
-                </Button>
+                [<Spacer key={2} />,
+                <Button key={1} size={size} bg={playColor}>
+                    <PlayArrow style={{ color: 'white', fontSize: size / 1.3 }} onClick={() => play()} />
+                </Button>,
+                ]
             }
-            <Spacer />
             {showClearButton && !recording && !paused &&
-                <Button bg={recColor} size={size}>
+            [<Spacer key={2} />,
+                <Button key={1} bg={recColor} size={size}>
                     <Clear style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
                 </Button>
+            ]
             }
         </HBox >
 

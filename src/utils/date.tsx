@@ -12,7 +12,7 @@ export const DateFormats = {
 export function getTimes(base:Dayjs =  toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
     const ret: string[] = [];
     let endTime = base;
-    while(endTime.day() == base.day()) {
+    while(endTime.day() === base.day()) {
         endTime = endTime.add(jump, "minutes")
         ret.push(endTime.format(fmt));
     }
@@ -97,7 +97,7 @@ export function getDayDesc(date: Dayjs): string {
  */
 export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30, startDate?: string): any[] {
     const ret: any[] = [];
-    const today = startDate && startDate != "" ?
+    const today = startDate && startDate !== "" ?
         toMidNight(dayjs(startDate)):
         toMidNight(dayjs());
 
@@ -155,7 +155,7 @@ export function sortEvents(events: any[]): any[] {
 
 function getDateFromTime(timeStr: string): Dayjs {
     if (!timeStr || timeStr.trim().length === 0) {
-        throw new Error("Not a valid time");
+        throw ("Not a valid time");
     }
     timeStr = timeStr.replace("am", " am");
     timeStr = timeStr.replace("pm", " pm");
