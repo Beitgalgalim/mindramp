@@ -72,7 +72,8 @@ export default function EventsHeader(props: any) {
 
     return <div style={{
         height: props.height,
-        fontSize: '2rem',
+        fontSize: '1.9rem',
+        fontWeight: 900,
         color: "white",
         display: "flex",
         justifyContent: "center",
@@ -83,24 +84,34 @@ export default function EventsHeader(props: any) {
         {!personalize && <Text>{headerMsg}</Text>}
         {
             personalize &&
-            <HBoxC style={{ zIndex: 100 }}>
+            <HBoxC style={{ zIndex: 100}}>
                 <TextField
                     label="שם"
                     variant="outlined"
+                    dir="rtl"
                     sx={{
                         ".MuiInputBase-input": {
                             padding: '1px 3px',
-                            fontSize: '2rem',
+                            fontFamily: "Assistant",
+                            fontWeight: 900,
+                            fontSize: '1.8rem',
                             color: "white",
-                            lineHeight: '1.25rem',
+                            borderStyle:"solid",
+                            borderColor:"white",
+                            borderRadius:3,
+                            borderWidth:2,
+                            //lineHeight: '1.25rem',
+                            margin:2,
                         },
                         ".MuiInputLabel-root": {
                             fontSize: '1.7rem',
                             color: "white",
-                            top: -5,
+                            top: 1,
+                            left:10,
                         },
                         ".MuiFormControl-root": {
                             width: "40vw",
+                            borderStyle:"none",
                         }
 
                     }}
@@ -113,11 +124,11 @@ export default function EventsHeader(props: any) {
                 />
                 <VBox>
                     <Spacer />
-                    <Check style={{ fontSize: 45 }} onClick={() => {
+                    <Check style={{ fontSize: 40 }} onClick={() => {
                         savePersonalization(editName);
                         setPersonalize(false);
                     }} />
-                    <Cancel style={{ fontSize: 45 }} onClick={() => setPersonalize(false)} />
+                    <Cancel style={{ fontSize: 40 }} onClick={() => setPersonalize(false)} />
                 </VBox>
             </HBoxC>
         }

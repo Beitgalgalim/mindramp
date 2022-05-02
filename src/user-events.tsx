@@ -10,6 +10,9 @@ import EventsNavigation from "./events-navigation";
 import { Event } from './event';
 
 import { AccessTime, Mic, PermIdentity } from "@mui/icons-material";
+import "./user-events.css";
+
+import { Design } from "./theme";
 
 const multipleFactor = .7;
 const buttonSize = 50;
@@ -98,7 +101,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
         <div style={{
             flex: "0 0 auto",
             width: (isSingle ? baseWidth : baseWidth * multipleFactor) - 48,
-            height: isSingle ? 150 : 230,
+            height: isSingle ? 150 : 205,
             background: playProgress >= 0 ?
                 `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
                 "white",
@@ -107,7 +110,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             marginLeft: 24,
             marginBottom: 30,
             marginTop: 1,
-            boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)", //rgb(46 66 77 / 15%)"
+            boxShadow: Design.boxShadow,
         }}
             onClick={(e: any) => {
                 const timerHandler = () => {
@@ -141,16 +144,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             }}
 
         >
-            {/* {playProgress > -1 && <div style={{
-                backgroundColor: 'green',
-                float:"right",
-                position:"relative",
-                left:0,
-                height:"100%",
-                width: playProgress*100 + "%"
-            }} />} */}
-
-
+            
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -167,6 +161,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     </div>
                 }
                 {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
+                {<Spacer height={buttonSize}/>}
                 {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
@@ -174,7 +169,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             {!isSingle && <Spacer height={25} />}
             <HBoxSB style={{ width: undefined, paddingRight: 10, paddingLeft: 10 }}>
                 <VBox style={{ width: "75%" }}>
-                    <HBox style={{ alignItems: "flex-start", width: "100%" }}>
+                    <HBox style={{ alignItems: "center", width: "100%" }}>
                         <AccessTime style={{ color: "#6F9CB6" }} />
                         <Spacer />
                         <Text aria-hidden="true" fontSize="0.7em">{t1 + " - " + t2}</Text>
@@ -194,7 +189,8 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                             <Mic style={{ fontSize: buttonSize }} />
                         </div>
                     }
-                    {/* {isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
+                    {/* {isSingle ? <PermIdentity style={{ fontSize: buttonSize }} />:<Spacer height={buttonSize}/>} */}
+                    {<Spacer height={buttonSize}/>}
                 </HBox>
             </HBoxSB>
 
@@ -203,7 +199,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     position: "relative",
                     display: "flex",
                     alignItems: "center",
-                    bottom: 0,
+                    bottom: 5,
                     right: 10,
                     height: 25,
                     width: "fit-content",
@@ -328,6 +324,8 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     return <div dir={"rtl"} style={{
         backgroundColor: "#0078C3",
         fontSize: 24, //default text size 
+        fontFamily :"Assistant",
+        fontWeight: 700,
         color: "#495D68", //default text color
         height: "100vh",
 
