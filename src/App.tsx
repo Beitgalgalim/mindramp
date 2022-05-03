@@ -77,7 +77,7 @@ function App(props: any) {
   return (
     <div className="App" dir="rtl">
       {msg && <Collapse in={msg.open} timeout={500} style={{ 
-          position: 'absolute', 
+          position: 'fixed', 
           display:"flex", justifyContent:"center",
           top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000 }} >
         <Alert style={{

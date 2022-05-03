@@ -102,7 +102,7 @@ export async function upsertEvent(event: Event | EventApi, ref: DocumentReferenc
             dbDoc.recurrent.gid = docRef.id;
         }
         return setDoc(docRef, dbDoc).then(() => {
-            eventObj._ref = ref;
+            eventObj._ref = docRef;
             return eventObj;
         });
     }

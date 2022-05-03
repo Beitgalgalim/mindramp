@@ -4,7 +4,7 @@ import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
 import { EditEventsProps, MediaResource } from './types';
-import { AccessTime, Edit, Image, Mic, Notes, Repeat, Title } from '@mui/icons-material';
+import { AccessTime, Clear, Edit, Image, Mic, Notes, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
@@ -55,14 +55,14 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
             position: 'absolute',
             top: "10vh",
             left: "10vw",
-            height: "80vh",
+            height: "85vh",
             width: '80vw',
             backgroundColor: Colors.PopupBackground,
             zIndex: 500,
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <h1>{ref ? "עדכון ארוע" : "ארוע חדש"}</h1>
+            <Text fontSize={45} textAlign="center">{ref ? "עדכון ארוע" : "ארוע חדש"}</Text>
             {editImage && <MediaPicker media={media}
                 onSelect={(rm: MediaResource) => {
                     setImageUrl(rm.url);
@@ -72,7 +72,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
             />
             }
 
-            <VBox style={{ margin: "10%" }}>
+            <VBox style={{ marginRight: "10vw", marginTop: "3vh" }}>
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Title />
@@ -114,7 +114,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={4} spacing={2} >
                         <HBoxSB >
                             {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: Design.eventImageSize, height:  Design.eventImageSize }} /> : <Text>אין תמונה</Text>}
+                            <HBox>
+                            {imageUrl && <Clear onClick={() => setImageUrl(undefined)} style={{fontSize:35}}/>}
                             <Edit onClick={() => setEditImage(true)} style={{fontSize:35}}/>
+                            </HBox>
                         </HBoxSB>
                     </Grid>
                 </Grid>
