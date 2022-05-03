@@ -15,6 +15,7 @@ export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
+    const [reloadMedia, setReloadMedia] = useState<number>(0);
 
     useEffect(() => {
         if (!props.connected)
@@ -22,7 +23,7 @@ export default function Admin(props: AdminProps) {
         api.getMedia().then((m:MediaResource[]) => setMedia(m));
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.connected]);
+    }, [props.connected, reloadMedia]);
 
     let adminTab = location.hash ? parseInt(location.hash.substr(1)) : 0;
     return (<div dir="rtl">
@@ -49,7 +50,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
         
         <TabPanel key={"1"} value={adminTab} index={1} >
-            {adminTab === 1 && <Media notify={props.notify} media={media}/>}
+            {adminTab === 1 && <Media notify={props.notify} media={media} reload={()=>setReloadMedia(old=>old+1)}/>}
         </TabPanel>
 
     </div>);

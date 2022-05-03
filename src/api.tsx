@@ -6,7 +6,7 @@ import {
     where
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from "firebase/storage";
 
 import {
     getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
@@ -189,20 +189,29 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
         contentType: 'image/jpeg',
     };
 
-    // Upload the file and metadata
-    const uploadTask = uploadBytes(resourceRef, file, metadata);
-    return uploadTask.then(val => {
-        return getDownloadURL(val.ref).then(url => {
-            const res = {
-                name,
-                type,
-                url,
-                path: val.ref.fullPath,
-            };
-            const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
-            return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
-        })
-    });
+    // Verify file does not exist:
+    return getMetadata(resourceRef).then(
+        //success
+        (md) => { throw ("קובץ בשם זה כבר קיים") },
+        () => {
+            // Fail - new file
+            // Upload the file and metadata
+            const uploadTask = uploadBytes(resourceRef, file, metadata);
+            return uploadTask.then(val => {
+                return getDownloadURL(val.ref).then(url => {
+                    const res = {
+                        name,
+                        type,
+                        url,
+                        path: val.ref.fullPath,
+                    };
+                    const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
+                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                });
+            });
+
+        });
+
 }
 
 export async function addAudio(name: string, data: Blob): Promise<MediaResource> {

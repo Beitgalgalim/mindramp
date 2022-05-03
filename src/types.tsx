@@ -50,6 +50,7 @@ export interface Connected {
 
 export interface WithMedia {
     media: MediaResource[];
+    reload?: CallableFunction;
 };
 
 interface WindowSize {
