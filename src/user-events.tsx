@@ -13,6 +13,7 @@ import { AccessTime, Mic, PermIdentity } from "@mui/icons-material";
 import "./user-events.css";
 
 import { Design } from "./theme";
+import { CircularProgress } from "@material-ui/core";
 
 const multipleFactor = .7;
 const buttonSize = 50;
@@ -65,6 +66,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
     }
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
+    const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
 
@@ -79,7 +81,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
 
     useEffect(() => {
         console.log(event.title, "mounted")
-        return ()=> {
+        return () => {
             console.log(event.title, "unmounted")
             audioRef.current.src = ""
         }
@@ -95,6 +97,10 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
         <Spacer height={2} />
         {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
     </div>
+
+    if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
+        setPlayProgress(-1);
+    }
 
     const isSingle = !!single;
     return (
@@ -116,6 +122,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                 const timerHandler = () => {
                     const { currentTime, duration } = audioRef.current;
                     const prog = Math.floor(currentTime / duration * 100);
+                    if (prog > 0) setEventAudioLoading(false);
                     setPlayProgress(prog)
                 }
 
@@ -125,13 +132,15 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     if (!audioRef.current.paused) {
                         audioRef.current.pause();
                         stopTimer();
+                        setEventAudioLoading(false);
                         return;
-                    } else if (audioRef.current.currentTime > 0) {
+                    } else if (audioRef.current.src === event.audioUrl) {
                         audioRef.current.play()
                         startTimer(timerHandler, 200)
                         return;
                     }
 
+                    setEventAudioLoading(true);
                     audioRef.current.src = event.audioUrl;
                     audioRef.current.onended = () => {
                         stopTimer();
@@ -144,7 +153,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             }}
 
         >
-            
+
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -161,7 +170,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     </div>
                 }
                 {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
-                {<Spacer height={buttonSize}/>}
+                {<Spacer height={buttonSize} />}
                 {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
@@ -178,19 +187,16 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
                 </VBox>
                 <HBox>
+                {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-                        event.audioUrl && <div style={{ height: buttonSize, width: buttonSize, display: "flex" }}>
-                            {/* <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
-                                showPlayButton={event.audioUrl !== ""}
-                                audioUrl={event.audioUrl}
-                                buttonSize={buttonSize - 5} 
-                                onPlayProgress={()=>{}}
-                                /> */}
+                        
+                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize*2, display: "flex" }}>
                             <Mic style={{ fontSize: buttonSize }} />
+
                         </div>
                     }
                     {/* {isSingle ? <PermIdentity style={{ fontSize: buttonSize }} />:<Spacer height={buttonSize}/>} */}
-                    {<Spacer height={buttonSize}/>}
+                    {<Spacer height={buttonSize} />}
                 </HBox>
             </HBoxSB>
 
@@ -324,7 +330,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     return <div dir={"rtl"} style={{
         backgroundColor: "#0078C3",
         fontSize: 24, //default text size 
-        fontFamily :"Assistant",
+        fontFamily: "Assistant",
         fontWeight: 700,
         color: "#495D68", //default text color
         height: "100vh",
@@ -332,7 +338,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     }}
     >
 
-        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset}/>
+        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} />
         <EventsMain height={"88vh"}>
             <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />
             <EventsContainer height={"78vh"}>
