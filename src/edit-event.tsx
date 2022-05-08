@@ -47,16 +47,16 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
         setAudioPath(event.audioPath);
     }, [inEvent]);
 
-
+    const narrow = window.innerWidth < 430;
 
 
     return (
         <div dir="rtl" style={{
             position: 'absolute',
             top: "10vh",
-            left: "10vw",
+            left: narrow? "2vw": "10vw",
             height: "85vh",
-            width: '80vw',
+            width: narrow? "96vw": "80vw",
             backgroundColor: Colors.PopupBackground,
             zIndex: 500,
             borderRadius: 15,
@@ -155,7 +155,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <Repeat />
                     </Grid>
-                    <Grid container item xs={9} spacing={2} >
+                    <Grid container item xs={5} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
                             {/* <FormControlLabel 
@@ -176,7 +176,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
 
                             <Spacer width={25} />
                             {recurrent && <ComboBox 
-                                style={{width: 200}}
+                                style={{width: "30vw"}}
                                 value={recurrent} 
                                 items={RecurrentEventFieldKeyValue}
                                 onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}
@@ -216,6 +216,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                 }}>שמור</Button>
                 <Spacer width={25} />
                 {ref && onDelete && <Button variant="contained" onClick={() => onDelete(inEvent, ref)}>מחק</Button>}
+                {ref && onDelete && <Spacer width={25} />}
                 <Button variant="contained" onClick={() => onCancel()} >בטל</Button>
 
             </HBoxC>
