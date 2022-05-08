@@ -9,7 +9,7 @@ import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { Event } from './event';
+import { Event, EventFrequency, RecurrentEventFieldKeyValue } from './event';
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
@@ -28,7 +28,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
     const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
-    const [recurrent, setRecurrent] = useState<string | undefined>(undefined);
+    const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
 
     useEffect(() => {
         const event = Event.fromEventAny(inEvent.event);
@@ -39,7 +39,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
             setRef(event._ref);
         }
         if (inEvent.editAllSeries && recu) {
-            setRecurrent(recu.freq === "weekly" ? "שבועי" : recu.freq === "daily" ? "יומי" : "");
+            setRecurrent(recu.freq);
         }
         setNotes(event.notes);
         setImageUrl(event.imageUrl);
@@ -163,7 +163,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                                 control={ */}
                             <Checkbox onChange={(evt) => {
                                 if (evt.currentTarget.checked) {
-                                    setRecurrent("שבועי");
+                                    setRecurrent("weekly");
                                 } else {
                                     setRecurrent(undefined);
                                 }
@@ -175,8 +175,11 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
 
 
                             <Spacer width={25} />
-                            {recurrent && <ComboBox value={recurrent} items={["שבועי", "יומי"]}
-                                onSelect={(newValue: string) => setRecurrent(newValue)}
+                            {recurrent && <ComboBox 
+                                style={{width: 200}}
+                                value={recurrent} 
+                                items={RecurrentEventFieldKeyValue}
+                                onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}
                                 readOnly={true}
                             />
                             }
@@ -190,7 +193,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                 <Button variant="contained" onClick={() => {
 
                     const recurrentField = inEvent.event.recurrent || {};
-                    recurrentField.freq = recurrent === "שבועי" ? "weekly" : recurrent === "יומי" ? "daily" : "none";
+                    recurrentField.freq = recurrent || "none";
 
                     onSave(
                         {

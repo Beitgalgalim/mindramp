@@ -95,7 +95,7 @@ export function getDayDesc(date: Dayjs): string {
     when exploding, we explode from *daysBefore* today until *daysAfter* today
  }
  */
-export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30, startDate?: string): any[] {
+export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 60, startDate?: string): any[] {
     const ret: any[] = [];
     const today = startDate && startDate !== "" ?
         toMidNight(dayjs(startDate)):
@@ -106,11 +106,16 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
             const rec: RecurrentEventField = event.recurrent;
             const start = toMidNight(dayjs(event.start));
             const weekDay = start.day();
+            
             for (let i = -daysBefore; i < daysAfter; i++) {
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
-                if (!rec.exclude?.includes(dateStr) && start.diff(date, "days") <= 0) {
-                    if (rec.freq === "daily" || (rec.freq === "weekly" && date.day() === weekDay)) {
+                const daysSinceStart = - start.diff(date, "days");
+                if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
+                    if (rec.freq === "daily" || 
+                        (rec.freq === "weekly" && date.day() === weekDay) ||
+                        (rec.freq === "biWeekly" && date.day() === weekDay && daysSinceStart % 14 === 0)
+                        ) {
                         const eventObj = { ...event }
                         adjustEvent(eventObj, date);
                         ret.push(eventObj);

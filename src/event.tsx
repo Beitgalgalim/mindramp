@@ -3,12 +3,24 @@ import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
 import dayjs from 'dayjs';
 
+export type EventFrequency = "daily" | "weekly" | "biWeekly" | "custom" | "none";
+
+
 export interface RecurrentEventField {
-    freq?: "daily" | "weekly" | "custom" | "none",
+    freq?: EventFrequency,
     daysOfWeek?: number[],
     gid?: string,
     exclude?: string[]
 }
+
+export const RecurrentEventFieldKeyValue = [
+    { key: "daily", value: "יומי" },
+    { key: "weekly", value: "שבועי" },
+    { key: "biWeekly", value: "אחת לשבועיים" },
+    { key: "custom", value: "מותאם" },
+    { key: "none", value: "ללא" },
+];
+
 
 export class Event {
     date: string = "";
@@ -26,7 +38,7 @@ export class Event {
     clearAudio?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
-    tag?:string;
+    tag?: string;
 
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;

@@ -31,9 +31,9 @@ export const ResponsiveTab = withStyles({
     },
     textColorPrimary: {
         color: "#737373",
-        fontSize:25,
+        fontSize: 25,
         '&$selected': {
-            backgroundColor:"#A8A8A8",
+            backgroundColor: "#A8A8A8",
             //FontFace: "bold",
             //textDecoration: "underline"
         }
@@ -69,16 +69,16 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
     return (
         <HBoxC onClick={onClick} style={{ width: "100%" }}>
             <input
-                style={{ width: "80%", borderWidth: 0, borderRadius:4,backgroundColor: (invalid ? "red" : "transparent") }}
+                style={{ width: "80%", borderWidth: 0, borderRadius: 4, backgroundColor: (invalid ? "red" : "transparent") }}
                 type="text"
                 ref={ref}
                 readOnly={props.readOnly === true}
-                onMouseOver={(e) => { 
+                onMouseOver={(e) => {
                     if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
                     e.currentTarget.style.textDecoration = "underline";
                 }}
-                onMouseLeave={(e) => { 
-                    if (!invalid) e.currentTarget.style.backgroundColor = 'transparent' 
+                onMouseLeave={(e) => {
+                    if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
                     e.currentTarget.style.textDecoration = "none";
                 }}
                 onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
@@ -96,7 +96,7 @@ export function ComboBox(props: any) {
     const [localValue, setLocalValue] = React.useState<string>("");
 
     const localElRef = React.useRef<HTMLDivElement | null>(null);
-    const currentIndex = items.findIndex((item: any) => item === value);
+    const currentIndex = items.findIndex((item: any) => item === value || item?.key === value);
 
     const handleElClick = () => {
         setOpen(true);
@@ -115,10 +115,10 @@ export function ComboBox(props: any) {
     const renderItem = ({ index, style }: { index: number, style: any }) => (
         <ListItem style={{ padding: 0, ...style }} key={index} selected={currentIndex === index} >
             <ListItemButton style={{ padding: 0 }}
-                onClick={() => props.onSelect(items[index])}>
+                onClick={() => props.onSelect(items[index]?.key || items[index])}>
                 <ListItemText
                     disableTypography
-                    primary={<Typography style={{ fontSize: 12 }}>{items[index]}</Typography>}
+                    primary={<Typography style={{ fontSize: 12 }}>{items[index]?.value || items[index]}</Typography>}
                 />
             </ListItemButton>
         </ListItem>
@@ -137,7 +137,7 @@ export function ComboBox(props: any) {
                     }}
                     onChange={(newVal: string) => setLocalValue(newVal)}
                     onBlur={(newVal: string) => props.onChange && props.onChange(newVal)}
-                    value={localValue}
+                    value={items.find((item:any) => item?.key === localValue)?.value || localValue}
                     readOnly={props.readOnly === true}
                     invalid={props.invalid}
                 />
@@ -145,17 +145,17 @@ export function ComboBox(props: any) {
             <Popper
                 open={open}
                 anchorEl={props.elRef ? props.elRef.current : localElRef.current}
-                transition disablePortal 
-                style={{ 
-                    zIndex: 1001, 
+                transition disablePortal
+                style={{
+                    zIndex: 1001,
                     backgroundColor: 'lightgray',
-                    padding:2,
-                    borderRadius:3,
-                    minWidth:80,
-                    minHeight:100,
-                    scrollbarWidth:"thin",
+                    padding: 2,
+                    borderRadius: 3,
+                    minWidth: 80,
+                    minHeight: 100,
+                    scrollbarWidth: "thin",
                     boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
-                    overflow:"scroll",
+                    overflow: "scroll",
 
                 }}>
 
