@@ -1,4 +1,5 @@
-import dayjs, { Dayjs } from "dayjs";
+import  { Dayjs } from "dayjs";
+import dayjs from '../localDayJs';
 import { RecurrentEventField } from "../event";
 
 export const DateFormats = {
@@ -9,10 +10,10 @@ export const DateFormats = {
     TIME: "HH:mm"
 };
 
-export function getTimes(base:Dayjs =  toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
+export function getTimes(base: Dayjs = toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
     const ret: string[] = [];
     let endTime = base;
-    while(endTime.day() === base.day()) {
+    while (endTime.day() === base.day()) {
         endTime = endTime.add(jump, "minutes")
         ret.push(endTime.format(fmt));
     }
@@ -98,7 +99,7 @@ export function getDayDesc(date: Dayjs): string {
 export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 60, startDate?: string): any[] {
     const ret: any[] = [];
     const today = startDate && startDate !== "" ?
-        toMidNight(dayjs(startDate)):
+        toMidNight(dayjs(startDate)) :
         toMidNight(dayjs());
 
     events.forEach((event: any) => {
@@ -106,16 +107,16 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
             const rec: RecurrentEventField = event.recurrent;
             const start = toMidNight(dayjs(event.start));
             const weekDay = start.day();
-            
+
             for (let i = -daysBefore; i < daysAfter; i++) {
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 const daysSinceStart = - start.diff(date, "days");
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
-                    if (rec.freq === "daily" || 
+                    if (rec.freq === "daily" ||
                         (rec.freq === "weekly" && date.day() === weekDay) ||
                         (rec.freq === "biWeekly" && date.day() === weekDay && daysSinceStart % 14 === 0)
-                        ) {
+                    ) {
                         const eventObj = { ...event }
                         adjustEvent(eventObj, date);
                         ret.push(eventObj);
@@ -165,8 +166,8 @@ function getDateFromTime(timeStr: string): Dayjs {
     timeStr = timeStr.replace("am", " am");
     timeStr = timeStr.replace("pm", " pm");
 
+    return dayjs("2000/01/01 " + timeStr);
 
-    return dayjs("2000-01-01 " + timeStr);
 
 }
 

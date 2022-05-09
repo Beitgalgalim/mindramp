@@ -8,7 +8,8 @@ import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { DateFormats, day2DayName, getTimes, MonthMap, replaceDatePreserveTime2, validTime } from './utils/date';
 
-const dayjs = require('dayjs');
+//const dayjs = require('dayjs');
+import dayjs from './localDayJs'
 
 
 

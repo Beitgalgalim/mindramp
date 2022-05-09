@@ -1,4 +1,4 @@
-import dayjs, { Dayjs } from "dayjs";
+import  { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
@@ -14,6 +14,9 @@ import "./user-events.css";
 
 import { Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
+
+import dayjs from './localDayJs'
+
 
 const multipleFactor = .7;
 const buttonSize = 50;
@@ -227,6 +230,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
+    const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
@@ -263,21 +267,21 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         showDateTime = dayjs(showDateTime.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
     }
 
-    if (startDate !== showDateTime.format(DateFormats.DATE)) {
-        setStartDate(showDateTime.format(DateFormats.DATE))
+    if (startDate !== dateTimeNoOffset.format(DateFormats.DATE)) {
+        setStartDate(dateTimeNoOffset.format(DateFormats.DATE))
     }
 
     useEffect(() => {
         if (!connected || startDate === "")
             return;
-
+        setLoadingEvents(true);
         api.getEvents().then(evts => {
             const evtsWithId = evts.map((e, i) => {
                 e.tag = "" + i
                 return e;
             })
             setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
-        })
+        }).finally(()=>setLoadingEvents(false));
     }, [connected, startDate]);
 
 
@@ -359,7 +363,9 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                     }
                 </HBox>))}
                 {eventsArray.length === 0 && <VBoxC style={{ height: "50vh" }}>
-                    <Text textAlign={"center"} fontSize={"2em"}>אין אירועים</Text>
+                    <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : "אין אירועים"}</Text>
+                    {loadingEvents && <CircularProgress size={buttonSize} />}
+
                 </VBoxC>}
             </EventsContainer>
         </EventsMain>

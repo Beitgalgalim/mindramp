@@ -1,7 +1,7 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
-import dayjs from 'dayjs';
+import dayjs from './localDayJs'
 
 export type EventFrequency = "daily" | "weekly" | "biWeekly" | "custom" | "none";
 
