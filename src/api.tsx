@@ -16,7 +16,7 @@ import {
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource } from './types';
+import { Collections, MediaResource, GuideInfo } from './types';
 import { Event } from './event';
 
 let app: FirebaseApp;
@@ -70,6 +70,18 @@ export async function getUserInfo(user: string, pwd: string) {
 
 export function getEvents(): Promise<Event[]> {
     return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
+}
+
+export function getGuides(): Promise<GuideInfo[]> {
+    return _getCollection(Collections.GUIDES_COLLECTION).then(items => items.map(d =>
+        ({
+            name: d.name,
+            url: d.url,
+            path: d.path || "",
+   
+            _ref: d._ref
+        })));
+
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -212,6 +224,42 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
         });
 
+}
+
+
+export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
+    const storage = getStorage(app);
+    const storageRef = ref(storage);
+    const mediaRef = ref(storageRef, 'media');
+    const folderRef = ref(mediaRef, 'guides_pics');
+    const resourceRef = ref(folderRef, pic.name);
+
+    /** @type {any} */
+    const metadata = {
+        contentType: 'image/jpeg',
+    };
+
+    // Verify guide does not exist:
+    return getMetadata(resourceRef).then(
+        //success
+        (md) => { throw ("מדריך בשם זה כבר קיים") },
+        () => {
+            // Fail - new guide name
+            // Upload his/her pic and metadata
+            const uploadTask = uploadBytes(resourceRef, pic, metadata);
+            return uploadTask.then(val => {
+                return getDownloadURL(val.ref).then(url => {
+                    const res = {
+                        name,
+                        path: val.ref.fullPath,
+                        url,
+                    };
+                    const docRef = doc(collection(db, Collections.GUIDES_COLLECTION));
+                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                });
+            });
+
+        });
 }
 
 export async function addAudio(name: string, data: Blob): Promise<MediaResource> {
