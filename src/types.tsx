@@ -3,6 +3,7 @@ import { Event } from './event';
 export const Collections = {
     EVENT_COLLECTION: "event",
     MEDIA_COLLECTION: "media",
+    GUIDES_COLLECTION: "guides",
 }
 
 
@@ -23,6 +24,13 @@ export interface NotificationMessage {
 }
 
 export type setDateFunc = (d: string) => void;
+
+export interface GuideInfo {
+    name: string,
+    url: string,
+    path: string,
+    _ref?: DocumentReference
+}
 
 export interface MediaResource {
     name: string,
@@ -53,6 +61,11 @@ export interface WithMedia {
     reload?: CallableFunction;
 };
 
+export interface WithGuidesInfo {
+    guides_info: GuideInfo[];
+    reload?: CallableFunction;
+};
+
 interface WindowSize {
     w: number,
     h: number
@@ -77,12 +90,18 @@ export interface AdminProps extends Connected, Notifying, WithUser { }
 export interface EventsProps extends Connected, Notifying, WithMedia { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
 export interface MediaProps extends Notifying, WithMedia { }
+export interface GuidesProps extends Notifying, WithGuidesInfo { }
 
 export interface EditEventsProps extends WithMedia, Notifying {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
     onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
+}
+
+export interface EditGuideInfoProps {
+   guide_info : GuideInfo;
+   afterSaved: (guide_info : GuideInfo) => void;
 }
 
 export interface DatePickerProps {
