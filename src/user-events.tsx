@@ -1,4 +1,4 @@
-import  { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
@@ -60,16 +60,49 @@ function getBeforeTimeText(minutes: number): string {
 }
 
 
-function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, stopTimer }:
+function EventElement({ event, single, firstInGroup, now, audioRef }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
-        audioRef: MutableRefObject<HTMLAudioElement>,
-        startTimer: (callback: () => void, delay: number) => void,
-        stopTimer: () => void,
+        audioRef: MutableRefObject<HTMLAudioElement>
     }
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
+    const intervalRef = useRef<NodeJS.Timer>();
+
+    const startTimer = () => {
+        // Clear any timers already running
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+
+        intervalRef.current = setInterval(() => {
+            if (audioRef?.current?.src === event.audioUrl) {
+                const { currentTime, duration } = audioRef.current;
+                const prog = Math.floor(currentTime / duration * 100);
+                if (prog > 0) {
+                    console.log("audio loading off 1", event.title)
+                    setEventAudioLoading(false);
+                }
+
+                setPlayProgress(prog)
+            } else {
+                stopTimer();
+                setPlayProgress(-1);
+            }
+        }, 200);
+    }
+
+    const stopTimer = () => {
+        if (intervalRef.current)
+            clearInterval(intervalRef.current);
+
+        setEventAudioLoading(false);
+        intervalRef.current = undefined;
+    }
+
+
+
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
 
@@ -121,37 +154,39 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             marginTop: 1,
             boxShadow: Design.boxShadow,
         }}
-            onClick={(e: any) => {
-                const timerHandler = () => {
-                    const { currentTime, duration } = audioRef.current;
-                    const prog = Math.floor(currentTime / duration * 100);
-                    if (prog > 0) setEventAudioLoading(false);
-                    setPlayProgress(prog)
-                }
-
+            onClick={() => {
                 // plays the audio if exists
                 if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
-                    console.log(e.detail)
-                    if (!audioRef.current.paused) {
-                        audioRef.current.pause();
-                        stopTimer();
-                        setEventAudioLoading(false);
-                        return;
-                    } else if (audioRef.current.src === event.audioUrl) {
-                        audioRef.current.play()
-                        startTimer(timerHandler, 200)
+                    // console.log(e.detail)
+                    if (audioRef.current.src === event.audioUrl) {
+                        // avoid multiple clicks
+                        if (eventAudioLoading) {
+                            console.log("audio is still loading - ignore click")
+                            return;
+                        }
+
+                        if (audioRef.current.paused) {
+                            audioRef.current.play().then(() => startTimer());
+                        } else {
+                            audioRef.current.pause();
+                            stopTimer();
+                            setEventAudioLoading(false);
+                            console.log("audio loading off 2")
+                        }
+
                         return;
                     }
 
                     setEventAudioLoading(true);
+                    console.log("audio start loading")
                     audioRef.current.src = event.audioUrl;
                     audioRef.current.onended = () => {
                         stopTimer();
                         console.log("ended")
+                        setEventAudioLoading(false);
                         setPlayProgress(-1);
                     }
-                    audioRef.current.play();
-                    startTimer(timerHandler, 200);
+                    audioRef.current.play().then(() => startTimer());
                 }
             }}
 
@@ -190,10 +225,10 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
                 </VBox>
                 <HBox>
-                {eventAudioLoading && <CircularProgress size={buttonSize} />}
+                    {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-                        
-                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize*2, display: "flex" }}>
+
+                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize * 2, display: "flex" }}>
                             <Mic style={{ fontSize: buttonSize }} />
 
                         </div>
@@ -234,23 +269,6 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     const [startDate, setStartDate] = useState<string>("");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
-    const intervalRef = useRef<NodeJS.Timer>();
-
-    const startTimer = (callback: () => void, delay: number) => {
-        // Clear any timers already running
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
-
-        intervalRef.current = setInterval(() => {
-            callback()
-        }, delay);
-    }
-
-    const stopTimer = () => {
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
-        intervalRef.current = undefined;
-    }
 
     const location = useLocation();
     let showDateTime: Dayjs;
@@ -281,7 +299,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                 return e;
             })
             setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
-        }).finally(()=>setLoadingEvents(false));
+        }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
 
 
@@ -357,8 +375,6 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                         evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
                             single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
                             audioRef={audioRef}
-                            startTimer={startTimer}
-                            stopTimer={stopTimer}
                         />))
                     }
                 </HBox>))}
