@@ -1,4 +1,4 @@
-import  { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
 import dayjs from '../localDayJs';
 import { RecurrentEventField } from "../event";
 
@@ -9,6 +9,13 @@ export const DateFormats = {
     TIME_AM_PM: "hh:mma",
     TIME: "HH:mm"
 };
+
+
+export interface Time {
+    hours: number;
+    minutes: number;
+    error?: string;
+}
 
 export function getTimes(base: Dayjs = toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
     const ret: string[] = [];
@@ -171,12 +178,77 @@ function getDateFromTime(timeStr: string): Dayjs {
 
 }
 
+const errWrongHourFormat = "Invalid: wrong hours format";
+
+const errWrongMinuteFormat = "Invalid: wrong minutes format";
+
+export function parseTime(timeStr: string): Time {
+
+    // valid formats: 11:00, 11:00am, 11:00 am, 1:05am, 23:00
+
+    const retTime: Time = { hours: 0, minutes: 0 };
+
+    if (!timeStr) {
+        retTime.error = "Invalid: empty time";
+        return retTime;
+    }
+
+    timeStr = timeStr.trim();
+    if (timeStr.length < 4) {
+        retTime.error = "Invalid: wrong time format ";
+        return retTime;
+    }
+    const colonPos = timeStr.indexOf(":");
+    if (colonPos < 1 || colonPos > 2) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+    const hour = parseInt(timeStr.substr(0, colonPos));
+    if (isNaN(hour)) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+    if (hour < 0 || hour > 23) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+
+    retTime.hours = hour;
+
+    const minute = parseInt(timeStr.substr(colonPos + 1, 2));
+    if (isNaN(minute)) {
+        retTime.error = errWrongMinuteFormat;
+        return retTime;
+    }
+    if (minute < 0 || minute > 59) {
+        retTime.error = errWrongMinuteFormat;
+        return retTime;
+    }
+    retTime.minutes = minute;
+
+    //check if am/pm exist
+    if (timeStr.length - colonPos > 3) {
+        let amPmStr = timeStr.substring(timeStr.length - colonPos);
+        amPmStr = amPmStr.trim().toLowerCase();
+
+        if (amPmStr.length > 0 && amPmStr !== "am" && amPmStr !== "pm") {
+            retTime.error = "Invalid: wrong suffix. expecting am or pm";
+            return retTime;
+        }
+        if (amPmStr.length > 0 && amPmStr === "pm" && hour < 13) {
+            retTime.hours = hour + 12;
+        }
+    }
+
+    return retTime;
+}
+
+
 export function validTime(timeStr: string): boolean {
-    if (!timeStr || timeStr.trim().length === 0) {
+    if (parseTime(timeStr).error) {
         return false;
     }
-    const date = getDateFromTime(timeStr);
-    return date.isValid();
+    return true;
 }
 
 export function timeRange2Text(timeStr1: string, timeStr2: string): string {
