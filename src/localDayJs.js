@@ -1,8 +1,11 @@
-import origDayjs from "dayjs";
+import dayjs from "dayjs";
 
-const dayjs = function(datStr) {
-    // Safari does not support parsing dates with hyphens
-    return origDayjs(datStr?.replace(/-/g, "/"))
-};
+// const dayjs = function(dateIn) {
+//     // Safari does not support parsing dates with hyphens
+//     if (dateIn && typeof dateIn === "string") {
+//         //dateIn = dateIn.replace(/-/g, "/");
+//     }
+//     return origDayjs(dateIn)
+// };
 
 export default dayjs;
