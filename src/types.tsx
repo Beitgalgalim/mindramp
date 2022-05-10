@@ -1,9 +1,19 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { Event } from './event';
-export const Collections = {
-    EVENT_COLLECTION: "event",
-    MEDIA_COLLECTION: "media",
-}
+
+console.log(process.env)
+export const Collections = 
+//(window as any).devMode === true ?
+process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
+    {
+        EVENT_COLLECTION: "event_dev",
+        MEDIA_COLLECTION: "media_dev",
+    }
+    :
+    {
+        EVENT_COLLECTION: "event",
+        MEDIA_COLLECTION: "media",
+    }
 
 
 export interface MsgButton {
@@ -90,26 +100,26 @@ export interface DatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
-    style?:any
+    style?: any
 }
 
 export interface RecorderProps {
-    notify?:Notify;
-    buttonSize?:number;
-    showRecordButton:boolean;
-    showPlayButton:boolean;
-    showClearButton?:boolean;
-    audioUrl?:string;
-    audioBlob?:Blob;
+    notify?: Notify;
+    buttonSize?: number;
+    showRecordButton: boolean;
+    showPlayButton: boolean;
+    showClearButton?: boolean;
+    audioUrl?: string;
+    audioBlob?: Blob;
     onCapture?: (blob: Blob) => void;
     onClear?: Callback;
-    onPlayProgress?:(percent:number)=>void;
+    onPlayProgress?: (percent: number) => void;
 }
 
 export interface HourLinesProps extends WithWindowSize {
-     sliceWidth: number;
-     height: number;
-     hours: string[];
-     sliceEachHour: number;
-     vertical: boolean;
+    sliceWidth: number;
+    height: number;
+    hours: string[];
+    sliceEachHour: number;
+    vertical: boolean;
 }
