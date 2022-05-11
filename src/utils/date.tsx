@@ -21,9 +21,11 @@ export function getTimes(base: Dayjs = toMidNight(dayjs()), jump: number = 30, f
     const ret: string[] = [];
     let endTime = base;
     while (endTime.day() === base.day()) {
-        endTime = endTime.add(jump, "minutes")
         ret.push(endTime.format(fmt));
+        endTime = endTime.add(jump, "minutes")
     }
+    // Add midnight to list
+    ret.push(endTime.format(fmt));
     return ret;
 }
 
