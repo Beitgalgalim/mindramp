@@ -166,7 +166,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
     }
 
     return (<div
-        style={{ display: "inline-grid", height: "100vh", width: "100vw"}}
+        style={{ display: "inline-grid", width: "100vw", height:"90vh"}}
     >
         {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
             <Fab
@@ -210,6 +210,8 @@ export default function Events({ connected, notify, media }: EventsProps) {
             dayMaxEvents={true}
             weekends={true}
             weekText={"שבוע"}
+            slotMinTime={"06:00:00"}
+            slotMaxTime={"22:00:00"}
             initialEvents={[]}
             handleWindowResize={true}
             select={handleDateSelect}
