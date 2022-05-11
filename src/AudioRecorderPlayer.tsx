@@ -45,6 +45,7 @@ function writeUTFBytes(view: any, offset: number, str: string) {
     }
 }
 
+
 export default function AudioPlayerRecorder({
     showRecordButton, showPlayButton, showClearButton, notify, audioUrl, audioBlob, onCapture, onClear, buttonSize
 }: RecorderProps) {
@@ -66,7 +67,10 @@ export default function AudioPlayerRecorder({
                 //window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 const AudioContext = window.AudioContext || // Default
                     (window as any).webkitAudioContext; // Safari and old versions of Chrome
-                const context = new AudioContext();
+                const context = new AudioContext({
+                    //latencyHint?: AudioContextLatencyCategory | number;
+                    sampleRate
+                });
 
                 // creates an audio node from the microphone incoming stream
                 const mss = context.createMediaStreamSource(stream);
@@ -77,23 +81,22 @@ export default function AudioPlayerRecorder({
                 const numberOfOutputChannels = 2;
                 const rec = context.createScriptProcessor(bufferSize, numberOfInputChannels, numberOfOutputChannels);
 
-                setRecData((d: any) => {
-                    rec.onaudioprocess = (e) => {
-                        setRecData((rd: any) => {
-                            const nrd = {
-                                leftChannel: [...rd.leftChannel, new Float32Array(e.inputBuffer.getChannelData(0))],
-                                rightChannel: [...rd.rightChannel, new Float32Array(e.inputBuffer.getChannelData(1))],
-                                length: rd.length + bufferSize
-                            }
-                            return nrd;
-                        });
-                    }
-                    return {
-                        leftChannel: [],
-                        rightChannel: [],
-                        length: 0,
-                    }
-                })
+                setRecData({
+                    leftChannel: [],
+                    rightChannel: [],
+                    length: 0,
+                });
+
+                rec.onaudioprocess = (e) => {
+                    setRecData((rd: any) => {
+                        const nrd = {
+                            leftChannel: [...rd.leftChannel, new Float32Array(e.inputBuffer.getChannelData(0))],
+                            rightChannel: [...rd.rightChannel, new Float32Array(e.inputBuffer.getChannelData(1))],
+                            length: rd.length + bufferSize
+                        }
+                        return nrd;
+                    });
+                }
 
                 // we connect the recorder with the input stream
                 mss.connect(rec);
@@ -237,11 +240,11 @@ export default function AudioPlayerRecorder({
                 ]
             }
             {showClearButton && !recording && !paused &&
-            [<Spacer key={2} />,
+                [<Spacer key={2} />,
                 <Button key={1} bg={recColor} size={size}>
                     <Clear style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
                 </Button>
-            ]
+                ]
             }
         </HBox >
 
