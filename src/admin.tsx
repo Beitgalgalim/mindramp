@@ -7,12 +7,14 @@ import Events from './events';
 import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
-import { AdminProps, MediaResource } from './types';
+import Guides from './guides';
+import { AdminProps, GuideInfo, MediaResource } from './types';
 import { Colors } from './theme';
 
 
 export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
+    const [guides, setGuides] = useState<GuideInfo[]> ([]);
     const location = useLocation();
     const navigate = useNavigate();
     const [reloadMedia, setReloadMedia] = useState<number>(0);
@@ -21,7 +23,7 @@ export default function Admin(props: AdminProps) {
         if (!props.connected)
             return;
         api.getMedia().then((m:MediaResource[]) => setMedia(m));
-
+        api.getGuides().then((g:GuideInfo[]) => setGuides(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadMedia]);
 
@@ -44,6 +46,8 @@ export default function Admin(props: AdminProps) {
             <ResponsiveTab label={"יומן"} />
             
             <ResponsiveTab label={"ספריית מדיה"} />
+
+            <ResponsiveTab label={"מנחים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
             <Events connected={props.connected} notify={props.notify} media={media}/>
@@ -53,5 +57,8 @@ export default function Admin(props: AdminProps) {
             {adminTab === 1 && <Media notify={props.notify} media={media} reload={()=>setReloadMedia(old=>old+1)}/>}
         </TabPanel>
 
+        <TabPanel key={"2"} value={adminTab} index={2} >
+            {adminTab === 2 && <Guides notify={props.notify} guides_info={guides} reload={()=>setReloadMedia(old=>old+2)}/>}
+        </TabPanel>
     </div>);
 }
