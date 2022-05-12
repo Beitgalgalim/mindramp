@@ -6,9 +6,10 @@ import { HBox, Spacer, ClickableText, ComboBox } from './elem';
 import ReactDatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { DateFormats, day2DayName, getTimes, MonthMap, replaceDatePreserveTime2, validTime } from './utils/date';
+import { DateFormats, day2DayName, getTimes, MonthMap, parseTime, replaceDatePreserveTime2, validTime } from './utils/date';
 
-const dayjs = require('dayjs');
+//const dayjs = require('dayjs');
+import dayjs from './localDayJs'
 
 
 
@@ -39,10 +40,10 @@ function calcDiff(d: string, newTime: string) {
     if (!d) {
         return 0;
     }
-    newTime = newTime.replace("am", " am");
-    newTime = newTime.replace("pm", " pm");
-    const newStart = dayjs(dayjs(d).format(DateFormats.DATE) + " " + newTime);
-    return newStart.diff(dayjs(d), 'minutes', true);
+    const time = parseTime(newTime);
+    const fromDate = dayjs(d);
+    const toDate = dayjs(d).hour(time.hours).minute(time.minutes)
+    return toDate.diff(fromDate, 'minutes', true);
 }
 
 

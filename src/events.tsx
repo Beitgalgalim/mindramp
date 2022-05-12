@@ -165,7 +165,9 @@ export default function Events({ connected, notify, media }: EventsProps) {
         }
     }
 
-    return (<div>
+    return (<div
+        style={{ display: "inline-grid", width: "100vw", height:"90vh"}}
+    >
         {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
             <Fab
                 color="primary" aria-label="הוסף"
@@ -183,6 +185,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
             //</div>
         }
         <FullCalendar
+
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             headerToolbar={{
@@ -207,9 +210,12 @@ export default function Events({ connected, notify, media }: EventsProps) {
             dayMaxEvents={true}
             weekends={true}
             weekText={"שבוע"}
+            slotMinTime={"06:00:00"}
+            slotMaxTime={"22:00:00"}
             initialEvents={[]}
             handleWindowResize={true}
             select={handleDateSelect}
+            selectLongPressDelay={300}
             eventChange={eventChanged}
             eventClick={(arg) => eventPressed(arg)}
             eventDidMount={(info: EventMountArg) => {

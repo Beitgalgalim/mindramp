@@ -1,4 +1,5 @@
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import dayjs from '../localDayJs';
 import { RecurrentEventField } from "../event";
 
 export const DateFormats = {
@@ -9,13 +10,22 @@ export const DateFormats = {
     TIME: "HH:mm"
 };
 
-export function getTimes(base:Dayjs =  toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
+
+export interface Time {
+    hours: number;
+    minutes: number;
+    error?: string;
+}
+
+export function getTimes(base: Dayjs = toMidNight(dayjs()), jump: number = 30, fmt: string = DateFormats.TIME_AM_PM): string[] {
     const ret: string[] = [];
     let endTime = base;
-    while(endTime.day() === base.day()) {
-        endTime = endTime.add(jump, "minutes")
+    while (endTime.day() === base.day()) {
         ret.push(endTime.format(fmt));
+        endTime = endTime.add(jump, "minutes")
     }
+    // Add midnight to list
+    ret.push(endTime.format(fmt));
     return ret;
 }
 
@@ -95,10 +105,10 @@ export function getDayDesc(date: Dayjs): string {
     when exploding, we explode from *daysBefore* today until *daysAfter* today
  }
  */
-export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 30, startDate?: string): any[] {
+export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 60, startDate?: string): any[] {
     const ret: any[] = [];
     const today = startDate && startDate !== "" ?
-        toMidNight(dayjs(startDate)):
+        toMidNight(dayjs(startDate)) :
         toMidNight(dayjs());
 
     events.forEach((event: any) => {
@@ -106,11 +116,16 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
             const rec: RecurrentEventField = event.recurrent;
             const start = toMidNight(dayjs(event.start));
             const weekDay = start.day();
+
             for (let i = -daysBefore; i < daysAfter; i++) {
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
-                if (!rec.exclude?.includes(dateStr) && start.diff(date, "days") <= 0) {
-                    if (rec.freq === "daily" || (rec.freq === "weekly" && date.day() === weekDay)) {
+                const daysSinceStart = - start.diff(date, "days");
+                if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
+                    if (rec.freq === "daily" ||
+                        (rec.freq === "weekly" && date.day() === weekDay) ||
+                        (rec.freq === "biWeekly" && date.day() === weekDay && daysSinceStart % 14 === 0)
+                    ) {
                         const eventObj = { ...event }
                         adjustEvent(eventObj, date);
                         ret.push(eventObj);
@@ -160,17 +175,82 @@ function getDateFromTime(timeStr: string): Dayjs {
     timeStr = timeStr.replace("am", " am");
     timeStr = timeStr.replace("pm", " pm");
 
+    return dayjs("2000/01/01 " + timeStr);
 
-    return dayjs("2000-01-01 " + timeStr);
 
 }
 
+const errWrongHourFormat = "Invalid: wrong hours format";
+
+const errWrongMinuteFormat = "Invalid: wrong minutes format";
+
+export function parseTime(timeStr: string): Time {
+
+    // valid formats: 11:00, 11:00am, 11:00 am, 1:05am, 23:00
+
+    const retTime: Time = { hours: 0, minutes: 0 };
+
+    if (!timeStr) {
+        retTime.error = "Invalid: empty time";
+        return retTime;
+    }
+
+    timeStr = timeStr.trim();
+    if (timeStr.length < 4) {
+        retTime.error = "Invalid: wrong time format ";
+        return retTime;
+    }
+    const colonPos = timeStr.indexOf(":");
+    if (colonPos < 1 || colonPos > 2) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+    const hour = parseInt(timeStr.substr(0, colonPos));
+    if (isNaN(hour)) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+    if (hour < 0 || hour > 23) {
+        retTime.error = errWrongHourFormat;
+        return retTime;
+    }
+
+    retTime.hours = hour;
+
+    const minute = parseInt(timeStr.substr(colonPos + 1, 2));
+    if (isNaN(minute)) {
+        retTime.error = errWrongMinuteFormat;
+        return retTime;
+    }
+    if (minute < 0 || minute > 59) {
+        retTime.error = errWrongMinuteFormat;
+        return retTime;
+    }
+    retTime.minutes = minute;
+
+    //check if am/pm exist
+    if (timeStr.length - colonPos > 3) {
+        let amPmStr = timeStr.substring(timeStr.length - colonPos);
+        amPmStr = amPmStr.trim().toLowerCase();
+
+        if (amPmStr.length > 0 && amPmStr !== "am" && amPmStr !== "pm") {
+            retTime.error = "Invalid: wrong suffix. expecting am or pm";
+            return retTime;
+        }
+        if (amPmStr.length > 0 && amPmStr === "pm" && hour < 13) {
+            retTime.hours = hour + 12;
+        }
+    }
+
+    return retTime;
+}
+
+
 export function validTime(timeStr: string): boolean {
-    if (!timeStr || timeStr.trim().length === 0) {
+    if (parseTime(timeStr).error) {
         return false;
     }
-    const date = getDateFromTime(timeStr);
-    return date.isValid();
+    return true;
 }
 
 export function timeRange2Text(timeStr1: string, timeStr2: string): string {

@@ -1,4 +1,4 @@
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
@@ -13,6 +13,10 @@ import { AccessTime, Mic, PermIdentity } from "@mui/icons-material";
 import "./user-events.css";
 
 import { Design } from "./theme";
+import { CircularProgress } from "@material-ui/core";
+
+import dayjs from './localDayJs'
+
 
 const multipleFactor = .7;
 const buttonSize = 50;
@@ -56,15 +60,49 @@ function getBeforeTimeText(minutes: number): string {
 }
 
 
-function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, stopTimer }:
+function EventElement({ event, single, firstInGroup, now, audioRef }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
-        audioRef: MutableRefObject<HTMLAudioElement>,
-        startTimer: (callback: () => void, delay: number) => void,
-        stopTimer: () => void,
+        audioRef: MutableRefObject<HTMLAudioElement>
     }
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
+    const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
+    const intervalRef = useRef<NodeJS.Timer>();
+
+    const startTimer = () => {
+        // Clear any timers already running
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+
+        intervalRef.current = setInterval(() => {
+            if (audioRef?.current?.src === event.audioUrl) {
+                const { currentTime, duration } = audioRef.current;
+                const prog = Math.floor(currentTime / duration * 100);
+                if (prog > 0) {
+                    console.log("audio loading off 1", event.title)
+                    setEventAudioLoading(false);
+                }
+
+                setPlayProgress(prog)
+            } else {
+                stopTimer();
+                setPlayProgress(-1);
+            }
+        }, 200);
+    }
+
+    const stopTimer = () => {
+        if (intervalRef.current)
+            clearInterval(intervalRef.current);
+
+        setEventAudioLoading(false);
+        intervalRef.current = undefined;
+    }
+
+
+
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
 
@@ -79,7 +117,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
 
     useEffect(() => {
         console.log(event.title, "mounted")
-        return ()=> {
+        return () => {
             console.log(event.title, "unmounted")
             audioRef.current.src = ""
         }
@@ -95,6 +133,10 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
         <Spacer height={2} />
         {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
     </div>
+
+    if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
+        setPlayProgress(-1);
+    }
 
     const isSingle = !!single;
     return (
@@ -112,39 +154,44 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
             marginTop: 1,
             boxShadow: Design.boxShadow,
         }}
-            onClick={(e: any) => {
-                const timerHandler = () => {
-                    const { currentTime, duration } = audioRef.current;
-                    const prog = Math.floor(currentTime / duration * 100);
-                    setPlayProgress(prog)
-                }
-
+            onClick={() => {
                 // plays the audio if exists
                 if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
-                    console.log(e.detail)
-                    if (!audioRef.current.paused) {
-                        audioRef.current.pause();
-                        stopTimer();
-                        return;
-                    } else if (audioRef.current.currentTime > 0) {
-                        audioRef.current.play()
-                        startTimer(timerHandler, 200)
+                    // console.log(e.detail)
+                    if (audioRef.current.src === event.audioUrl) {
+                        // avoid multiple clicks
+                        if (eventAudioLoading) {
+                            console.log("audio is still loading - ignore click")
+                            return;
+                        }
+
+                        if (audioRef.current.paused) {
+                            audioRef.current.play().then(() => startTimer());
+                        } else {
+                            audioRef.current.pause();
+                            stopTimer();
+                            setEventAudioLoading(false);
+                            console.log("audio loading off 2")
+                        }
+
                         return;
                     }
 
+                    setEventAudioLoading(true);
+                    console.log("audio start loading")
                     audioRef.current.src = event.audioUrl;
                     audioRef.current.onended = () => {
                         stopTimer();
                         console.log("ended")
+                        setEventAudioLoading(false);
                         setPlayProgress(-1);
                     }
-                    audioRef.current.play();
-                    startTimer(timerHandler, 200);
+                    audioRef.current.play().then(() => startTimer());
                 }
             }}
 
         >
-            
+
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -161,7 +208,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     </div>
                 }
                 {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
-                {<Spacer height={buttonSize}/>}
+                {<Spacer height={buttonSize} />}
                 {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
@@ -178,19 +225,16 @@ function EventElement({ event, single, firstInGroup, now, audioRef, startTimer, 
                     {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
                 </VBox>
                 <HBox>
+                    {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-                        event.audioUrl && <div style={{ height: buttonSize, width: buttonSize, display: "flex" }}>
-                            {/* <AudioPlayerRecorder showRecordButton={false} showClearButton={false}
-                                showPlayButton={event.audioUrl !== ""}
-                                audioUrl={event.audioUrl}
-                                buttonSize={buttonSize - 5} 
-                                onPlayProgress={()=>{}}
-                                /> */}
+
+                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize * 2, display: "flex" }}>
                             <Mic style={{ fontSize: buttonSize }} />
+
                         </div>
                     }
                     {/* {isSingle ? <PermIdentity style={{ fontSize: buttonSize }} />:<Spacer height={buttonSize}/>} */}
-                    {<Spacer height={buttonSize}/>}
+                    {<Spacer height={buttonSize} />}
                 </HBox>
             </HBoxSB>
 
@@ -221,26 +265,10 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
+    const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
-    const intervalRef = useRef<NodeJS.Timer>();
-
-    const startTimer = (callback: () => void, delay: number) => {
-        // Clear any timers already running
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
-
-        intervalRef.current = setInterval(() => {
-            callback()
-        }, delay);
-    }
-
-    const stopTimer = () => {
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
-        intervalRef.current = undefined;
-    }
 
     const location = useLocation();
     let showDateTime: Dayjs;
@@ -257,21 +285,21 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         showDateTime = dayjs(showDateTime.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
     }
 
-    if (startDate !== showDateTime.format(DateFormats.DATE)) {
-        setStartDate(showDateTime.format(DateFormats.DATE))
+    if (startDate !== dateTimeNoOffset.format(DateFormats.DATE)) {
+        setStartDate(dateTimeNoOffset.format(DateFormats.DATE))
     }
 
     useEffect(() => {
         if (!connected || startDate === "")
             return;
-
+        setLoadingEvents(true);
         api.getEvents().then(evts => {
             const evtsWithId = evts.map((e, i) => {
                 e.tag = "" + i
                 return e;
             })
             setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
-        })
+        }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
 
 
@@ -324,7 +352,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     return <div dir={"rtl"} style={{
         backgroundColor: "#0078C3",
         fontSize: 24, //default text size 
-        fontFamily :"Assistant",
+        fontFamily: "Assistant",
         fontWeight: 700,
         color: "#495D68", //default text color
         height: "100vh",
@@ -332,7 +360,7 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     }}
     >
 
-        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset}/>
+        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} />
         <EventsMain height={"88vh"}>
             <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />
             <EventsContainer height={"78vh"}>
@@ -347,13 +375,13 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                         evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
                             single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
                             audioRef={audioRef}
-                            startTimer={startTimer}
-                            stopTimer={stopTimer}
                         />))
                     }
                 </HBox>))}
                 {eventsArray.length === 0 && <VBoxC style={{ height: "50vh" }}>
-                    <Text textAlign={"center"} fontSize={"2em"}>אין אירועים</Text>
+                    <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : "אין אירועים"}</Text>
+                    {loadingEvents && <CircularProgress size={buttonSize} />}
+
                 </VBoxC>}
             </EventsContainer>
         </EventsMain>

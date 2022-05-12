@@ -28,7 +28,7 @@ export default function Admin(props: AdminProps) {
     }, [props.connected, reloadMedia]);
 
     let adminTab = location.hash ? parseInt(location.hash.substr(1)) : 0;
-    return (<div dir="rtl">
+    return (<div dir="rtl" style={{height: "100vh", overflowY:"hidden"}}>
         <Tabs key={"100"}
             value={adminTab}
             onChange={(e, tab) => navigate("/admin#" + tab)}

@@ -98,7 +98,7 @@ export function getMedia(): Promise<MediaResource[]> {
 export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
     const eventObj = Event.fromEventAny(event)
 
-    let dbDoc = eventObj.toDbObj();
+    let dbDoc = eventObj.toDbObj(!ref);
 
     if (ref) {
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {

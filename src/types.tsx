@@ -120,26 +120,26 @@ export interface DatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
-    style?:any
+    style?: any
 }
 
 export interface RecorderProps {
-    notify?:Notify;
-    buttonSize?:number;
-    showRecordButton:boolean;
-    showPlayButton:boolean;
-    showClearButton?:boolean;
-    audioUrl?:string;
-    audioBlob?:Blob;
+    notify?: Notify;
+    buttonSize?: number;
+    showRecordButton: boolean;
+    showPlayButton: boolean;
+    showClearButton?: boolean;
+    audioUrl?: string;
+    audioBlob?: Blob;
     onCapture?: (blob: Blob) => void;
     onClear?: Callback;
-    onPlayProgress?:(percent:number)=>void;
+    onPlayProgress?: (percent: number) => void;
 }
 
 export interface HourLinesProps extends WithWindowSize {
-     sliceWidth: number;
-     height: number;
-     hours: string[];
-     sliceEachHour: number;
-     vertical: boolean;
+    sliceWidth: number;
+    height: number;
+    hours: string[];
+    sliceEachHour: number;
+    vertical: boolean;
 }

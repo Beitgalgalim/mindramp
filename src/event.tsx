@@ -1,14 +1,30 @@
-import { DocumentReference } from "@firebase/firestore/dist/lite";
+import {
+     deleteField, DocumentReference
+    
+} from 'firebase/firestore/lite';
 import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
-import dayjs from 'dayjs';
+import dayjs from './localDayJs'
+import { MapLike } from "typescript";
+
+export type EventFrequency = "daily" | "weekly" | "biWeekly" | "custom" | "none";
+
 
 export interface RecurrentEventField {
-    freq?: "daily" | "weekly" | "custom" | "none",
+    freq?: EventFrequency,
     daysOfWeek?: number[],
     gid?: string,
     exclude?: string[]
 }
+
+export const RecurrentEventFieldKeyValue = [
+    { key: "daily", value: "יומי" },
+    { key: "weekly", value: "שבועי" },
+    { key: "biWeekly", value: "אחת לשבועיים" },
+    //    { key: "custom", value: "מותאם" },
+    { key: "none", value: "ללא" },
+];
+
 
 export class Event {
     date: string = "";
@@ -26,7 +42,7 @@ export class Event {
     clearAudio?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
-    tag?:string;
+    tag?: string;
 
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
@@ -60,7 +76,7 @@ export class Event {
         return Event.fromDbObj(obj);
     }
 
-    toDbObj(): any {
+    toDbObj(isCreate: boolean = true): any {
         let eventObj = { ...this };
         eventObj.date = dayjs(this.start).format(DateFormats.DATE);
         eventObj.start = dayjs(this.start).format(DateFormats.DATE_TIME);
@@ -74,30 +90,30 @@ export class Event {
             throw ("חסר כותרת לאירוע");
         }
 
-        if (!eventObj.notes) {
-            delete eventObj.notes;
-        }
-        if (!eventObj.imageUrl) {
-            delete eventObj.imageUrl;
-        }
-        if (!eventObj.recurrent) {
-            delete eventObj.recurrent;
-        }
+        const clearFieldIfEmpty = (fieldName: string) => {
+            const eventProps = eventObj as MapLike<any>;
+
+            if (eventProps[fieldName] === undefined) {
+                if (isCreate) {
+                    delete eventProps[fieldName];
+                } else {
+                    eventProps[fieldName] = deleteField();
+                }
+            }
+        };
+
+        clearFieldIfEmpty("notes");
+        clearFieldIfEmpty("imageUrl");
+        clearFieldIfEmpty("recurrent");
+        clearFieldIfEmpty("instanceStatus");
+        clearFieldIfEmpty("audioUrl");
+        clearFieldIfEmpty("audioPath");
+        
         delete eventObj._ref;
         delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
 
-
-        if (!eventObj.instanceStatus) {
-            delete eventObj.instanceStatus;
-        }
-        if (!eventObj.audioUrl) {
-            delete eventObj.audioUrl;
-        }
-        if (!eventObj.audioPath) {
-            delete eventObj.audioPath;
-        }
         return eventObj;
     }
 
