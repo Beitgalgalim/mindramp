@@ -1,10 +1,21 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { Event } from './event';
-export const Collections = {
-    EVENT_COLLECTION: "event",
-    MEDIA_COLLECTION: "media",
-    GUIDES_COLLECTION: "guides",
-}
+
+console.log(process.env)
+export const Collections = 
+//(window as any).devMode === true ?
+process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
+    {
+        EVENT_COLLECTION: "event_dev",
+        MEDIA_COLLECTION: "media_dev",
+        GUIDES_COLLECTION: "guides_dev",
+    }
+    :
+    {
+        EVENT_COLLECTION: "event",
+        MEDIA_COLLECTION: "media",
+        GUIDES_COLLECTION: "guides",
+    }
 
 
 export interface MsgButton {
