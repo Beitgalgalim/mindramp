@@ -8,11 +8,13 @@ process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDAT
     {
         EVENT_COLLECTION: "event_dev",
         MEDIA_COLLECTION: "media_dev",
+        GUIDES_COLLECTION: "guides_dev",
     }
     :
     {
         EVENT_COLLECTION: "event",
         MEDIA_COLLECTION: "media",
+        GUIDES_COLLECTION: "guides",
     }
 
 
