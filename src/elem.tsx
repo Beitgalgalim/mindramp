@@ -21,6 +21,7 @@ import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
+import { style, textAlign } from '@mui/system';
 
 export const ResponsiveTab = withStyles({
     root: {
@@ -69,7 +70,14 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
     return (
         <HBoxC onClick={onClick} style={{ width: "100%" }}>
             <input
-                style={{ width: "80%", borderWidth: 0, borderRadius: 4, backgroundColor: (invalid ? "red" : "transparent") }}
+                style={{
+                    width: "80%",
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    backgroundColor: (invalid ? "red" : "transparent"),
+                    direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
+                    textAlign: props.style?.textAlign || "left"
+                }}
                 type="text"
                 ref={ref}
                 readOnly={props.readOnly === true}
@@ -112,25 +120,24 @@ export function ComboBox(props: any) {
         setLocalValue(props.value);
     }, [props.value])
 
-    const renderItem = ({ index, style }: { index: number, style: any }) => (
-        <ListItem style={{ padding: 0, ...style }} key={index} selected={currentIndex === index} >
+    const renderItem = (renderProps: any) => {
+        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }} key={renderProps.index} selected={currentIndex === renderProps.index} >
             <ListItemButton style={{ padding: 0 }}
-                onClick={() => props.onSelect(items[index]?.key || items[index])}>
+                onClick={() => props.onSelect(items[renderProps.index]?.key || items[renderProps.index])}>
                 <ListItemText
                     disableTypography
-                    primary={<Typography style={{ fontSize: 12 }}>{items[index]?.value || items[index]}</Typography>}
+                    primary={<Typography style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>{items[renderProps.index]?.value || items[renderProps.index]}</Typography>}
                 />
             </ListItemButton>
         </ListItem>
-    );
-
+    };
 
 
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
         <div style={{ display: "flex", ...style }}>
             {!props.elRef &&
                 <ClickableText
-                    style={{ width: "70%" }}
+                    style={{ width: "70%", ...style }}
                     ref={localElRef}
                     onClick={() => {
                         setOpen(true)
@@ -168,7 +175,8 @@ export function ComboBox(props: any) {
                 <FixedSizeList
                     itemCount={items.length}
                     height={Math.min(items.length * 25, 150)}
-                    width={70}
+                    width={style?.width || 100}
+                    direction={style?.textAlign === "right"?"rtl":"ltr"}
                     itemSize={25}
                     initialScrollOffset={currentIndex > 0 ? currentIndex * 25 : 0}>
                     {renderItem}

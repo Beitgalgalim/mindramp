@@ -106,7 +106,6 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
 
 
             <ComboBox value={getTime(start)} items={times}
-                style={{ width: "28%" }}
                 onSelect={(newValue: string) => setStartTime(newValue)}
                 onChange={(newValue: string) => setStartTime(newValue)}
                 invalid={invalidStart} />
@@ -115,7 +114,6 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
             <Spacer width={"2%"} />
 
             <ComboBox value={getTime(end)} items={getTimes(dayjs(start))}
-                style={{ width: "28%" }}
                 onSelect={(newValue: string) => setEndTime(newValue)}
                 onChange={(newValue: string) => setEndTime(newValue)}
                 invalid={invalidEnd} />

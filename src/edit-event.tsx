@@ -205,7 +205,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
 
                             <Spacer width={25} />
                             {recurrent && <ComboBox
-                                style={{ width: "30vw" }}
+                                style={{ width: "30vw", textAlign:"right" }}
                                 value={recurrent}
                                 items={RecurrentEventFieldKeyValue}
                                 onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}

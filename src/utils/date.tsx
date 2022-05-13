@@ -123,6 +123,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const daysSinceStart = - start.diff(date, "days");
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
+                        (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||
                         (rec.freq === "weekly" && date.day() === weekDay) ||
                         (rec.freq === "biWeekly" && date.day() === weekDay && daysSinceStart % 14 === 0)
                     ) {

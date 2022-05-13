@@ -7,7 +7,7 @@ import { DateFormats } from "./utils/date";
 import dayjs from './localDayJs'
 import { MapLike } from "typescript";
 
-export type EventFrequency = "daily" | "weekly" | "biWeekly" | "custom" | "none";
+export type EventFrequency = "daily" | "weekly" | "biWeekly" | "weekdays" | "custom" | "none";
 
 
 export interface RecurrentEventField {
@@ -21,6 +21,7 @@ export const RecurrentEventFieldKeyValue = [
     { key: "daily", value: "יומי" },
     { key: "weekly", value: "שבועי" },
     { key: "biWeekly", value: "אחת לשבועיים" },
+    { key: "weekdays", value: "ימות השבוע (א-ה)" },
     //    { key: "custom", value: "מותאם" },
     { key: "none", value: "ללא" },
 ];
