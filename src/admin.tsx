@@ -45,12 +45,12 @@ export default function Admin(props: AdminProps) {
         >
             <ResponsiveTab label={"יומן"} />
             
-            <ResponsiveTab label={"ספריית מדיה"} />
+            <ResponsiveTab label={"מדיה"} />
 
             <ResponsiveTab label={"מנחים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
-            <Events connected={props.connected} notify={props.notify} media={media}/>
+            <Events connected={props.connected} notify={props.notify} media={media} guides={guides}/>
         </TabPanel>
         
         <TabPanel key={"1"} value={adminTab} index={1} >
@@ -58,7 +58,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Guides notify={props.notify} guides_info={guides} reload={()=>setReloadMedia(old=>old+2)}/>}
+            {adminTab === 2 && <Guides notify={props.notify} guides={guides} reload={()=>setReloadMedia(old=>old+2)}/>}
         </TabPanel>
     </div>);
 }

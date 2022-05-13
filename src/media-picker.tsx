@@ -1,11 +1,11 @@
 import { Close } from "@mui/icons-material";
 import { Text } from "./elem";
 import { Design } from "./theme";
-import { MediaResource } from "./types";
+import { GuideInfo, MediaResource } from "./types";
 
 
-export default function MediaPicker({ media, onSelect, onCancel }:
-    { media: MediaResource[], onSelect: CallableFunction, onCancel: CallableFunction }) {
+export default function MediaPicker({ title, media, onSelect, onCancel }:
+    { title:string, media: MediaResource[] | GuideInfo[], onSelect: CallableFunction, onCancel: CallableFunction }) {
 
 
 
@@ -21,7 +21,7 @@ export default function MediaPicker({ media, onSelect, onCancel }:
             overflow:"scroll",
             padding: 10
         }}>
-            <Text textAlign="center" fontSize={30}>בחירת תמונה</Text>
+            <Text textAlign="center" fontSize={30}>{title}</Text>
             {media.map((m, i) => (<img key={i} src={m.url} 
                 style={{ width: Design.eventImageSize, height: Design.eventImageSize, padding: 10 }}
                 alt={m.name}

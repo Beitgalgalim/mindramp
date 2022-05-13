@@ -33,6 +33,7 @@ export class Event {
     end: string = "";
     notes?: string;
     imageUrl?: string;
+    guideUrl?:string;
     audioUrl?: string;
     audioPath?: string;
     audioBlob?: Blob;
@@ -62,6 +63,7 @@ export class Event {
         assignIfExists(evt, "notes", doc);
         assignIfExists(evt, "_ref", doc);
         assignIfExists(evt, "imageUrl", doc);
+        assignIfExists(evt, "guideUrl", doc);
         assignIfExists(evt, "recurrent", doc);
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
@@ -104,6 +106,7 @@ export class Event {
 
         clearFieldIfEmpty("notes");
         clearFieldIfEmpty("imageUrl");
+        clearFieldIfEmpty("guideUrl");
         clearFieldIfEmpty("recurrent");
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");

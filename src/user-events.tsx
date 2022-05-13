@@ -1,7 +1,7 @@
 import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import * as api from './api'
-import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer } from "./elem";
+import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer, Avatar } from "./elem";
 import { DateFormats, explodeEvents, sortEvents } from "./utils/date";
 import { useLocation } from "react-router-dom";
 import { UserEventsProps } from "./types";
@@ -9,7 +9,7 @@ import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 import { Event } from './event';
 
-import { AccessTime, Mic, PermIdentity } from "@mui/icons-material";
+import { AccessTime, Mic } from "@mui/icons-material";
 import "./user-events.css";
 
 import { Design } from "./theme";
@@ -207,14 +207,14 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                         <img src={event.imageUrl} style={{ maxWidth: Design.eventImageSize, maxHeight: Design.eventImageSize }} alt="תמונה" />
                     </div>
                 }
-                {/* {!isSingle && <PermIdentity style={{ fontSize: buttonSize }} />} */}
-                {<Spacer height={buttonSize} />}
+                {!isSingle && event.guideUrl && <Avatar size={buttonSize} imageSrc={event.guideUrl} />}
+                {/* {<Spacer height={buttonSize} />} */}
                 {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
             {!isSingle && titleAndRoom}
             {!isSingle && <Spacer height={25} />}
-            <HBoxSB style={{ width: undefined, paddingRight: 10, paddingLeft: 10 }}>
+            <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
                     <HBox style={{ alignItems: "center", width: "100%" }}>
                         <AccessTime style={{ color: "#6F9CB6" }} />
@@ -227,13 +227,11 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                 <HBox>
                     {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-
-                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize * 2, display: "flex" }}>
+                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize, display: "flex", justifyContent:"flex-end" }}>
                             <Mic style={{ fontSize: buttonSize }} />
-
                         </div>
                     }
-                    {/* {isSingle ? <PermIdentity style={{ fontSize: buttonSize }} />:<Spacer height={buttonSize}/>} */}
+                    {isSingle && event.guideUrl ? <Avatar size={buttonSize} imageSrc={event.guideUrl} /> : isSingle && <Spacer width={buttonSize} />}
                     {<Spacer height={buttonSize} />}
                 </HBox>
             </HBoxSB>

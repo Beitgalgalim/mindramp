@@ -69,13 +69,15 @@ export interface Connected {
 
 export interface WithMedia {
     media: MediaResource[];
+};
+
+export interface WithReload {
     reload?: CallableFunction;
 };
 
-export interface WithGuidesInfo {
-    guides_info: GuideInfo[];
-    reload?: CallableFunction;
-};
+export interface WithGuides {
+    guides: GuideInfo[];
+}
 
 interface WindowSize {
     w: number,
@@ -98,12 +100,12 @@ export interface Notifying {
 }
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
-export interface EventsProps extends Connected, Notifying, WithMedia { }
+export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
-export interface MediaProps extends Notifying, WithMedia { }
-export interface GuidesProps extends Notifying, WithGuidesInfo { }
+export interface MediaProps extends Notifying, WithMedia, WithReload { }
+export interface GuidesProps extends Notifying, WithGuides, WithReload { }
 
-export interface EditEventsProps extends WithMedia, Notifying {
+export interface EditEventsProps extends WithMedia, Notifying, WithGuides {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;

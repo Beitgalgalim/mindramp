@@ -5,7 +5,7 @@ import { Text, HBox, Spacer } from './elem';
 import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 
-export default function Guides({ guides_info, notify, reload }: GuidesProps) {
+export default function Guides({ guides, notify, reload }: GuidesProps) {
     const [editedGuide, seteditGuide] = useState<GuideInfo | undefined>(undefined);
     //console.log(guides_info);
     function getNewGuideInfo() : GuideInfo {
@@ -35,7 +35,7 @@ export default function Guides({ guides_info, notify, reload }: GuidesProps) {
             </Fab>
         }
         { editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved= {(g) => {seteditGuide(undefined); if(reload) reload();}}/>}
-        {guides_info.map((m, i) => (
+        {guides.map((m, i) => (
         <HBox key={i}>
              <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
              <Spacer width={30}/>

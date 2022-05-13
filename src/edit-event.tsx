@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button, TextField } from '@mui/material';
-import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
+import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox, Avatar } from './elem';
 
 
-import { EditEventsProps, MediaResource } from './types';
-import { AccessTime, Clear, Edit, Image, Mic, Notes, Repeat, Title } from '@mui/icons-material';
+import { EditEventsProps, GuideInfo, MediaResource } from './types';
+import { AccessTime, Clear, Edit, Image, Mic, Notes, Person, PersonOutlined, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
@@ -15,12 +15,13 @@ import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
 
 
-export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, notify }: EditEventsProps) {
+export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, guides, notify }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<string>(inEvent.event.start);
     const [end, setEnd] = useState<string>(inEvent.event.end);
     const [imageUrl, setImageUrl] = useState<string>();
+    const [guideUrl, setGuideUrl] = useState<string>();
     const [audioUrl, setAudioUrl] = useState<string>();
     const [audioPath, setAudioPath] = useState<string>();
     const [audioBlob, setAudioBlob] = useState<any>();
@@ -28,6 +29,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
     const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
+    const [editGuide, setEditGuide] = useState(false);
+
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
 
     useEffect(() => {
@@ -43,6 +46,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
         }
         setNotes(event.notes);
         setImageUrl(event.imageUrl);
+        setGuideUrl(event.guideUrl);
         setAudioUrl(event.audioUrl);
         setAudioPath(event.audioPath);
     }, [inEvent]);
@@ -54,21 +58,30 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
         <div dir="rtl" style={{
             position: 'absolute',
             top: "10vh",
-            left: narrow? "2vw": "10vw",
+            left: narrow ? "2vw" : "10vw",
             height: "85vh",
-            width: narrow? "96vw": "80vw",
+            width: narrow ? "96vw" : "80vw",
             backgroundColor: Colors.PopupBackground,
             zIndex: 500,
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
             <Text fontSize={45} textAlign="center">{ref ? "עדכון ארוע" : "ארוע חדש"}</Text>
-            {editImage && <MediaPicker media={media}
+            {editImage && <MediaPicker media={media} title={"בחירת תמונה"}
                 onSelect={(rm: MediaResource) => {
                     setImageUrl(rm.url);
                     setEditImage(false);
                 }}
                 onCancel={() => setEditImage(false)}
+            />
+            }
+
+            {editGuide && <MediaPicker media={guides} title={"בחירת מנחה"}
+                onSelect={(guide: GuideInfo) => {
+                    setGuideUrl(guide.url);
+                    setEditGuide(false);
+                }}
+                onCancel={() => setEditGuide(false)}
             />
             }
 
@@ -111,12 +124,28 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <Image />
                     </Grid>
-                    <Grid container item xs={4} spacing={2} >
+                    <Grid container item xs={5} spacing={2} >
                         <HBoxSB >
-                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: Design.eventImageSize, height:  Design.eventImageSize }} /> : <Text>אין תמונה</Text>}
+                            {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: Design.eventImageSize, height: Design.eventImageSize }} /> : <Text>אין תמונה</Text>}
                             <HBox>
-                            {imageUrl && <Clear onClick={() => setImageUrl(undefined)} style={{fontSize:35}}/>}
-                            <Edit onClick={() => setEditImage(true)} style={{fontSize:35}}/>
+                                {imageUrl && <Clear onClick={() => setImageUrl(undefined)} style={{ fontSize: 35 }} />}
+                                <Edit onClick={() => setEditImage(true)} style={{ fontSize: 35 }} />
+                            </HBox>
+                        </HBoxSB>
+                    </Grid>
+                </Grid>
+                <Spacer height={30} />
+                {/** Guide */}
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
+                        <PersonOutlined />
+                    </Grid>
+                    <Grid container item xs={5} spacing={2} >
+                        <HBoxSB >
+                            {guideUrl ? <Avatar size={Design.avatarSize} imageSrc={guideUrl}/>: <Text>מנחה לא הוגדר</Text>}
+                            <HBox>
+                                {guideUrl && <Clear onClick={() => setGuideUrl(undefined)} style={{ fontSize: 35 }} />}
+                                <Edit onClick={() => setEditGuide(true)} style={{ fontSize: 35 }} />
                             </HBox>
                         </HBoxSB>
                     </Grid>
@@ -128,11 +157,11 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Mic />
                     </Grid>
-                    <Grid container item xs={4} spacing={2} >
+                    <Grid container item xs={5} spacing={2} >
                         <HBoxSB >
                             {(audioUrl || audioBlob) && !clearAudio ? <Text >יש שמע</Text> : <Text >אין שמע</Text>}
                             <AudioPlayerRecorder notify={notify}
-                            showRecordButton={true} showClearButton={audioUrl || audioBlob}
+                                showRecordButton={true} showClearButton={audioUrl || audioBlob}
                                 showPlayButton={audioUrl || audioBlob} onCapture={(blob) => {
                                     setAudioBlob(blob)
                                     setClearAudio(false);
@@ -175,9 +204,9 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
 
 
                             <Spacer width={25} />
-                            {recurrent && <ComboBox 
-                                style={{width: "30vw"}}
-                                value={recurrent} 
+                            {recurrent && <ComboBox
+                                style={{ width: "30vw" }}
+                                value={recurrent}
                                 items={RecurrentEventFieldKeyValue}
                                 onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}
                                 readOnly={true}
@@ -203,6 +232,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, n
                                 end,
                                 notes,
                                 imageUrl,
+                                guideUrl,
                                 audioUrl,
                                 audioPath,
                                 clearAudio,

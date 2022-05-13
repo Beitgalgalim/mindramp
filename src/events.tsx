@@ -19,7 +19,7 @@ import { addRepeatIcon } from './elem';
 
 
 
-export default function Events({ connected, notify, media }: EventsProps) {
+export default function Events({ connected, notify, media, guides }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -210,8 +210,8 @@ export default function Events({ connected, notify, media }: EventsProps) {
             dayMaxEvents={true}
             weekends={true}
             weekText={"שבוע"}
-            slotMinTime={"06:00:00"}
-            slotMaxTime={"22:00:00"}
+            // slotMinTime={"06:00:00"}
+            // slotMaxTime={"22:00:00"}
             initialEvents={[]}
             handleWindowResize={true}
             select={handleDateSelect}
@@ -228,6 +228,7 @@ export default function Events({ connected, notify, media }: EventsProps) {
             newEvent && <AddEvent
                 notify={notify}
                 media={media}
+                guides={guides}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
                 onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {

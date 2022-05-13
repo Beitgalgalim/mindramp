@@ -237,7 +237,7 @@ export function parseTime(timeStr: string): Time {
             retTime.error = "Invalid: wrong suffix. expecting am or pm";
             return retTime;
         }
-        if (amPmStr.length > 0 && amPmStr === "pm" && hour < 13) {
+        if (amPmStr.length > 0 && amPmStr === "pm" && hour < 12) {
             retTime.hours = hour + 12;
         }
     }

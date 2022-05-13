@@ -136,8 +136,14 @@ export function ComboBox(props: any) {
                         setOpen(true)
                     }}
                     onChange={(newVal: string) => setLocalValue(newVal)}
-                    onBlur={(newVal: string) => props.onChange && props.onChange(newVal)}
-                    value={items.find((item:any) => item?.key === localValue)?.value || localValue}
+                    onBlur={(newVal: string) => {
+                        // check if value changed before firing event
+                        if (newVal !== (items.find((item: any) => item?.key === props.value)?.value || props.value)) {
+                            props.onChange && props.onChange(newVal)
+                        }
+                    }
+                    }
+                    value={items.find((item: any) => item?.key === localValue)?.value || localValue}
                     readOnly={props.readOnly === true}
                     invalid={props.invalid}
                 />
@@ -184,6 +190,10 @@ export function HBox(props: any) {
         onClick={props.onClick}>
         {props.children}
     </Box>
+}
+
+export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
+    return <img src={imageSrc} alt="" style={{ borderRadius: size / 2, width: size, height: size }} />
 }
 
 export function Spacer(props: any) {
@@ -255,8 +265,8 @@ export function EventsContainer(props: any) {
         width: "100%",
         height: props.height,
         backgroundColor: "#EBF0F2",
-        borderTopRightRadius: 40,
-        borderTopLeftRadius: 40,
+        // borderTopRightRadius: 40,
+        // borderTopLeftRadius: 40,
         overflowY: "auto",
         flexWrap: "nowrap",
     }}>
