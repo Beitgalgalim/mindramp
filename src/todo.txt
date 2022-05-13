@@ -1,4 +1,5 @@
 
+- if change time of an instance of the same day of series, rest of series is gone
 - Reset playing sound event after pause
 - In admin
   - close list on second click on down arrow
