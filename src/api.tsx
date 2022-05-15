@@ -74,13 +74,13 @@ export function getEvents(): Promise<Event[]> {
 
 export function getGuides(): Promise<GuideInfo[]> {
     return _getCollection(Collections.GUIDES_COLLECTION).then(items => items.map(d =>
-        ({
-            name: d.name,
-            url: d.url,
-            path: d.path || "",
-   
-            _ref: d._ref
-        })));
+    ({
+        name: d.name,
+        url: d.url,
+        path: d.path || "",
+
+        _ref: d._ref
+    })));
 
 }
 
@@ -165,8 +165,30 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
     });
 }
 
-export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
+export async function createEventInstanceAsDeleted(excludeDate: string, ref: DocumentReference) {
+    if (!ref) {
+        throw ("Ref must be valid");
+    }
 
+    return getDoc(ref).then((seriesDoc) => {
+        const seriesDocObj = seriesDoc.data();
+
+        if (!seriesDocObj || !seriesDocObj.recurrent) {
+            // not expected
+            throw ("Unexpected missing recurrent info on series event");
+        }
+        if (!seriesDocObj.recurrent.exclude) {
+            seriesDocObj.recurrent.exclude = [excludeDate];
+        } else {
+            seriesDocObj.recurrent.exclude.push(excludeDate);
+        }
+
+        return updateDoc(ref, seriesDocObj).then(() => Event.fromDbObj(seriesDocObj, ref));
+    });
+}
+
+
+export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
     if (ref) {
         if (deleteModifiedInstance) {
             const q = query(collection(db, Collections.EVENT_COLLECTION), where("recurrent.gid", "==", ref.id));
@@ -187,6 +209,8 @@ export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance
     }
     return [];
 }
+
+
 
 export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {
     // First upload to storage

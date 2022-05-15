@@ -54,7 +54,7 @@ export class Event {
         return evt as Event;
     }
 
-    static fromDbObj(doc: any): Event {
+    static fromDbObj(doc: any, ref?:DocumentReference): Event {
         const evt: Event = new Event();
         evt.title = doc.title;
         evt.start = dayjs(doc.start).format(DateFormats.DATE_TIME);
@@ -63,6 +63,9 @@ export class Event {
 
         assignIfExists(evt, "notes", doc);
         assignIfExists(evt, "_ref", doc);
+        if (ref) {
+            evt._ref = ref;
+        }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "guideUrl", doc);
         assignIfExists(evt, "recurrent", doc);

@@ -166,7 +166,7 @@ export default function Events({ connected, notify, media, guides }: EventsProps
     }
 
     return (<div
-        style={{ display: "inline-grid", width: "100vw", height:"90vh"}}
+        style={{ display: "inline-grid", width: "100vw", height: "90vh" }}
     >
         {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
             <Fab
@@ -310,14 +310,26 @@ export default function Events({ connected, notify, media, guides }: EventsProps
                 }}
 
                 onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
-                    // delete non-recurrent event
-                    api.deleteEvent(ref, editEvent.editAllSeries === true).then(
-                        (removedIDs) => {
-                            setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
-                            setNewEvent(undefined);
-                        },
-                        (err: any) => notify.error(err)
-                    );
+                    if (editEvent.editAllSeries === true || editEvent.event.instanceStatus) {
+                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
+                            (removedIDs) => {
+                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
+                                setNewEvent(undefined);
+                                notify.success("נמחק בהצלחה")
+                            },
+                            (err: any) => notify.error(err)
+                        );
+                    } else {
+                        // deletion of an instance that has no persistance
+                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
+                            (updatedEventSeries)=>{
+                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id? e : updatedEventSeries));
+                                setNewEvent(undefined);
+                                notify.success("מופע זה נמחק בהצלחה");
+                            },
+                            (err: any) => notify.error(err)
+                        )
+                    }
                 }}
             />
         }
