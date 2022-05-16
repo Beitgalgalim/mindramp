@@ -1,4 +1,4 @@
-import {  useRef } from 'react';
+import { useRef } from 'react';
 import { MediaProps, MediaResource } from './types';
 
 import { Text, HBox, HBoxC, Spacer } from './elem';
@@ -11,14 +11,21 @@ import "./admin.css"
 export default function Media({ media, notify, reload }: MediaProps) {
 
     const inputEl = useRef<HTMLInputElement | null>(null);
-    return (<div  dir="rtl">
-        {media.map((m, i) => (
-            <HBox key={i}>
-                <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
-                <Text width={"50vw"} textAlign="right">{m.name}</Text>
-                <Spacer />
-                <Button variant={"outlined"}
-                    onClick={()=>notify.ask("האם למחוק?", undefined, [
+    return (<div dir="rtl" >
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            flexWrap: "nowrap",
+            overflowY: "scroll",
+            height:"75vh"
+        }}>
+            {media.map((m, i) => (
+                <HBox key={i}>
+                    <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name} />
+                    <Text width={"50vw"} textAlign="right">{m.name}</Text>
+                    <Spacer />
+                    <Button variant={"outlined"}
+                        onClick={() => notify.ask("האם למחוק?", undefined, [
                             {
                                 caption: "כן",
                                 callback: () => {
@@ -38,28 +45,29 @@ export default function Media({ media, notify, reload }: MediaProps) {
                                 callback: () => { }
                             }
                         ])
-                    }>מחק</Button>
-            </HBox>
-        ))}
-        <Spacer height={20}/>
-        <HBoxC style={{ width:500}}>
-        <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}}/>
-        <Spacer width={20}/>
-        <Button 
-        variant={"contained"} 
-        onClick={() => {
-            const files = inputEl?.current?.files;
-            if (files && files.length > 0) {
-                api.addMedia(files[0].name, "photo", files[0]).then(
-                    (m: MediaResource) => { 
-                        notify.success(`תמונה עלתה בהצלחה`);
-                        if (inputEl.current) inputEl.current.value = "";
-                        if (reload) reload();
-                    },
-                    (err)=>notify.error(err)
-                );
-            }
-        }}>שמור</Button>
+                        }>מחק</Button>
+                </HBox>
+            ))}
+        </div>
+        <Spacer height={20} />
+        <HBoxC style={{ width: 500 }}>
+            <input className="custom-file-input" type="file" ref={inputEl} style={{ width: 400 }} />
+            <Spacer width={20} />
+            <Button
+                variant={"contained"}
+                onClick={() => {
+                    const files = inputEl?.current?.files;
+                    if (files && files.length > 0) {
+                        api.addMedia(files[0].name, "photo", files[0]).then(
+                            (m: MediaResource) => {
+                                notify.success(`תמונה עלתה בהצלחה`);
+                                if (inputEl.current) inputEl.current.value = "";
+                                if (reload) reload();
+                            },
+                            (err) => notify.error(err)
+                        );
+                    }
+                }}>שמור</Button>
         </HBoxC>
     </div>);
 }
