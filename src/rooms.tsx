@@ -6,8 +6,7 @@ import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 
 export default function Rooms({ guides, notify, reload }: RoomsProps) {
-    const [editedGuide, seteditGuide] = useState<RoomInfo | undefined>(undefined);
-    //console.log(guides_info);
+    const [editedRoom, seteditRoom] = useState<RoomInfo | undefined>(undefined);
     function getNewRoomInfo() : RoomInfo {
         return {
             name: "",
@@ -19,7 +18,7 @@ export default function Rooms({ guides, notify, reload }: RoomsProps) {
     return (
 
         <div  dir="rtl">
-            {!editedGuide &&
+            {!editedRoom &&
             <Fab
                 color="primary" aria-label="הוסף"
                 variant="circular"
@@ -31,10 +30,10 @@ export default function Rooms({ guides, notify, reload }: RoomsProps) {
                     borderRadius: '50%'
                 }}
             >
-                <Add onClick={() => { seteditGuide( getNewRoomInfo()) }} />
+                <Add onClick={() => { seteditRoom( getNewRoomInfo()) }} />
             </Fab>
             }
-            { editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved= {(g) => {seteditGuide(undefined); if(reload) reload();}}/>}
+            { editedRoom && <EditRoomInfo room_info={editedRoom} afterSaved= {(g) => {seteditRoom(undefined); if(reload) reload();}}/>}
             {guides.map((m, i) => (
                 <HBox key={i}>
                     <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
