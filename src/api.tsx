@@ -250,6 +250,41 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
+export async function addRoomInfo(name: string, pic: File): Promise<GuideInfo> {
+    const storage = getStorage(app);
+    const storageRef = ref(storage);
+    const mediaRef = ref(storageRef, 'media');
+    const folderRef = ref(mediaRef, 'rooms_pics');
+    const resourceRef = ref(folderRef, pic.name);
+
+    /** @type {any} */
+    const metadata = {
+        contentType: 'image/jpeg',
+    };
+
+    // Verify guide does not exist:
+    return getMetadata(resourceRef).then(
+        //success
+        (md) => { throw ("מדריך בשם זה כבר קיים") },
+        () => {
+            // Fail - new guide name
+            // Upload his/her pic and metadata
+            const uploadTask = uploadBytes(resourceRef, pic, metadata);
+            return uploadTask.then(val => {
+                return getDownloadURL(val.ref).then(url => {
+                    const res = {
+                        name,
+                        path: val.ref.fullPath,
+                        url,
+                    };
+                    const docRef = doc(collection(db, Collections.ROOMS_COLLECTION));
+                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                });
+            });
+
+        });
+}
+
 
 export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
     const storage = getStorage(app);
