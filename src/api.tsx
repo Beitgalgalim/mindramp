@@ -250,7 +250,7 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-export async function addRoomInfo(name: string, pic: File): Promise<GuideInfo> {
+export async function addLocationInfo(name: string, pic: File): Promise<GuideInfo> {
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
@@ -265,7 +265,7 @@ export async function addRoomInfo(name: string, pic: File): Promise<GuideInfo> {
     // Verify guide does not exist:
     return getMetadata(resourceRef).then(
         //success
-        (md) => { throw ("מדריך בשם זה כבר קיים") },
+        (md) => { throw ("מקום בשם זה כבר קיים") },
         () => {
             // Fail - new guide name
             // Upload his/her pic and metadata
@@ -277,7 +277,7 @@ export async function addRoomInfo(name: string, pic: File): Promise<GuideInfo> {
                         path: val.ref.fullPath,
                         url,
                     };
-                    const docRef = doc(collection(db, Collections.ROOMS_COLLECTION));
+                    const docRef = doc(collection(db, Collections.LOCATIONS_COLLECTION));
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
                 });
             });

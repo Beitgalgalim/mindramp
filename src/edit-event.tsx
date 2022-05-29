@@ -150,6 +150,28 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                         </HBoxSB>
                     </Grid>
                 </Grid>
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
+                        <PersonOutlined />
+                    </Grid>
+                    <Grid container item xs={5} spacing={2} >
+                        <HBoxSB >
+                            {guideUrl ? <Avatar size={Design.avatarSize} imageSrc={guideUrl}/>: <Text>מיקום לא הוגדר</Text>}
+                            <HBox style={{ alignItems: "center" }}>
+                                <Spacer width={25} />
+                                {<ComboBox
+                                    style={{ width: "30vw", textAlign:"right" }}
+                                    value={recurrent}
+                                    items={RecurrentEventFieldKeyValue}
+                                    onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}
+                                    readOnly={true}
+                                />
+                                }
+                                <Spacer width={25} />
+                            </HBox>
+                        </HBoxSB>
+                    </Grid>
+                </Grid>
                 <Spacer height={30} />
 
                 {/* Audio recording */}
@@ -187,7 +209,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                     <Grid container item xs={5} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
-                            {/* <FormControlLabel 
+                            {/* <FormControlLabel
                             style={{ justifyContent: "flex-start" }}
                                 control={ */}
                             <Checkbox onChange={(evt) => {

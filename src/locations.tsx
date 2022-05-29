@@ -1,13 +1,13 @@
 import {  useRef, useState } from 'react';
-import { RoomsProps, RoomInfo } from './types';
-import EditRoomInfo from './edit-room-info';
+import { LocationsProps, LocationInfo } from './types';
+import EditLocationInfo from './edit-location-info';
 import { Text, HBox, Spacer } from './elem';
 import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 
-export default function Rooms({ guides, notify, reload }: RoomsProps) {
-    const [editedRoom, seteditRoom] = useState<RoomInfo | undefined>(undefined);
-    function getNewRoomInfo() : RoomInfo {
+export default function Locations({ guides, notify, reload }: LocationsProps) {
+    const [editedLocation, seteditLocation] = useState<LocationInfo | undefined>(undefined);
+    function getNewRoomInfo() : LocationInfo {
         return {
             name: "",
             url: "",
@@ -18,7 +18,7 @@ export default function Rooms({ guides, notify, reload }: RoomsProps) {
     return (
 
         <div  dir="rtl">
-            {!editedRoom &&
+            {!editedLocation &&
             <Fab
                 color="primary" aria-label="הוסף"
                 variant="circular"
@@ -30,10 +30,10 @@ export default function Rooms({ guides, notify, reload }: RoomsProps) {
                     borderRadius: '50%'
                 }}
             >
-                <Add onClick={() => { seteditRoom( getNewRoomInfo()) }} />
+                <Add onClick={() => { seteditLocation( getNewRoomInfo()) }} />
             </Fab>
             }
-            { editedRoom && <EditRoomInfo room_info={editedRoom} afterSaved= {(g) => {seteditRoom(undefined); if(reload) reload();}}/>}
+            { editedLocation && <EditLocationInfo location_info={editedLocation} afterSaved= {(g) => {seteditLocation(undefined); if(reload) reload();}}/>}
             {guides.map((m, i) => (
                 <HBox key={i}>
                     <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>

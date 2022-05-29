@@ -9,14 +9,14 @@ process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDAT
         EVENT_COLLECTION: "event_dev",
         MEDIA_COLLECTION: "media_dev",
         GUIDES_COLLECTION: "guides_dev",
-        ROOMS_COLLECTION: "rooms_dev",
+        LOCATIONS_COLLECTION: "location_dev",
     }
     :
     {
         EVENT_COLLECTION: "event",
         MEDIA_COLLECTION: "media",
         GUIDES_COLLECTION: "guides",
-        ROOMS_COLLECTION : "rooms",
+        LOCATIONS_COLLECTION : "location",
     }
 
 
@@ -45,7 +45,7 @@ export interface GuideInfo {
     _ref?: DocumentReference
 }
 
-export interface RoomInfo {
+export interface LocationInfo {
     name: string,
     url: string,
     path: string,
@@ -88,8 +88,8 @@ export interface WithGuides {
     guides: GuideInfo[];
 }
 
-export interface WithRooms {
-    guides: RoomInfo[];
+export interface WithLocations {
+    guides: LocationInfo[];
 }
 
 interface WindowSize {
@@ -117,7 +117,7 @@ export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
-export interface RoomsProps extends Notifying, WithRooms, WithReload { }
+export interface LocationsProps extends Notifying, WithLocations, WithReload { }
 
 export interface EditEventsProps extends WithMedia, Notifying, WithGuides {
     inEvent: EditEvent;
@@ -131,9 +131,9 @@ export interface EditGuideInfoProps {
    afterSaved: (guide_info : GuideInfo) => void;
 }
 
-export interface EditRoomInfoProps {
-    room_info : RoomInfo;
-    afterSaved: (room_info : RoomInfo) => void;
+export interface EditLocationInfoProps {
+    location_info : LocationInfo;
+    afterSaved: (room_info : LocationInfo) => void;
 }
 
 export interface DatePickerProps {

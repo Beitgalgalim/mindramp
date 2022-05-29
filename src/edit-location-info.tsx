@@ -1,14 +1,14 @@
 import { Colors, Design } from './theme';
 import { Text, Spacer } from './elem';
 import { Button, TextField } from '@mui/material';
-import { RoomInfo, EditRoomInfoProps } from './types';
+import { LocationInfo, EditLocationInfoProps } from './types';
 import { useEffect, useRef, useState } from 'react';
 import * as api from "./api";
 
-export default function EditRoomInfo({room_info, afterSaved} : EditRoomInfoProps) {
+export default function EditLocationInfo({location_info, afterSaved} : EditLocationInfoProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
     const [preview, setPreview] = useState<string|undefined>();
-    const [name, setName] = useState<string>(room_info.name);
+    const [name, setName] = useState<string>(location_info.name);
 
 
     function onSelectedFile(f : any) {
@@ -28,8 +28,8 @@ export default function EditRoomInfo({room_info, afterSaved} : EditRoomInfoProps
         //console.log("start save " + name );
         const files = inputEl?.current?.files;
         if (files && files.length > 0) {
-            api.addRoomInfo(name, files[0]).then(
-                (g: RoomInfo) => {
+            api.addLocationInfo(name, files[0]).then(
+                (g: LocationInfo) => {
                     //console.log(`תמונה עלתה בהצלחה`);
                     afterSaved(g);
                 },
@@ -50,8 +50,7 @@ export default function EditRoomInfo({room_info, afterSaved} : EditRoomInfoProps
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <TextField variant="standard" helperText="שם החדר"  value={name} onChange={onNameChange} />
-            <Text>תמונה של המנחה</Text>
+            <TextField variant="standard" helperText="שם המקום"  value={name} onChange={onNameChange} />
             <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}} onChange={onSelectedFile} />
             {inputEl && <img src={preview} style={{width:48}} />}
             <Button variant="contained" onClick={onSave}>שמור</Button>
