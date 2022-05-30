@@ -1,5 +1,5 @@
 import { Dayjs } from "dayjs";
-import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useRef, useState, Fragment } from "react";
 import * as api from './api'
 import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer, Avatar } from "./elem";
 import { DateFormats, explodeEvents, sortEvents } from "./utils/date";
@@ -16,6 +16,8 @@ import { Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 
 import dayjs from './localDayJs'
+import UserSettings from "./user-settings";
+
 
 
 const multipleFactor = .7;
@@ -227,7 +229,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                 <HBox>
                     {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize, display: "flex", justifyContent:"flex-end" }}>
+                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize, display: "flex", justifyContent: "flex-end" }}>
                             <Mic style={{ fontSize: buttonSize }} />
                         </div>
                     }
@@ -258,13 +260,15 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
     );
 }
 
-export default function UserEvents({ windowSize, connected }: UserEventsProps) {
+export default function UserEvents({ windowSize, connected, notify, user }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
+    const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
+    const [nickName, setNickName] = useState<string>("");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
 
@@ -300,6 +304,14 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
 
+    useEffect(() => {
+        // Init personalized name on mount
+        const savedState = localStorage.getItem("state");
+        if (savedState && savedState.length > 0) {
+            const obj = JSON.parse(savedState)
+            setNickName(obj.name);
+        }
+    }, [])
 
     useEffect(() => {
         let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)
@@ -346,6 +358,14 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         eventsArray[eventGroupIndex].push(ev);
     }
 
+    if (showUserSettings) {
+        return <UserSettings user={user} onDone={(newNick) => {
+            setShowUserSettings(false);
+            setNickName(newNick)
+        }}
+            notify={notify} nickName={nickName} />
+    }
+
 
     return <div dir={"rtl"} style={{
         backgroundColor: "#0078C3",
@@ -358,7 +378,11 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
     }}
     >
 
-        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} />
+
+        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} nickName={nickName} 
+            onLogoDoubleClicked={() => setShowUserSettings(true)}
+            user={user}
+        />
         <EventsMain height={"88vh"}>
             <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />
             <EventsContainer height={"78vh"}>
@@ -383,6 +407,5 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
                 </VBoxC>}
             </EventsContainer>
         </EventsMain>
-
     </div>
 }

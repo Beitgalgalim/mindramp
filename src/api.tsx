@@ -10,7 +10,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata
 
 import {
     getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
-    signInWithEmailAndPassword,
+    signInWithEmailAndPassword, signOut
 } from "firebase/auth";
 
 import { EventApi } from '@fullcalendar/common'
@@ -41,6 +41,11 @@ export async function getUserInfo(user: string, pwd: string) {
             return userCredential.user;
         });
 }
+
+export async function logout() {
+    return signOut(auth);
+}
+
 
 // export async function getUserObj(user) {
 //     if (user && user.email) {
