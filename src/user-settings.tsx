@@ -5,9 +5,15 @@ import { UserSettingsProps } from "./types";
 import { HBoxC, Spacer, VBoxC } from "./elem";
 import { TextField } from '@mui/material';
 import { useState, Fragment } from "react";
-import { Button } from "@material-ui/core";
+import { Button, makeStyles } from "@material-ui/core";
 import * as api from './api'
+import { Cancel, Save } from "@mui/icons-material";
 
+const useStyles = makeStyles(() => ({
+    buttonIcon: {
+        margin: 10,
+    }
+}));
 
 export default function UserSettings({ onDone, user, notify, nickName }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName);
@@ -17,6 +23,8 @@ export default function UserSettings({ onDone, user, notify, nickName }: UserSet
             localStorage.setItem("state", JSON.stringify(state));
         }
     }
+
+    const classes = useStyles();
 
     return <div>
         <Spacer height={35} />
@@ -31,6 +39,7 @@ export default function UserSettings({ onDone, user, notify, nickName }: UserSet
         }
         <VBoxC>
             <TextField
+                autoFocus
                 label="כינוי"
                 variant="outlined"
                 dir="rtl"
@@ -38,16 +47,25 @@ export default function UserSettings({ onDone, user, notify, nickName }: UserSet
                 onChange={(e) => setEditName(e.target.value)}
             />
 
-            <Spacer height={20}/>
+            <Spacer height={20} />
             <HBoxC>
-                <Button variant="outlined" onClick={() => {
-                    savePersonalization(editName);
-                    onDone(editName);
-                }}>שמור</Button>
+                <Button
+                    variant="outlined"
+                    endIcon={<Save />}
+                    classes={{ endIcon: classes.buttonIcon }}
+                    onClick={() => {
+                        savePersonalization(editName);
+                        onDone(editName);
+                    }}>שמור</Button>
                 <Spacer />
-                <Button variant="outlined" onClick={() => {
-                    onDone(nickName);
-                }}>בטל</Button>
+                <Button
+                    variant="outlined"
+                    endIcon={<Cancel />}
+                    classes={{ endIcon: classes.buttonIcon }}
+
+                    onClick={() => {
+                        onDone(nickName);
+                    }}>בטל</Button>
 
                 {
                     user && <Fragment>
