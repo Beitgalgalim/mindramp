@@ -110,9 +110,9 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
                     שכחתי סיסמא?
                 </Link>
                 <Spacer width={20} />
-                <Link variant="body2" onClick={() => onCancel && onCancel()}>
+                {onCancel && <Link variant="body2" onClick={() => onCancel && onCancel()}>
                     הישאר אנונימי
-                </Link>
+                </Link>}
             </HBox>
         </div>
 

@@ -4,7 +4,7 @@ import { User } from '@firebase/auth';
 import { UserSettingsProps } from "./types";
 import { HBoxC, Spacer, VBoxC } from "./elem";
 import { TextField } from '@mui/material';
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Button } from "@material-ui/core";
 import * as api from './api'
 
@@ -38,7 +38,7 @@ export default function UserSettings({ onDone, user, notify, nickName }: UserSet
                 onChange={(e) => setEditName(e.target.value)}
             />
 
-            <Spacer />
+            <Spacer height={20}/>
             <HBoxC>
                 <Button variant="outlined" onClick={() => {
                     savePersonalization(editName);
@@ -48,11 +48,14 @@ export default function UserSettings({ onDone, user, notify, nickName }: UserSet
                 <Button variant="outlined" onClick={() => {
                     onDone(nickName);
                 }}>בטל</Button>
-                <Spacer width={20} />
+
                 {
-                    user && <Button variant="outlined" onClick={() => {
-                        api.logout();
-                    }}>התנתקות</Button>
+                    user && <Fragment>
+                        <Spacer width={20} />
+                        <Button variant="outlined" onClick={() => {
+                            api.logout();
+                        }}>התנתקות</Button>
+                    </Fragment>
                 }
             </HBoxC>
         </VBoxC>

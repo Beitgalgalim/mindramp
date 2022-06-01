@@ -10,13 +10,13 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata
 
 import {
     getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
-    signInWithEmailAndPassword, signOut
+    signInWithEmailAndPassword, signOut,
 } from "firebase/auth";
 
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, GuideInfo } from './types';
+import { Collections, MediaResource, GuideInfo, UserInfo } from './types';
 import { Event } from './event';
 
 let app: FirebaseApp;
@@ -46,35 +46,27 @@ export async function logout() {
     return signOut(auth);
 }
 
-
-// export async function getUserObj(user) {
-//     if (user && user.email) {
-//         let docRef = doc(db, Collections.USERS_INFO_COLLECTION, user.email.toLowerCase());
-//         return getDoc(docRef).then(u => {
-//             let data = u.data();
-//             if (!data) {
-//                 throw new Error("חשבונך מחכה לאישור - יש לפנות למנהל המערכת");
-//             } else if (data.inactive) {
-//                 throw new Error("חשבונך אינו פעיל - יש לפנות למנהל המערכת");
-//             }
-//             return {
-//                 displayName: data.displayName,
-//                 email: user.email.toLowerCase(),
-//                 _user: user,
-//                 _userInfo: data,
-//                 pushNotification: data.pushNotification
-//             };
-//         },
-//             (err) => {
-//                 throw new Error("חשבונך אינו פעיל - יש לפנות למנהל המערכת")
-//             });
-//     }
-//     return undefined;
-// }
-
-
 export function getEvents(): Promise<Event[]> {
-    return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
+    return Promise.allSettled([
+        _getCollection(Collections.EVENT_COLLECTION, "start", "asc"),
+        _getCollection(Collections.PERSONAL_EVENT_COLLECTION, "start", "asc"),
+    ]).then((results: PromiseSettledResult<DocumentData[]>[]) => {
+        let events = [] as Event[];
+        if (results[0].status === "fulfilled") {
+            events = results[0].value.map((doc: any) => Event.fromDbObj(doc));
+        } else {
+            return Promise.reject(results[0].reason);
+        }
+
+        if (results.length > 1) {
+            if (results[1].status === "fulfilled") {
+                events = events.concat(results[1].value.map((doc: any) => Event.fromDbObj(doc)));
+            } else {
+                console.log("fail calling personal_events", results[1].reason);
+            }
+        }
+        return events;
+    });
 }
 
 export function getGuides(): Promise<GuideInfo[]> {
@@ -89,6 +81,18 @@ export function getGuides(): Promise<GuideInfo[]> {
 
 }
 
+export function getUsers(): Promise<UserInfo[]> {
+    return _getCollection(Collections.USERS_COLLECTION).then(items => items.map(d =>
+    ({
+        fname: d.fname,
+        lname: d.lname,
+        avatar: d.avarar,
+        _ref: d._ref,
+        displayName: d.fname + " " + d.lname,
+        type: d.type,
+    })));
+}
+
 export function getMedia(): Promise<MediaResource[]> {
     return _getCollection(Collections.MEDIA_COLLECTION).then(items => items.map(d =>
     ({
@@ -100,21 +104,60 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
+function getEventCollection(ref: DocumentReference): string {
+    return ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
+        Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION
+}
+
 export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
     const eventObj = Event.fromEventAny(event)
 
-    let dbDoc = eventObj.toDbObj(!ref);
 
     if (ref) {
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
             eventObj.recurrent.gid = ref.id;
         }
-        return updateDoc(ref, dbDoc).then(() => {
+        let updatePromise: Promise<void>;
+
+        if (eventObj.participants && ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ||
+            !eventObj.participants && ref.path.startsWith(Collections.EVENT_COLLECTION)) {
+
+            // event remain in same collection
+            const dbDoc = eventObj.toDbObj(false);
+            updatePromise = updateDoc(ref, dbDoc);
+        } else {
+            // event (and all instances?) need to move to the other collection
+            const batch = writeBatch(db);
+            const newCollection = ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
+                Collections.EVENT_COLLECTION : Collections.PERSONAL_EVENT_COLLECTION;
+            const prevCollection = ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
+                Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION;
+
+            batch.delete(ref);
+            ref = doc(collection(db, newCollection), ref.id);
+            const dbDoc = eventObj.toDbObj(true);
+            batch.set(ref, dbDoc);
+
+            // move instances of recurrent to the other collection
+            const q = query(collection(db, prevCollection), where("recurrent.gid", "==", ref.id));
+            const instances = await getDocs(q);
+            instances.docs.forEach(instanceDoc => {
+                batch.delete(instanceDoc.ref);
+                const newDocRef = doc(collection(db, newCollection), instanceDoc.ref.id);
+                batch.set(newDocRef, instanceDoc.data())
+            });
+
+            updatePromise = batch.commit()
+        }
+
+        return updatePromise.then(() => {
             eventObj._ref = ref;
             return eventObj;
-        });
+        })
     } else {
-        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
+        const dbDoc = eventObj.toDbObj(true);
+        const collectionName = eventObj.participants ? Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION
+        const docRef = doc(collection(db, collectionName));
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
             dbDoc.recurrent.gid = docRef.id;
         }
@@ -154,7 +197,7 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
             seriesDocObj.recurrent.exclude.push(eventObj.date);
         }
 
-        const instanceRef = doc(collection(db, Collections.EVENT_COLLECTION));
+        const instanceRef = doc(collection(db, getEventCollection(ref)));
         batch.update(ref, { recurrent: seriesDocObj.recurrent });
         batch.set(instanceRef, eventObj);
         return batch.commit().then(
@@ -196,7 +239,7 @@ export async function createEventInstanceAsDeleted(excludeDate: string, ref: Doc
 export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
     if (ref) {
         if (deleteModifiedInstance) {
-            const q = query(collection(db, Collections.EVENT_COLLECTION), where("recurrent.gid", "==", ref.id));
+            const q = query(collection(db, getEventCollection(ref)), where("recurrent.gid", "==", ref.id));
             return getDocs(q).then(instances => {
                 let batch = writeBatch(db);
                 const removedIDs: string[] = []
@@ -214,8 +257,6 @@ export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance
     }
     return [];
 }
-
-
 
 export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {
     // First upload to storage

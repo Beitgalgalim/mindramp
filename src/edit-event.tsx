@@ -1,27 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Button, TextField } from '@mui/material';
-import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox, Avatar } from './elem';
+import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
-import { EditEventsProps, GuideInfo, MediaResource } from './types';
-import { AccessTime, Clear, Edit, Image, Mic, Notes, Person, PersonOutlined, Repeat, Title } from '@mui/icons-material';
+import { EditEventsProps, MediaResource, UserInfo, UserType } from './types';
+import { AccessTime, Clear, Edit, Image, Mic, Notes, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { Event, EventFrequency, RecurrentEventFieldKeyValue } from './event';
+import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue } from './event';
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
+import { PeoplePicker, Person } from './people-picker';
 
 
-export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, guides, notify }: EditEventsProps) {
+export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, users, notify }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<string>(inEvent.event.start);
     const [end, setEnd] = useState<string>(inEvent.event.end);
     const [imageUrl, setImageUrl] = useState<string>();
-    const [guideUrl, setGuideUrl] = useState<string>();
+    const [guide, setGuide] = useState<Participant | null>();
     const [audioUrl, setAudioUrl] = useState<string>();
     const [audioPath, setAudioPath] = useState<string>();
     const [audioBlob, setAudioBlob] = useState<any>();
@@ -29,7 +30,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
     const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
-    const [editGuide, setEditGuide] = useState(false);
+    const [participants, setParticipants] = useState<Participant[] | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
 
@@ -46,9 +47,15 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
         }
         setNotes(event.notes);
         setImageUrl(event.imageUrl);
-        setGuideUrl(event.guideUrl);
+        if (event.guide !== null) {
+            setGuide(event.guide);
+        }
+
         setAudioUrl(event.audioUrl);
         setAudioPath(event.audioPath);
+        if (event.participants) {
+            setParticipants(event.participants);
+        }
     }, [inEvent]);
 
     const narrow = window.innerWidth < 430;
@@ -73,15 +80,6 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                     setEditImage(false);
                 }}
                 onCancel={() => setEditImage(false)}
-            />
-            }
-
-            {editGuide && <MediaPicker media={guides} title={"בחירת מנחה"}
-                onSelect={(guide: GuideInfo) => {
-                    setGuideUrl(guide.url);
-                    setEditGuide(false);
-                }}
-                onCancel={() => setEditGuide(false)}
             />
             }
 
@@ -135,19 +133,59 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
+
                 {/** Guide */}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <PersonOutlined />
                     </Grid>
                     <Grid container item xs={5} spacing={2} >
-                        <HBoxSB >
-                            {guideUrl ? <Avatar size={Design.avatarSize} imageSrc={guideUrl}/>: <Text>מנחה לא הוגדר</Text>}
-                            <HBox>
-                                {guideUrl && <Clear onClick={() => setGuideUrl(undefined)} style={{ fontSize: 35 }} />}
-                                <Edit onClick={() => setEditGuide(true)} style={{ fontSize: 35 }} />
-                            </HBox>
-                        </HBoxSB>
+                        <PeoplePicker
+                            users={users}
+                            type={UserType.GUIDE}
+                            onSelect={(person: string) => {
+                                const guideUserInfo = users.find(u => u._ref?.id === person);
+                                if (guideUserInfo) {
+                                    setGuide({
+                                        displayName: guideUserInfo.displayName,
+                                        email: person,
+                                        ...(guideUserInfo.avatar && { icon: guideUserInfo.avatar.url }),
+                                    });
+                                };
+
+                            }}
+                        />
+                        {guide && <Person name={guide.displayName}
+                            onRemove={() => setGuide(null)}
+                        />}
+
+
+                    </Grid>
+                </Grid>
+                <Spacer height={30} />
+
+                {/** Participants */}
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
+                        <PeopleOutline />
+                    </Grid>
+                    <Grid container item xs={5} spacing={2} >
+                        <PeoplePicker
+                            users={users}
+                            onSelect={(person: string) => {
+                                const selectedUser = users.find((u: UserInfo) => u._ref?.id === person);
+                                if (selectedUser) {
+                                    const newParticipant = {
+                                        displayName: selectedUser.displayName,
+                                        email: selectedUser._ref?.id || "",
+                                        ...(selectedUser.avatar && { iconUrl: selectedUser.avatar.url }),
+                                    }
+                                    setParticipants((curr: Participant[] | null) => curr !== null ? [newParticipant, ...curr] : [newParticipant]);
+                                }
+                            }} />
+                        <Spacer />
+                        {participants && participants.map(g => <Person name={g.displayName}
+                            onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
@@ -187,9 +225,6 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                     <Grid container item xs={5} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
-                            {/* <FormControlLabel 
-                            style={{ justifyContent: "flex-start" }}
-                                control={ */}
                             <Checkbox onChange={(evt) => {
                                 if (evt.currentTarget.checked) {
                                     setRecurrent("weekly");
@@ -200,15 +235,14 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                                 disabled={inEvent.editAllSeries === false}
                                 style={{ paddingRight: 0 }} />
                             <Text fontSize={13}>חוזר</Text>
-                            {/* } label="חוזר" /> */}
 
 
                             <Spacer width={25} />
                             {recurrent && <ComboBox
-                                style={{ width: "30vw", textAlign:"right" }}
+                                style={{ width: "30vw", textAlign: "right" }}
                                 value={recurrent}
                                 items={RecurrentEventFieldKeyValue}
-                                onSelect={(newValue: EventFrequency) => setRecurrent(newValue)}
+                                onSelect={(newValue: string) => setRecurrent(newValue as EventFrequency)}
                                 readOnly={true}
                             />
                             }
@@ -232,13 +266,15 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, g
                                 end,
                                 notes,
                                 imageUrl,
-                                guideUrl,
+
                                 audioUrl,
                                 audioPath,
                                 clearAudio,
                                 ...(audioBlob != null && { audioBlob: audioBlob }),
                                 ...(instanceStatus && { instanceStatus }),
                                 ...(recurrent && { recurrent: recurrentField }),
+                                ...(participants != null && participants.length > 0 && { participants }),
+                                ...(guide != null && { guide })
                             }),
                             editAllSeries: inEvent.editAllSeries
                         },

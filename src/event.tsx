@@ -17,6 +17,13 @@ export interface RecurrentEventField {
     exclude?: string[]
 }
 
+export interface Participant {
+    email: string,
+    displayName: string,
+    iconUrl?: string,
+    optional?:boolean,
+}
+
 export const RecurrentEventFieldKeyValue = [
     { key: "daily", value: "יומי" },
     { key: "weekly", value: "שבועי" },
@@ -39,6 +46,8 @@ export class Event {
     audioPath?: string;
     audioBlob?: Blob;
     recurrent?: RecurrentEventField;
+    guide?: Participant;
+    participants?: Participant[];
     instanceStatus?: boolean;
 
     clearAudio?: boolean;
@@ -67,13 +76,14 @@ export class Event {
             evt._ref = ref;
         }
         assignIfExists(evt, "imageUrl", doc);
-        assignIfExists(evt, "guideUrl", doc);
         assignIfExists(evt, "recurrent", doc);
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
         assignIfExists(evt, "audioPath", doc);
         assignIfExists(evt, "audioBlob", doc);
         assignIfExists(evt, "clearAudio", doc);
+        assignIfExists(evt, "participants", doc);
+        assignIfExists(evt, "guide", doc);
 
         return evt;
     }
@@ -99,7 +109,7 @@ export class Event {
         const clearFieldIfEmpty = (fieldName: string) => {
             const eventProps = eventObj as MapLike<any>;
 
-            if (eventProps[fieldName] === undefined) {
+            if (eventProps[fieldName] === undefined || (Array.isArray(eventProps[fieldName]) && eventProps[fieldName].length === 0)) {
                 if (isCreate) {
                     delete eventProps[fieldName];
                 } else {
@@ -115,6 +125,8 @@ export class Event {
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
+        clearFieldIfEmpty("participants");
+        clearFieldIfEmpty("guide");
         
         delete eventObj._ref;
         delete eventObj.tag;
