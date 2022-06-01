@@ -6,7 +6,7 @@ import {
     where
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference} from "firebase/storage";
 
 import {
     getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
@@ -250,13 +250,76 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-
-export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
+function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
     const folderRef = ref(mediaRef, 'guides_pics');
     const resourceRef = ref(folderRef, pic.name);
+
+    return resourceRef;
+}
+
+export async function editGuideInfo(_ref: DocumentReference, name: string, pic: File | null){
+    console.log("we got ref need to update " + name + " , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
+
+    return getDoc(_ref).then((g)=> {
+        let existing_info = g.data(); 
+        console.log(existing_info);
+        if(!existing_info){
+            throw ("ref is not find any obj!");
+        }
+
+        if (existing_info.name !== name) {
+            console.log("New name for " + existing_info.name + " : " + name);
+            existing_info.name = name;
+        } else if (!pic){
+            console.log("nothing changed!");
+            return;
+        }
+
+        let res : GuideInfo = {
+            name: existing_info.name,
+            url: existing_info.url,
+            path: existing_info.path,
+            _ref: _ref
+        };
+
+        if (pic){
+            console.log("got new pic for " + res.name);
+            const resourceRef = GetResourceRefOfGuidePic(pic);
+            const metadata = {
+                contentType: 'image/jpeg',
+            };
+        
+            // Verify guide pic with this name does not exist:
+            getMetadata(resourceRef).then(
+                //success
+                (md) => { throw ("תמונת מדריך בשם זה כבר קיימת") },
+                () => {
+                    const uploadTask = uploadBytes(resourceRef, pic, metadata);
+                    uploadTask.then(val => {
+                        getDownloadURL(val.ref).then(url => {
+                            res.url = url;
+                            res.path =  val.ref.fullPath;
+                            let anyres : any = res; 
+
+                            updateDoc(_ref, anyres).then(() => (console.log("השינוי הוחל בהצלחה")));
+                        });
+                    });
+                });
+        } else {
+            // stay with the old pic
+            let anyres : any = res; 
+            updateDoc(_ref, anyres).then(() => (console.log("השם שונה ל " + name)));
+        }
+    });
+    
+}
+
+
+export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
+    const resourceRef = GetResourceRefOfGuidePic(pic);
 
     /** @type {any} */
     const metadata = {

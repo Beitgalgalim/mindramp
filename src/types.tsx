@@ -114,7 +114,7 @@ export interface EditEventsProps extends WithMedia, Notifying, WithGuides {
 
 export interface EditGuideInfoProps {
    guide_info : GuideInfo;
-   afterSaved: (guide_info : GuideInfo) => void;
+   afterSaved: () => void;
 }
 
 export interface DatePickerProps {

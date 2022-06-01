@@ -16,6 +16,14 @@ export default function Guides({ guides, notify, reload }: GuidesProps) {
         }
     }
 
+    function afterEdit() {
+        seteditGuide(undefined);
+        if(reload) {
+            //console.log("reloading!");
+            reload();
+        }
+    }
+
     return ( 
 
     <div  dir="rtl">
@@ -34,9 +42,9 @@ export default function Guides({ guides, notify, reload }: GuidesProps) {
                 <Add onClick={() => { seteditGuide( getNewGuideInfo()) }} />
             </Fab>
         }
-        { editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved= {(g) => {seteditGuide(undefined); if(reload) reload();}}/>}
+        { editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved={afterEdit} />}
         {guides.map((m, i) => (
-        <HBox key={i}>
+        <HBox key={i} onClick={()=>seteditGuide(m)}>
              <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
              <Spacer width={30}/>
              <Text width={"50vw"} textAlign="right">{m.name}</Text>
