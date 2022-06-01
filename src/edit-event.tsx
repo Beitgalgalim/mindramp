@@ -4,7 +4,7 @@ import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
 import { EditEventsProps, MediaResource, UserInfo, UserType } from './types';
-import { AccessTime, Clear, Edit, Image, Mic, Notes, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
+import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
@@ -127,7 +127,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                             {imageUrl ? <img src={imageUrl} alt="אין תמונה" style={{ width: Design.eventImageSize, height: Design.eventImageSize }} /> : <Text>אין תמונה</Text>}
                             <HBox>
                                 {imageUrl && <Clear onClick={() => setImageUrl(undefined)} style={{ fontSize: 35 }} />}
-                                <Edit onClick={() => setEditImage(true)} style={{ fontSize: 35 }} />
+                                <AddPhotoAlternateOutlined onClick={() => setEditImage(true)} style={{ fontSize: 35 }} />
                             </HBox>
                         </HBoxSB>
                     </Grid>
@@ -140,26 +140,32 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         <PersonOutlined />
                     </Grid>
                     <Grid container item xs={5} spacing={2} >
-                        <PeoplePicker
-                            users={users}
-                            type={UserType.GUIDE}
-                            onSelect={(person: string) => {
-                                const guideUserInfo = users.find(u => u._ref?.id === person);
-                                if (guideUserInfo) {
-                                    setGuide({
-                                        displayName: guideUserInfo.displayName,
-                                        email: person,
-                                        ...(guideUserInfo.avatar && { icon: guideUserInfo.avatar.url }),
-                                    });
-                                };
+                        <VBox style={{ alignItems: "flex-start" }}>
 
-                            }}
-                        />
-                        {guide && <Person name={guide.displayName}
-                            onRemove={() => setGuide(null)}
-                        />}
+                            <PeoplePicker
+                                users={users}
+                                type={UserType.GUIDE}
+                                placeholder={"בחירת מדריך"}
+                                onSelect={(person: string) => {
+                                    const guideUserInfo = users.find(u => u._ref?.id === person);
+                                    if (guideUserInfo) {
+                                        setGuide({
+                                            displayName: guideUserInfo.displayName,
+                                            email: person,
+                                            ...(guideUserInfo.avatar && { icon: guideUserInfo.avatar.url }),
+                                        });
+                                    };
 
-
+                                }}
+                            />
+                            <Spacer height={10} />
+                            <HBox>
+                                <Spacer width={20} />
+                                {guide && <Person name={guide.displayName}
+                                    onRemove={() => setGuide(null)}
+                                />}
+                            </HBox>
+                        </VBox>
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
@@ -170,22 +176,29 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         <PeopleOutline />
                     </Grid>
                     <Grid container item xs={5} spacing={2} >
-                        <PeoplePicker
-                            users={users}
-                            onSelect={(person: string) => {
-                                const selectedUser = users.find((u: UserInfo) => u._ref?.id === person);
-                                if (selectedUser) {
-                                    const newParticipant = {
-                                        displayName: selectedUser.displayName,
-                                        email: selectedUser._ref?.id || "",
-                                        ...(selectedUser.avatar && { iconUrl: selectedUser.avatar.url }),
+                        <VBox style={{ alignItems: "flex-start" }}>
+                            <PeoplePicker
+                                users={users}
+                                placeholder={"הוספת מוזמנים"}
+
+                                onSelect={(person: string) => {
+                                    const selectedUser = users.find((u: UserInfo) => u._ref?.id === person);
+                                    if (selectedUser) {
+                                        const newParticipant = {
+                                            displayName: selectedUser.displayName,
+                                            email: selectedUser._ref?.id || "",
+                                            ...(selectedUser.avatar && { iconUrl: selectedUser.avatar.url }),
+                                        }
+                                        setParticipants((curr: Participant[] | null) => curr !== null ? [newParticipant, ...curr] : [newParticipant]);
                                     }
-                                    setParticipants((curr: Participant[] | null) => curr !== null ? [newParticipant, ...curr] : [newParticipant]);
-                                }
-                            }} />
-                        <Spacer />
-                        {participants && participants.map(g => <Person name={g.displayName}
-                            onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
+                                }} />
+                            <Spacer height={10} />
+                            <HBox>
+                                <Spacer width={20} />
+                                {participants && participants.map((g, i) => <Person key={i} name={g.displayName}
+                                    onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
+                            </HBox>
+                        </VBox>
                     </Grid>
                 </Grid>
                 <Spacer height={30} />

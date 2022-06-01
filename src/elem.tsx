@@ -1,7 +1,7 @@
 
 import React, { MutableRefObject, ReactElement, useEffect } from 'react';
 import {
-    Box, ListItemButton, Typography
+    Box, ListItemButton, TextField, Typography, InputAdornment,
 } from '@mui/material';
 import {
     ClickAwayListener,
@@ -21,7 +21,6 @@ import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
-import { ReferenceObject } from 'popper.js';
 
 
 export const ResponsiveTab = withStyles({
@@ -67,28 +66,40 @@ export function VBox(props: any) {
 }
 
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
-    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown } = props;
+    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand } = props;
     return (
-        <HBoxC onClick={onClick} style={{ width: "100%" }}>
-            <input
+        //<HBoxC onClick={onClick} style={{ width: "100%" }}>
+            <TextField
+                hiddenLabel
+                variant="standard"
+                onClick={onClick}
                 style={{
-                    width: "80%",
+                    //width: "80%",
+                    height: 30,
                     borderWidth: 0,
-                    borderRadius: 4,
+                    //borderRadius: 4,
                     backgroundColor: (invalid ? "red" : "transparent"),
                     direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
                     textAlign: props.style?.textAlign || "left"
                 }}
+                placeholder={placeholder}
                 type="text"
                 ref={ref}
-                readOnly={props.readOnly === true}
+                InputProps={{
+                    readOnly: props.readOnly === true,
+                    startAdornment: showExpand && (
+                        <InputAdornment position="end">
+                          <ExpandMore />
+                        </InputAdornment>
+                      ),
+                  }}
                 onMouseOver={(e) => {
                     if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
-                    e.currentTarget.style.textDecoration = "underline";
+                    //e.currentTarget.style.textDecoration = "underline";
                 }}
                 onMouseLeave={(e) => {
                     if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.textDecoration = "none";
+                    //e.currentTarget.style.textDecoration = "none";
                 }}
                 onKeyDown={(e) => {
                     if (e.key === "ArrowDown") {
@@ -102,8 +113,7 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
                 value={props.value}
             />
 
-            <ExpandMore style={{ width: "20%" }} />
-        </HBoxC>);
+    );
 });
 
 
@@ -126,11 +136,13 @@ export interface ComboBoxProps {
     renderItem?: (item: ComboBoxItem, hoover: boolean, selected: boolean) => ReactElement,
     itemHeight?: number,
     listHeight?: number,
+    placeholder?: string,
+    hideExpandButton?: boolean,
 }
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { style, filterItem, itemHeight, listHeight, onSelect, onChange } = props;
+    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
@@ -204,6 +216,7 @@ export function ComboBox(props: ComboBoxProps) {
         <div style={{ display: "flex", ...style }}>
             {!props.elRef &&
                 <ClickableText
+                    showExpand={!hideExpandButton}
                     style={{ width: "70%", ...style }}
                     ref={localElRef}
                     onClick={() => {
@@ -217,6 +230,7 @@ export function ComboBox(props: ComboBoxProps) {
                         }
                     }
                     }
+                    placeholder={placeholder}
                     value={value || localValue}
                     readOnly={props.readOnly === true}
                     invalid={props.invalid}

@@ -15,23 +15,24 @@ function translate2ComboBoxItems(users: UserInfo[], type: undefined | UserType):
     }));
 }
 
-export function PeoplePicker({ onSelect, users, type }: any) {
+export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
     const [items, setItems] = useState<any>(translate2ComboBoxItems(users, type));
 
     useEffect(() => {
         setItems(translate2ComboBoxItems(users, type));
-    }, [users])
+    }, [users, type])
 
     return <ComboBox
         items={items}
         style={{
             width: 150,
             textAlign: "right",
-            backgroundColor: "white",
-            height: 25,
+            //backgroundColor: "white",
+            //height: 25,
         }}
         itemHeight={35}
-
+        placeholder={placeholder}
+        hideExpandButton={true}
         onSelect={(key: string) => {
             onSelect(key);
         }}

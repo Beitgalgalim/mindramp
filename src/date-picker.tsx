@@ -96,6 +96,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
                     shouldCloseOnSelect={true}
                     customInput={
                         <ClickableText
+                            showExpand={true}
                             onClick={() => datePicker?.current?.setOpen(true)}>
                             {getNiceDate(start)}
                         </ClickableText>
