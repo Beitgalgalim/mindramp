@@ -58,7 +58,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Guides notify={props.notify} guides={guides} reload={()=>setReloadMedia(old=>old+2)}/>}
+            {adminTab === 2 && <Guides notify={props.notify} guides={guides} reload={()=>setReloadMedia(old=>old+1)}/>}
         </TabPanel>
     </div>);
 }
