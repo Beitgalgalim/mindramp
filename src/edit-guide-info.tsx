@@ -7,12 +7,12 @@ import * as api from "./api";
 
 export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
-    const [preview, setPreview] = useState<string|undefined>();
+    const [preview, setPreview] = useState<string|undefined>(guide_info.url);
     const [name, setName] = useState<string>(guide_info.name);
 
 
     function onSelectedFile(f : any) {
-        if(!f.target.files || f.target.files.length == 0){
+        if(!f.target.files || f.target.files.length === 0){
             setPreview(undefined);
         }
         const objectUrl = URL.createObjectURL(f.target.files[0]);
@@ -27,15 +27,28 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
     function onSave() {
         //console.log("start save " + name );
         const files = inputEl?.current?.files;
-        if (files && files.length > 0) {
+        
+        // exist guide
+        if (guide_info._ref) {
+            api.editGuideInfo(guide_info._ref, name, (files && files.length)? files[0] : null).then( () => { 
+                console.log(`המדריך עודכן בהצלחה`);
+                afterSaved();
+            },
+            (err)=>console.log(err)
+            );
+            return;
+        }
+        
+        // new guide
+        if(files && files.length > 0) {
             api.addGuideInfo(name, files[0]).then(
                     (g: GuideInfo) => { 
-                        //console.log(`תמונה עלתה בהצלחה`);
-                        afterSaved(g);
+                        console.log(`המדריך נוצר בהצלחה`);
+                        afterSaved();
                     },
                     (err)=>console.log(err)
-                );
-            }
+            );
+        }
     }
 
     return (
@@ -53,7 +66,7 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
             <TextField variant="standard" helperText="שם המנחה"  value={name} onChange={onNameChange} />
             <Text>תמונה של המנחה</Text>
             <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}} onChange={onSelectedFile} />
-            {inputEl && <img src={preview} style={{width:48}} />}
+            {inputEl && <img src={preview} style={{width:48}} alt={name} />}
             <Button variant="contained" onClick={onSave}>שמור</Button>
             </div>);
 }
