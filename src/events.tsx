@@ -19,7 +19,7 @@ import { addRepeatIcon } from './elem';
 
 
 
-export default function Events({ connected, notify, media, guides }: EventsProps) {
+export default function Events({ connected, notify, media, users }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -228,7 +228,7 @@ export default function Events({ connected, notify, media, guides }: EventsProps
             newEvent && <AddEvent
                 notify={notify}
                 media={media}
-                guides={guides}
+                users={users}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
                 onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {
@@ -310,16 +310,7 @@ export default function Events({ connected, notify, media, guides }: EventsProps
                 }}
 
                 onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
-                    if (editEvent.editAllSeries === true || editEvent.event.instanceStatus) {
-                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
-                            (removedIDs) => {
-                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
-                                setNewEvent(undefined);
-                                notify.success("נמחק בהצלחה")
-                            },
-                            (err: any) => notify.error(err)
-                        );
-                    } else {
+                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
                         // deletion of an instance that has no persistance
                         api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
                             (updatedEventSeries)=>{
@@ -329,7 +320,16 @@ export default function Events({ connected, notify, media, guides }: EventsProps
                             },
                             (err: any) => notify.error(err)
                         )
-                    }
+                    } else {
+                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
+                            (removedIDs) => {
+                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
+                                setNewEvent(undefined);
+                                notify.success("נמחק בהצלחה")
+                            },
+                            (err: any) => notify.error(err)
+                        );
+                    } 
                 }}
             />
         }

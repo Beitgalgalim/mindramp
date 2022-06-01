@@ -1,7 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React, { MutableRefObject, ReactElement, useEffect } from 'react';
 import {
-    Box, ListItemButton, Typography
+    Box, ListItemButton, TextField, Typography, InputAdornment,
 } from '@mui/material';
 import {
     ClickAwayListener,
@@ -21,7 +21,7 @@ import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
-import { style, textAlign } from '@mui/system';
+
 
 export const ResponsiveTab = withStyles({
     root: {
@@ -66,45 +66,89 @@ export function VBox(props: any) {
 }
 
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
-    const { onClick, onChange, onBlur, invalid } = props;
+    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand } = props;
     return (
-        <HBoxC onClick={onClick} style={{ width: "100%" }}>
-            <input
+        //<HBoxC onClick={onClick} style={{ width: "100%" }}>
+            <TextField
+                hiddenLabel
+                variant="standard"
+                onClick={onClick}
                 style={{
-                    width: "80%",
+                    //width: "80%",
+                    height: 30,
                     borderWidth: 0,
-                    borderRadius: 4,
+                    //borderRadius: 4,
                     backgroundColor: (invalid ? "red" : "transparent"),
                     direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
                     textAlign: props.style?.textAlign || "left"
                 }}
+                placeholder={placeholder}
                 type="text"
                 ref={ref}
-                readOnly={props.readOnly === true}
+                InputProps={{
+                    readOnly: props.readOnly === true,
+                    startAdornment: showExpand && (
+                        <InputAdornment position="end">
+                          <ExpandMore />
+                        </InputAdornment>
+                      ),
+                  }}
                 onMouseOver={(e) => {
                     if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
-                    e.currentTarget.style.textDecoration = "underline";
+                    //e.currentTarget.style.textDecoration = "underline";
                 }}
                 onMouseLeave={(e) => {
                     if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.textDecoration = "none";
+                    //e.currentTarget.style.textDecoration = "none";
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === "ArrowDown") {
+                        if (onArrowDown) onArrowDown();
+                    } else if (e.key === "ArrowUp") {
+                        if (onArrowUp) onArrowUp();
+                    }
                 }}
                 onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
                 onChange={(e) => onChange && onChange(e.currentTarget.value)}
                 value={props.value}
             />
 
-            <ExpandMore style={{ width: "20%" }} />
-        </HBoxC>);
+    );
 });
 
-export function ComboBox(props: any) {
-    const { items, value, style } = props;
+
+export type ComboBoxItem = string | {
+    key: string,
+    value: string,
+    icon?: string
+}
+
+export interface ComboBoxProps {
+    items: ComboBoxItem[],
+    value?: string, //actual value or key if an item in items
+    onSelect: (itemKey: string) => void,
+    onChange?: (newVal: string) => void,
+    elRef?: MutableRefObject<HTMLElement>,
+    style?: any,
+    readOnly?: boolean,
+    invalid?: boolean,
+    filterItem?: (item: ComboBoxItem, txtValue: string) => boolean,
+    renderItem?: (item: ComboBoxItem, hoover: boolean, selected: boolean) => ReactElement,
+    itemHeight?: number,
+    listHeight?: number,
+    placeholder?: string,
+    hideExpandButton?: boolean,
+}
+
+
+export function ComboBox(props: ComboBoxProps) {
+    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
+    const [hoverItem, setHoverItem] = React.useState<number>(-1);
 
     const localElRef = React.useRef<HTMLDivElement | null>(null);
-    const currentIndex = items.findIndex((item: any) => item === value || item?.key === value);
+    const currentIndex = props.items.findIndex((item: any) => item === props.value || item?.key === props.value);
 
     const handleElClick = () => {
         setOpen(true);
@@ -117,26 +161,62 @@ export function ComboBox(props: any) {
     }, [props.elRef])
 
     useEffect(() => {
-        setLocalValue(props.value);
+        setLocalValue(props.value || "");
+        console.log("setLocalValue", props.value)
     }, [props.value])
 
-    const renderItem = (renderProps: any) => {
-        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }} key={renderProps.index} selected={currentIndex === renderProps.index} >
+    const items = filterItem ? props.items.filter((item: any) => filterItem(item, localValue)) : props.items;
+
+    const renderItems = (renderProps: any) => {
+        let key: string, txtValue: string;
+        if (typeof items[renderProps.index] == "string") {
+            key = items[renderProps.index] as string;
+            txtValue = key;
+        } else {
+            key = (items[renderProps.index] as any).key
+            txtValue = (items[renderProps.index] as any).value;
+        }
+
+
+        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }}
+            key={renderProps.index}
+            selected={currentIndex === renderProps.index}
+        >
             <ListItemButton style={{ padding: 0 }}
-                onClick={() => props.onSelect(items[renderProps.index]?.key || items[renderProps.index])}>
+                onMouseEnter={() => setHoverItem(renderProps.index)}
+                onMouseLeave={() => setHoverItem(-1)}
+                onClick={() => onSelect(key)}>
                 <ListItemText
                     disableTypography
-                    primary={<Typography style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>{items[renderProps.index]?.value || items[renderProps.index]}</Typography>}
+                    primary={
+                        props.renderItem ?
+                            props.renderItem(items[renderProps.index], hoverItem === renderProps.index, false) :
+                            <Typography style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>
+                                {txtValue}
+                            </Typography>
+                    }
                 />
             </ListItemButton>
         </ListItem>
     };
+
+    const itemSize = itemHeight || 25;
+    const listSize = Math.min(items.length * (itemSize), (listHeight || 150))
+
+    let value = props.value;
+    if (items.length > 0 && typeof items[0] !== "string") {
+        const foundItem = items.find((item: ComboBoxItem) => typeof item !== "string" && item.key === props.value);
+        if (foundItem) {
+            value = (foundItem as any).value;
+        }
+    }
 
 
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
         <div style={{ display: "flex", ...style }}>
             {!props.elRef &&
                 <ClickableText
+                    showExpand={!hideExpandButton}
                     style={{ width: "70%", ...style }}
                     ref={localElRef}
                     onClick={() => {
@@ -145,18 +225,21 @@ export function ComboBox(props: any) {
                     onChange={(newVal: string) => setLocalValue(newVal)}
                     onBlur={(newVal: string) => {
                         // check if value changed before firing event
-                        if (newVal !== (items.find((item: any) => item?.key === props.value)?.value || props.value)) {
-                            props.onChange && props.onChange(newVal)
+                        if (newVal !== value) {
+                            onChange && onChange(newVal)
                         }
                     }
                     }
-                    value={items.find((item: any) => item?.key === localValue)?.value || localValue}
+                    placeholder={placeholder}
+                    value={value || localValue}
                     readOnly={props.readOnly === true}
                     invalid={props.invalid}
+                    onArrowUp={() => console.log("up")}
+                    onArrowDown={() => console.log("down")}
                 />
             }
             <Popper
-                open={open}
+                open={open && items.length > 0}
                 anchorEl={props.elRef ? props.elRef.current : localElRef.current}
                 transition disablePortal
                 style={{
@@ -165,7 +248,7 @@ export function ComboBox(props: any) {
                     padding: 2,
                     borderRadius: 3,
                     minWidth: 80,
-                    minHeight: 100,
+                    minHeight: listSize,
                     scrollbarWidth: "thin",
                     boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
                     overflow: "scroll",
@@ -174,12 +257,12 @@ export function ComboBox(props: any) {
 
                 <FixedSizeList
                     itemCount={items.length}
-                    height={Math.min(items.length * 25, 150)}
+                    height={listSize}
                     width={style?.width || 100}
-                    direction={style?.textAlign === "right"?"rtl":"ltr"}
-                    itemSize={25}
-                    initialScrollOffset={currentIndex > 0 ? currentIndex * 25 : 0}>
-                    {renderItem}
+                    direction={style?.textAlign === "right" ? "rtl" : "ltr"}
+                    itemSize={itemSize}
+                    initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
+                    {renderItems}
                 </FixedSizeList>
             </Popper>
         </div>

@@ -127,7 +127,12 @@ function App(props: any) {
                 <Admin connected={connected} notify={notify} user={user} />
 
           } />
-          <Route path="/" element={<UserEvents windowSize={windowSize} connected={connected} user={user} />} />
+          <Route path="/" element={<UserEvents 
+            windowSize={windowSize} 
+            connected={connected} 
+            user={user}
+            notify={notify} />} 
+          />
         </Routes>
       </BrowserRouter>
     </div>

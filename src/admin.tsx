@@ -8,13 +8,13 @@ import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
 import Guides from './guides';
-import { AdminProps, GuideInfo, MediaResource } from './types';
+import { AdminProps, GuideInfo, MediaResource, UserInfo } from './types';
 import { Colors } from './theme';
 
 
 export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
-    const [guides, setGuides] = useState<GuideInfo[]> ([]);
+    const [users, setUsers] = useState<UserInfo[]> ([]);
     const location = useLocation();
     const navigate = useNavigate();
     const [reloadMedia, setReloadMedia] = useState<number>(0);
@@ -23,7 +23,7 @@ export default function Admin(props: AdminProps) {
         if (!props.connected)
             return;
         api.getMedia().then((m:MediaResource[]) => setMedia(m));
-        api.getGuides().then((g:GuideInfo[]) => setGuides(g));
+        api.getUsers().then((g:UserInfo[]) => setUsers(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadMedia]);
 
@@ -50,7 +50,7 @@ export default function Admin(props: AdminProps) {
             <ResponsiveTab label={"מנחים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
-            <Events connected={props.connected} notify={props.notify} media={media} guides={guides}/>
+            <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
         </TabPanel>
         
         <TabPanel key={"1"} value={adminTab} index={1} >

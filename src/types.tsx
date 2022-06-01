@@ -1,21 +1,27 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { Event } from './event';
+import { User } from '@firebase/auth';
+import { Dayjs } from "dayjs";
 
 console.log(process.env)
-export const Collections = 
-//(window as any).devMode === true ?
-process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
-    {
-        EVENT_COLLECTION: "event_dev",
-        MEDIA_COLLECTION: "media_dev",
-        GUIDES_COLLECTION: "guides_dev",
-    }
-    :
-    {
-        EVENT_COLLECTION: "event",
-        MEDIA_COLLECTION: "media",
-        GUIDES_COLLECTION: "guides",
-    }
+export const Collections =
+    //(window as any).devMode === true ?
+    process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
+        {
+            EVENT_COLLECTION: "event_dev",
+            MEDIA_COLLECTION: "media_dev",
+            GUIDES_COLLECTION: "guides_dev",
+            USERS_COLLECTION: "users_dev",
+            PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+        }
+        :
+        {
+            EVENT_COLLECTION: "event",
+            MEDIA_COLLECTION: "media",
+            GUIDES_COLLECTION: "guides",
+            USERS_COLLECTION: "users",
+            PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+        }
 
 
 export interface MsgButton {
@@ -43,6 +49,25 @@ export interface GuideInfo {
     _ref?: DocumentReference
 }
 
+export interface AvatarInfo {
+    path: string,
+    url: string,
+}
+
+export enum UserType {
+    PARTICIPANT = 1,
+    GUIDE = 2,
+}
+
+export interface UserInfo {
+    fname: string,
+    lname: string,
+    displayName: string,
+    avatar: AvatarInfo,
+    type: UserType,
+    _ref?: DocumentReference
+}
+
 export interface MediaResource {
     name: string,
     url: string,
@@ -50,7 +75,6 @@ export interface MediaResource {
     path: string,
     _ref?: DocumentReference
 }
-
 
 export interface EditEvent {
     event: Event,
@@ -79,6 +103,10 @@ export interface WithGuides {
     guides: GuideInfo[];
 }
 
+export interface WithUsers {
+    users: UserInfo[];
+}
+
 interface WindowSize {
     w: number,
     h: number
@@ -100,12 +128,31 @@ export interface Notifying {
 }
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
-export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides { }
-export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
+export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
+export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying { }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
 
-export interface EditEventsProps extends WithMedia, Notifying, WithGuides {
+export interface LoginProps {
+    onForgotPwd: () => void,
+    onLogin: (u: User) => void,
+    onError: (e: Error) => void,
+    onCancel?: Callback;
+}
+
+export interface UserSettingsProps extends WithUser, Notifying {
+    onDone: (newNick: string)=>void,
+    nickName: string,
+}
+
+export interface EventsHeaderProps extends WithUser {
+    onLogoDoubleClicked : Callback,
+    nickName: string,
+    height: number | string,
+    showDateTime: Dayjs,
+}
+
+export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
