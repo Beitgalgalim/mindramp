@@ -31,6 +31,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
     const [participants, setParticipants] = useState<Participant[] | null>(null);
+    const [availableUsers, setAvailableUsers] = useState<UserInfo[]>([]);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
 
@@ -58,6 +59,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
         }
     }, [inEvent]);
 
+    useEffect(() => {
+        setAvailableUsers(users.filter((u:UserInfo)=>!participants?.some(p=>p.email === u._ref?.id)))
+    }, [users, participants]);
+
     const narrow = window.innerWidth < 430;
 
 
@@ -83,7 +88,11 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
             />
             }
 
-            <VBox style={{ marginRight: "10vw", marginTop: "3vh" }}>
+            <Grid
+                style={{ marginTop: "3vh", paddingRight: "10vw", overflowY: "scroll", maxHeight: "60vh" }}
+                container
+                spacing={2}
+            >
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                         <Title />
@@ -175,10 +184,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <PeopleOutline />
                     </Grid>
-                    <Grid container item xs={5} spacing={2} >
+                    <Grid container item xs={8} spacing={2} >
                         <VBox style={{ alignItems: "flex-start" }}>
                             <PeoplePicker
-                                users={users}
+                                users={availableUsers}
                                 placeholder={"הוספת מוזמנים"}
 
                                 onSelect={(person: string) => {
@@ -193,7 +202,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                     }
                                 }} />
                             <Spacer height={10} />
-                            <HBox>
+                            <HBox style={{ maxWidth: "80vw", flexWrap: "wrap" }}>
                                 <Spacer width={20} />
                                 {participants && participants.map((g, i) => <Person key={i} name={g.displayName}
                                     onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
@@ -263,7 +272,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         </HBox>
                     </Grid>
                 </Grid>
-            </VBox>
+            </Grid>
 
             <HBoxC style={{ position: "absolute", bottom: "2%" }}>
                 <Button variant="contained" onClick={() => {

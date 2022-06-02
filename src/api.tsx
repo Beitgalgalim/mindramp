@@ -86,7 +86,7 @@ export function getUsers(): Promise<UserInfo[]> {
     ({
         fname: d.fname,
         lname: d.lname,
-        avatar: d.avarar,
+        avatar: d.avatar,
         _ref: d._ref,
         displayName: d.fname + " " + d.lname,
         type: d.type,
