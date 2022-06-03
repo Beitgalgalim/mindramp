@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Button, TextField } from '@mui/material';
+import { Button, FormControlLabel, FormGroup, TextField } from '@mui/material';
 import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
 import { EditEventsProps, MediaResource, UserInfo, UserType } from './types';
-import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
+import { AccessTime, AddPhotoAlternateOutlined, CheckBox, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue } from './event';
+import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue } from './event';
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
@@ -32,6 +32,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
     const [editImage, setEditImage] = useState(false);
     const [participants, setParticipants] = useState<Participant[] | null>(null);
     const [availableUsers, setAvailableUsers] = useState<UserInfo[]>([]);
+    const [keyEvent, setKeyEvent] = useState<boolean>(false);
+    const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
 
@@ -47,6 +49,9 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
             setRecurrent(recu.freq);
         }
         setNotes(event.notes);
+        if (event.keyEvent === true) {
+            setKeyEvent(true);
+        }
         setImageUrl(event.imageUrl);
         if (event.guide !== null) {
             setGuide(event.guide);
@@ -57,10 +62,13 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
         if (event.participants) {
             setParticipants(event.participants);
         }
+        if (event.reminderMinutes || event.reminderMinutes === 0) {
+            setReminderMinutes(event.reminderMinutes);
+        }
     }, [inEvent]);
 
     useEffect(() => {
-        setAvailableUsers(users.filter((u:UserInfo)=>!participants?.some(p=>p.email === u._ref?.id)))
+        setAvailableUsers(users.filter((u: UserInfo) => !participants?.some(p => p.email === u._ref?.id)))
     }, [users, participants]);
 
     const narrow = window.innerWidth < 430;
@@ -89,7 +97,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
             }
 
             <Grid
-                style={{ marginTop: "3vh", paddingRight: "10vw", overflowY: "scroll", maxHeight: "60vh" }}
+                style={{ marginTop: "3vh", paddingRight: "10vw", overflowY: "scroll", maxHeight: "65vh" }}
                 container
                 spacing={2}
             >
@@ -107,7 +115,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <AccessTime />
                     </Grid>
-                    <Grid container item xs={11} spacing={2} >
+                    <Grid container item xs={10} spacing={2} >
                         <MyDatePicker start={start} end={end}
                             setStart={(d) => setStart(d)}
                             setEnd={(d) => setEnd(d)}
@@ -123,6 +131,13 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                     <Grid container item xs={9} spacing={2} >
                         <TextField variant="standard" helperText="תיאור"
                             onChange={(e => setNotes(e.currentTarget.value))} value={notes || ""} />
+                        <Spacer />
+                        <FormGroup>
+                            <FormControlLabel control={<Checkbox
+                                checked={keyEvent === true}
+                                onChange={(e) => setKeyEvent(prev => e.currentTarget.checked)}
+                            />} label="אירוע מיוחד" />
+                        </FormGroup>
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
@@ -237,7 +252,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         </HBoxSB>
                     </Grid>
                 </Grid>
-                <Spacer height={30} />
+                <Spacer height={25} />
 
                 {/* Recurrence */}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
@@ -272,6 +287,47 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         </HBox>
                     </Grid>
                 </Grid>
+                <Spacer height={25} />
+                {/*reminder*/}
+
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
+                        <NotificationsActive />
+                    </Grid>
+                    <Grid container item xs={9} spacing={2} >
+                        <HBox style={{ alignItems: "center" }}>
+
+                            <Checkbox onChange={(evt) => {
+                                if (evt.currentTarget.checked) {
+                                    setReminderMinutes(15);
+                                } else {
+                                    setReminderMinutes(null);
+                                }
+                            }}
+                                checked={(reminderMinutes || reminderMinutes === 0)?true:false}
+                                style={{ paddingRight: 0 }} />
+                            <Text fontSize={13}>תזכורת</Text>
+
+
+                            <Spacer width={25} />
+                            {(reminderMinutes || reminderMinutes === 0) && <ComboBox
+                                style={{ width: "100%", textAlign: "right" }}
+                                value={reminderMinutes || reminderMinutes === 0 ? reminderMinutes + "" : ""}
+                                items={ReminderFieldKeyValue}
+                                onSelect={(newValue: string) => {
+                                    const minutes = parseInt(newValue);
+                                    if (!isNaN(minutes) && minutes >= 0 && minutes <= 720) {
+                                        // 0 to 1 day
+                                        setReminderMinutes(minutes);
+                                    }
+                                }}
+                                readOnly={true}
+                            />
+                            }
+                            <Spacer width={25} />
+                        </HBox>
+                    </Grid>
+                </Grid>
             </Grid>
 
             <HBoxC style={{ position: "absolute", bottom: "2%" }}>
@@ -287,6 +343,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                 start,
                                 end,
                                 notes,
+                                ...(keyEvent != null && { keyEvent }),
                                 imageUrl,
 
                                 audioUrl,
@@ -296,7 +353,8 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                 ...(instanceStatus && { instanceStatus }),
                                 ...(recurrent && { recurrent: recurrentField }),
                                 ...(participants != null && participants.length > 0 && { participants }),
-                                ...(guide != null && { guide })
+                                ...(guide != null && { guide }),
+                                ...(reminderMinutes != null && { reminderMinutes }),
                             }),
                             editAllSeries: inEvent.editAllSeries
                         },

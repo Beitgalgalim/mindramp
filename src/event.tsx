@@ -33,12 +33,20 @@ export const RecurrentEventFieldKeyValue = [
     { key: "none", value: "ללא" },
 ];
 
+export const ReminderFieldKeyValue = [
+    { key: "0", value: "בתחילת הארוע" },
+    { key: "15", value: "15 דקות לפני" },
+    { key: "30", value: "30 דקות לפני" },
+    { key: "60", value: "שעה לפני" },
+];
+
 
 export class Event {
     date: string = "";
     title: string = "";
     start: string = "";
     end: string = "";
+    keyEvent?: boolean;
     notes?: string;
     imageUrl?: string;
     guideUrl?:string;
@@ -49,6 +57,7 @@ export class Event {
     guide?: Participant;
     participants?: Participant[];
     instanceStatus?: boolean;
+    reminderMinutes?:number;
 
     clearAudio?: boolean;
 
@@ -84,6 +93,8 @@ export class Event {
         assignIfExists(evt, "clearAudio", doc);
         assignIfExists(evt, "participants", doc);
         assignIfExists(evt, "guide", doc);
+        assignIfExists(evt, "keyEvent", doc);
+        assignIfExists(evt, "reminderMinutes", doc);
 
         return evt;
     }
@@ -127,6 +138,8 @@ export class Event {
         clearFieldIfEmpty("audioPath");
         clearFieldIfEmpty("participants");
         clearFieldIfEmpty("guide");
+        clearFieldIfEmpty("keyEvent");
+        clearFieldIfEmpty("reminderMinutes");
         
         delete eventObj._ref;
         delete eventObj.tag;
