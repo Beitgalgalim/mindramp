@@ -35,6 +35,7 @@ export class Event {
     notes?: string;
     imageUrl?: string;
     guideUrl?:string;
+    locationUrl? : string;
     audioUrl?: string;
     audioPath?: string;
     audioBlob?: Blob;
@@ -68,6 +69,7 @@ export class Event {
         }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "guideUrl", doc);
+        assignIfExists(evt, "locationUrl", doc);
         assignIfExists(evt, "recurrent", doc);
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
@@ -111,6 +113,7 @@ export class Event {
         clearFieldIfEmpty("notes");
         clearFieldIfEmpty("imageUrl");
         clearFieldIfEmpty("guideUrl");
+        clearFieldIfEmpty("locationUrl");
         clearFieldIfEmpty("recurrent");
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");

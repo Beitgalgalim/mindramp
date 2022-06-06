@@ -19,7 +19,7 @@ import { addRepeatIcon } from './elem';
 
 
 
-export default function Events({ connected, notify, media, guides }: EventsProps) {
+export default function Events({ connected, notify, media, guides, locations }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -229,6 +229,7 @@ export default function Events({ connected, notify, media, guides }: EventsProps
                 notify={notify}
                 media={media}
                 guides={guides}
+                locations={locations}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
                 onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {

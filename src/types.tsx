@@ -89,7 +89,7 @@ export interface WithGuides {
 }
 
 export interface WithLocations {
-    guides: LocationInfo[];
+    locations: LocationInfo[];
 }
 
 interface WindowSize {
@@ -113,13 +113,13 @@ export interface Notifying {
 }
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
-export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides { }
+export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides, WithLocations { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
 export interface LocationsProps extends Notifying, WithLocations, WithReload { }
 
-export interface EditEventsProps extends WithMedia, Notifying, WithGuides {
+export interface EditEventsProps extends WithMedia, Notifying, WithGuides, WithLocations {
     inEvent: EditEvent;
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
@@ -133,7 +133,7 @@ export interface EditGuideInfoProps {
 
 export interface EditLocationInfoProps {
     location_info : LocationInfo;
-    afterSaved: (room_info : LocationInfo) => void;
+    afterSaved: (location_info : LocationInfo) => void;
 }
 
 export interface DatePickerProps {
