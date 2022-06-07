@@ -33,6 +33,11 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         setLName(n.currentTarget.value);
     }
 
+    function onDelete() {
+        if (guide_info._ref)
+            api.deleteMedia(guide_info.avatar.path, guide_info._ref).finally(()=> afterSaved());
+    }
+
     function onSave() {
         const files = inputEl?.current?.files;
         
@@ -79,6 +84,7 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
             <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}} onChange={onSelectedFile} />
             {inputEl && <img src={preview} style={{width:48}} alt={fname + " " + lname} />}
             <Button variant="contained" onClick={onSave}>שמור</Button>
+            {guide_info._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button> }
             <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </div>);
 }
