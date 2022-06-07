@@ -166,7 +166,6 @@ export function testNotif() {
 }
 
 export async function getUserInfo(user: string, pwd: string) {
-    console.log("try to log with " + user + " : " + pwd );
     return signInWithEmailAndPassword(auth, user, pwd)
         .then((userCredential) => {
             // Signed in
@@ -507,7 +506,7 @@ export async function addGuideInfo(fname: string, lname: string, email:string, p
                     console.log("log to DB:");
                     console.log(res);
                     const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
-                    console.log("doc ref is "+ docRef);
+  
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
                 });
             });

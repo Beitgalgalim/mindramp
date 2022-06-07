@@ -13,7 +13,6 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
     const [editedGuide, seteditGuide] = useState<UserInfo | undefined>(undefined);
     
     let guides : UserInfo[] = FilterGuides(users);
-    console.log(guides);
 
     function getNewGuideInfo() : UserInfo {
         return {
@@ -35,8 +34,6 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
             reload();
         }
     }
-
-    console.log("render guides");
 
     return ( 
 
