@@ -3,7 +3,7 @@ import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Link from '@material-ui/core/Link';
-import { LockOutlined } from '@mui/icons-material';
+import { ConstructionOutlined, LockOutlined } from '@mui/icons-material';
 import Typography from '@material-ui/core/Typography';
 
 import * as api from './api'
@@ -22,6 +22,7 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
     const [pwd, setPwd] = useState<string>("");
 
     const ok = useCallback(() => {
+        console.log("in ok");
         api.getUserInfo(user, pwd).then(
             info => onLogin(info),
             err => onError(new Error(err.message))

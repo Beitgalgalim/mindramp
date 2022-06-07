@@ -36,6 +36,8 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
         }
     }
 
+    console.log("render guides");
+
     return ( 
 
     <div  dir="rtl">

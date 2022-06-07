@@ -10,8 +10,7 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
     const [preview, setPreview] = useState<string|undefined>(guide_info.avatar?.url);
     const [fname, setFName] = useState<string>(guide_info.fname);
     const [lname, setLName] = useState<string>(guide_info.lname);
-    const [displayName, setDisplayName] = useState<string>(guide_info.displayName);
-
+    const [email, setEmail] = useState<string>(guide_info._ref ? guide_info._ref.id : "");
 
     function onSelectedFile(f : any) {
         if(!f.target.files || f.target.files.length === 0){
@@ -22,6 +21,10 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
 
     }
 
+    function onEmailChange(n: any) {
+        setEmail(n.currentTarget.value);
+    }
+
     function onFNameChange(n: any) {
         setFName(n.currentTarget.value);
     }
@@ -30,16 +33,12 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         setLName(n.currentTarget.value);
     }
 
-    function onDisplayNameChange(n: any) {
-        setDisplayName(n.currentTarget.value);
-    }
-
     function onSave() {
         const files = inputEl?.current?.files;
         
         // exist guide
         if (guide_info._ref) {
-            api.editGuideInfo(guide_info._ref, fname, lname, displayName, (files && files.length)? files[0] : null).then( () => { 
+            api.editGuideInfo(guide_info._ref, fname, lname, (files && files.length)? files[0] : null).then( () => { 
                 console.log(`המדריך עודכן בהצלחה`);
                 afterSaved();
             },
@@ -49,8 +48,8 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         }
         
         // new guide
-        if(files && files.length > 0) {
-            api.addGuideInfo(fname, lname, displayName, files[0]).then(
+        if(files && files.length > 0 && email.length) {
+            api.addGuideInfo(fname, lname, email, files[0]).then(
                     () => { 
                         console.log(`המדריך נוצר בהצלחה`);
                         afterSaved();
@@ -72,12 +71,14 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
+            {guide_info._ref    ? <TextField variant="standard" helperText="אימייל" type="email" value={email} disabled />
+                                : <TextField variant="standard" helperText="אימייל" type="email" value={email} onChange={onEmailChange} />}
             <TextField variant="standard" helperText="שם פרטי"  value={fname} onChange={onFNameChange} />
             <TextField variant="standard" helperText="שם משפחה"  value={lname} onChange={onLNameChange} />
-            <TextField variant="standard" helperText="כינוי"  value={displayName} onChange={onDisplayNameChange} />
             <Text>תמונה של המנחה</Text>
             <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}} onChange={onSelectedFile} />
             {inputEl && <img src={preview} style={{width:48}} alt={fname + " " + lname} />}
             <Button variant="contained" onClick={onSave}>שמור</Button>
+            <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </div>);
 }

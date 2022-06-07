@@ -166,6 +166,7 @@ export function testNotif() {
 }
 
 export async function getUserInfo(user: string, pwd: string) {
+    console.log("try to log with " + user + " : " + pwd );
     return signInWithEmailAndPassword(auth, user, pwd)
         .then((userCredential) => {
             // Signed in
@@ -426,7 +427,7 @@ function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     return resourceRef;
 }
 
-export async function editGuideInfo(_ref: DocumentReference, fname: string, lname: string, displayName: string, pic: File | null){
+export async function editGuideInfo(_ref: DocumentReference, fname: string, lname: string, pic: File | null){
     console.log("we got ref need to update " + fname + " " + lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g)=> {
@@ -436,11 +437,10 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
             throw ("ref is not find any obj!");
         }
 
-        if (existing_info.fname !== fname || existing_info.lname !== lname || existing_info.displayName !== displayName) {
+        if (existing_info.fname !== fname || existing_info.lname !== lname) {
             console.log("New name for " + existing_info.fname + " " + existing_info.lname + " : " + fname + " " + lname);
             existing_info.fname = fname;
             existing_info.lname = lname;
-            existing_info.displayName = displayName;
         } else if (!pic){
             console.log("nothing changed!");
             return;
@@ -464,8 +464,8 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
                     uploadTask.then(val => {
                         getDownloadURL(val.ref).then(url => {
-                            res.avater.url = url;
-                            res.avater.path =  val.ref.fullPath;
+                            res.avatar.url = url;
+                            res.avatar.path =  val.ref.fullPath;
                            
                             updateDoc(_ref, res).then(() => (console.log("השינוי הוחל בהצלחה")));
                         });
@@ -480,7 +480,7 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
 }
 
 
-export async function addGuideInfo(fname: string, lname: string, displayName: string, pic: File) {
+export async function addGuideInfo(fname: string, lname: string, email:string, pic: File) {
     const resourceRef = GetResourceRefOfGuidePic(pic);
 
     /** @type {any} */
@@ -501,13 +501,13 @@ export async function addGuideInfo(fname: string, lname: string, displayName: st
                     const res = {
                         fname: fname,
                         lname: lname,
-                        displayName: displayName,
-                        avater: {path: val.ref.fullPath, url: url},
+                        avatar: {path: val.ref.fullPath, url: url},
                         type: UserType.GUIDE,
                     };
                     console.log("log to DB:");
                     console.log(res);
-                    const docRef = doc(collection(db, Collections.USERS_COLLECTION));
+                    const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
+                    console.log("doc ref is "+ docRef);
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
                 });
             });
