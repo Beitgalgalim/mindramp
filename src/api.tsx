@@ -19,7 +19,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, GuideInfo, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
+import { Collections, MediaResource, UserType, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -200,17 +200,6 @@ export function getEvents(): Promise<Event[]> {
     });
 }
 
-export function getGuides(): Promise<GuideInfo[]> {
-    return _getCollection(Collections.GUIDES_COLLECTION).then(items => items.map(d =>
-    ({
-        name: d.name,
-        url: d.url,
-        path: d.path || "",
-
-        _ref: d._ref
-    })));
-
-}
 
 export function getUsers(): Promise<UserInfo[]> {
     return _getCollection(Collections.USERS_COLLECTION).then(items => items.map(d =>
@@ -437,8 +426,8 @@ function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     return resourceRef;
 }
 
-export async function editGuideInfo(_ref: DocumentReference, name: string, pic: File | null){
-    console.log("we got ref need to update " + name + " , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
+export async function editGuideInfo(_ref: DocumentReference, fname: string, lname: string, displayName: string, pic: File | null){
+    console.log("we got ref need to update " + fname + " " + lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g)=> {
         let existing_info = g.data(); 
@@ -447,23 +436,21 @@ export async function editGuideInfo(_ref: DocumentReference, name: string, pic: 
             throw ("ref is not find any obj!");
         }
 
-        if (existing_info.name !== name) {
-            console.log("New name for " + existing_info.name + " : " + name);
-            existing_info.name = name;
+        if (existing_info.fname !== fname || existing_info.lname !== lname || existing_info.displayName !== displayName) {
+            console.log("New name for " + existing_info.fname + " " + existing_info.lname + " : " + fname + " " + lname);
+            existing_info.fname = fname;
+            existing_info.lname = lname;
+            existing_info.displayName = displayName;
         } else if (!pic){
             console.log("nothing changed!");
             return;
         }
 
-        let res : GuideInfo = {
-            name: existing_info.name,
-            url: existing_info.url,
-            path: existing_info.path,
-            _ref: _ref
-        };
+        let res : any = existing_info;
+        res._ref = _ref;
 
         if (pic){
-            console.log("got new pic for " + res.name);
+            console.log("got new pic for " + fname + " " + lname);
             const resourceRef = GetResourceRefOfGuidePic(pic);
             const metadata = {
                 contentType: 'image/jpeg',
@@ -477,25 +464,23 @@ export async function editGuideInfo(_ref: DocumentReference, name: string, pic: 
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
                     uploadTask.then(val => {
                         getDownloadURL(val.ref).then(url => {
-                            res.url = url;
-                            res.path =  val.ref.fullPath;
-                            let anyres : any = res; 
-
-                            updateDoc(_ref, anyres).then(() => (console.log("השינוי הוחל בהצלחה")));
+                            res.avater.url = url;
+                            res.avater.path =  val.ref.fullPath;
+                           
+                            updateDoc(_ref, res).then(() => (console.log("השינוי הוחל בהצלחה")));
                         });
                     });
                 });
         } else {
             // stay with the old pic
-            let anyres : any = res; 
-            updateDoc(_ref, anyres).then(() => (console.log("השם שונה ל " + name)));
+            updateDoc(_ref, res).then();
         }
     });
     
 }
 
 
-export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
+export async function addGuideInfo(fname: string, lname: string, displayName: string, pic: File) {
     const resourceRef = GetResourceRefOfGuidePic(pic);
 
     /** @type {any} */
@@ -503,10 +488,10 @@ export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> 
         contentType: 'image/jpeg',
     };
 
-    // Verify guide does not exist:
+    // Verify picture name does not exist:
     return getMetadata(resourceRef).then(
         //success
-        (md) => { throw ("מדריך בשם זה כבר קיים") },
+        (md) => { throw ("תמונת מדריך בשם זה כבר קיים") },
         () => {
             // Fail - new guide name
             // Upload his/her pic and metadata
@@ -514,11 +499,15 @@ export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> 
             return uploadTask.then(val => {
                 return getDownloadURL(val.ref).then(url => {
                     const res = {
-                        name,
-                        path: val.ref.fullPath,
-                        url,
+                        fname: fname,
+                        lname: lname,
+                        displayName: displayName,
+                        avater: {path: val.ref.fullPath, url: url},
+                        type: UserType.GUIDE,
                     };
-                    const docRef = doc(collection(db, Collections.GUIDES_COLLECTION));
+                    console.log("log to DB:");
+                    console.log(res);
+                    const docRef = doc(collection(db, Collections.USERS_COLLECTION));
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
                 });
             });

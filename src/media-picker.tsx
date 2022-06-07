@@ -1,11 +1,11 @@
 import { Close } from "@mui/icons-material";
 import { Text } from "./elem";
 import { Design } from "./theme";
-import { GuideInfo, MediaResource } from "./types";
+import { MediaResource } from "./types";
 
 
 export default function MediaPicker({ title, media, onSelect, onCancel }:
-    { title:string, media: MediaResource[] | GuideInfo[], onSelect: CallableFunction, onCancel: CallableFunction }) {
+    { title:string, media: MediaResource[], onSelect: CallableFunction, onCancel: CallableFunction }) {
 
 
 

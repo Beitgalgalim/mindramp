@@ -1,14 +1,16 @@
 import { Colors, Design } from './theme';
-import { Text, Spacer } from './elem';
+import { Text } from './elem';
 import { Button, TextField } from '@mui/material';
-import { GuideInfo, EditGuideInfoProps } from './types';
-import { useEffect, useRef, useState } from 'react';
+import { EditGuideInfoProps } from './types';
+import { useRef, useState } from 'react';
 import * as api from "./api";
 
 export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
-    const [preview, setPreview] = useState<string|undefined>(guide_info.url);
-    const [name, setName] = useState<string>(guide_info.name);
+    const [preview, setPreview] = useState<string|undefined>(guide_info.avatar?.url);
+    const [fname, setFName] = useState<string>(guide_info.fname);
+    const [lname, setLName] = useState<string>(guide_info.lname);
+    const [displayName, setDisplayName] = useState<string>(guide_info.displayName);
 
 
     function onSelectedFile(f : any) {
@@ -20,17 +22,24 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
 
     }
 
-    function onNameChange(n: any) {
-        setName(n.currentTarget.value);
+    function onFNameChange(n: any) {
+        setFName(n.currentTarget.value);
+    }
+
+    function onLNameChange(n: any) {
+        setLName(n.currentTarget.value);
+    }
+
+    function onDisplayNameChange(n: any) {
+        setDisplayName(n.currentTarget.value);
     }
 
     function onSave() {
-        //console.log("start save " + name );
         const files = inputEl?.current?.files;
         
         // exist guide
         if (guide_info._ref) {
-            api.editGuideInfo(guide_info._ref, name, (files && files.length)? files[0] : null).then( () => { 
+            api.editGuideInfo(guide_info._ref, fname, lname, displayName, (files && files.length)? files[0] : null).then( () => { 
                 console.log(`המדריך עודכן בהצלחה`);
                 afterSaved();
             },
@@ -41,8 +50,8 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         
         // new guide
         if(files && files.length > 0) {
-            api.addGuideInfo(name, files[0]).then(
-                    (g: GuideInfo) => { 
+            api.addGuideInfo(fname, lname, displayName, files[0]).then(
+                    () => { 
                         console.log(`המדריך נוצר בהצלחה`);
                         afterSaved();
                     },
@@ -63,10 +72,12 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <TextField variant="standard" helperText="שם המנחה"  value={name} onChange={onNameChange} />
+            <TextField variant="standard" helperText="שם פרטי"  value={fname} onChange={onFNameChange} />
+            <TextField variant="standard" helperText="שם משפחה"  value={lname} onChange={onLNameChange} />
+            <TextField variant="standard" helperText="כינוי"  value={displayName} onChange={onDisplayNameChange} />
             <Text>תמונה של המנחה</Text>
             <input className="custom-file-input" type="file" ref={inputEl} style={{width:400}} onChange={onSelectedFile} />
-            {inputEl && <img src={preview} style={{width:48}} alt={name} />}
+            {inputEl && <img src={preview} style={{width:48}} alt={fname + " " + lname} />}
             <Button variant="contained" onClick={onSave}>שמור</Button>
             </div>);
 }

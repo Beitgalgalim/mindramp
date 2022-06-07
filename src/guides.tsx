@@ -1,18 +1,30 @@
 import {  useRef, useState } from 'react';
-import { GuidesProps, GuideInfo } from './types';
+import { GuidesProps, UserInfo, UserType} from './types';
 import EditGuideInfo from './edit-guide-info';
 import { Text, HBox, Spacer } from './elem';
 import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 
-export default function Guides({ guides, notify, reload }: GuidesProps) {
-    const [editedGuide, seteditGuide] = useState<GuideInfo | undefined>(undefined);
-    //console.log(guides_info);
-    function getNewGuideInfo() : GuideInfo {
+function FilterGuides(users : UserInfo[]) : UserInfo[] {
+    return users.filter((u) => (u.type === UserType.GUIDE));
+}
+
+export default function Guides({ users, notify, reload }: GuidesProps) {
+    const [editedGuide, seteditGuide] = useState<UserInfo | undefined>(undefined);
+    
+    let guides : UserInfo[] = FilterGuides(users);
+    console.log(guides);
+
+    function getNewGuideInfo() : UserInfo {
         return {
-            name: "",
-            url: "",
-            path: "",
+            fname: "",
+            lname: "",
+            displayName: "",
+            avatar: {
+                url: "",
+                path: "",
+            },
+            type: UserType.GUIDE,
         }
     }
 
@@ -45,9 +57,9 @@ export default function Guides({ guides, notify, reload }: GuidesProps) {
         { editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved={afterEdit} />}
         {guides.map((m, i) => (
         <HBox key={i} onClick={()=>seteditGuide(m)}>
-             <img src={m.url} style={{ width: 40, height: 40 }} alt={m.name}/>
+             {m.avatar && m.avatar.url && <img src={m.avatar.url} style={{ width: 40, height: 40 }} alt={m.fname + " " + m.lname}/>}
              <Spacer width={30}/>
-             <Text width={"50vw"} textAlign="right">{m.name}</Text>
+             <Text width={"50vw"} textAlign="right">{m.fname + " " + m.lname}</Text>
         </HBox>
         ))}
     </div>);
