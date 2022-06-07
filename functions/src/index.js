@@ -101,7 +101,7 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
 
                 return axios.post(url, postData, {
                     headers,
-                });
+                }).then((res)=>({success:true}));
             }
         });
     });

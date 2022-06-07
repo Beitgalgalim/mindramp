@@ -60,6 +60,12 @@ function App(props: any) {
     },
   }
 
+  const onPushNotification = (msgPayload:any) => {
+    console.log(JSON.stringify(msgPayload, undefined, " "))
+    
+    notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
+  };
+
   useEffect(() => {
     api.initAPI(
       // Callback for AuthStateChanged
@@ -69,11 +75,7 @@ function App(props: any) {
         setTokens(userPersonalInfo.tokens);
         setSynced(true);
       },
-      (msgPayload) => {
-        console.log(JSON.stringify(msgPayload, undefined, " "))
-        //notify.notification(msgPayload.fcmMessageId, msgPayload.notification.body, msgPayload.notification.title, msgPayload.notification.click_action)
-        //todo show the message
-      },
+      onPushNotification,
       (notifToken) => setNotificationToken(notifToken)
     );
 
@@ -148,6 +150,7 @@ function App(props: any) {
           <Route path="/" element={<UserEvents
             notificationOn={notificationOn === true}
             onNotificationToken={(notifToken) => setNotificationToken(notifToken)}
+            onPushNotification={onPushNotification}
             onNotificationOnChange={(on) => setNotificationOn(on)}
             windowSize={windowSize}
             connected={connected}

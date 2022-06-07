@@ -261,7 +261,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
 }
 
 export default function UserEvents({ windowSize, connected, notify, user, 
-    notificationOn, onNotificationOnChange, onNotificationToken }: UserEventsProps) {
+    notificationOn, onNotificationOnChange, onNotificationToken, onPushNotification }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
@@ -368,6 +368,7 @@ export default function UserEvents({ windowSize, connected, notify, user,
             notificationOn={notificationOn}
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
+            onPushNotification={onPushNotification}
             notify={notify} nickName={nickName} />
     }
 

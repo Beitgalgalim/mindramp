@@ -19,7 +19,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, GuideInfo, UserInfo, UserPersonalInfo, isDev } from './types';
+import { Collections, MediaResource, GuideInfo, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -31,7 +31,7 @@ let functions: any = undefined;
 
 export function initAPI(
     onAuth: (userPersonalInfo: UserPersonalInfo) => void,
-    onPushNotification: (msgPayload: any) => void,
+    onPushNotification: onPushNotificationHandler,
     onNotificationToken: (notificationToken: string) => void
 ): boolean {
     if (!app) {
@@ -64,7 +64,7 @@ export function initAPI(
 }
 
 export function initializeNotification(
-    onPushNotification: (msgPayload: any) => void,
+    onPushNotification: onPushNotificationHandler,
     onNotificationToken: (notificationToken: string) => void
 ) {
 

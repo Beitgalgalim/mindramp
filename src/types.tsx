@@ -2,6 +2,7 @@ import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { Event } from './event';
 import { User } from '@firebase/auth';
 import { Dayjs } from "dayjs";
+import { MessagePayload } from "@firebase/messaging";
 
 export function isDev(): boolean {
     return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";
@@ -145,12 +146,15 @@ export interface Notifying {
     notify: Notify;
 }
 
+export type onPushNotificationHandler = (msgPayload:MessagePayload)=>void
+
 export interface AdminProps extends Connected, Notifying, WithUser { }
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
+    onPushNotification: onPushNotificationHandler,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
@@ -168,6 +172,7 @@ export interface UserSettingsProps extends WithUser, Notifying {
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
+    onPushNotification: onPushNotificationHandler,
 }
 
 export interface EventsHeaderProps extends WithUser {
