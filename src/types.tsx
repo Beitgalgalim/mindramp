@@ -3,16 +3,19 @@ import { Event } from './event';
 import { User } from '@firebase/auth';
 import { Dayjs } from "dayjs";
 
-console.log(process.env)
+export function isDev(): boolean {
+    return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";
+}
 export const Collections =
     //(window as any).devMode === true ?
-    process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
+    isDev() ?
         {
             EVENT_COLLECTION: "event_dev",
             MEDIA_COLLECTION: "media_dev",
             GUIDES_COLLECTION: "guides_dev",
             USERS_COLLECTION: "users_dev",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+            USER_PERSONAL_SUBCOLLECTION: "personal",
         }
         :
         {
@@ -21,6 +24,7 @@ export const Collections =
             GUIDES_COLLECTION: "guides",
             USERS_COLLECTION: "users",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+            USER_PERSONAL_SUBCOLLECTION: "personal",
         }
 
 
@@ -67,6 +71,20 @@ export interface UserInfo {
     type: UserType,
     _ref?: DocumentReference
 }
+
+export interface NotificationToken {
+    token: string,
+    isSafari: boolean,
+    ts: string,
+}
+
+export interface UserPersonalInfo {
+    _ref: DocumentReference,
+    phone?: string,
+    notificationOn?: boolean,
+    tokens?: NotificationToken[]
+}
+
 
 export interface MediaResource {
     name: string,
@@ -129,7 +147,11 @@ export interface Notifying {
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
-export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying { }
+export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
+    notificationOn: boolean,
+    onNotificationOnChange: (on: boolean) => void,
+    onNotificationToken: (token: string) => void,
+}
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
 
@@ -141,12 +163,15 @@ export interface LoginProps {
 }
 
 export interface UserSettingsProps extends WithUser, Notifying {
-    onDone: (newNick: string)=>void,
+    onDone: (newNick: string) => void,
     nickName: string,
+    notificationOn: boolean,
+    onNotificationOnChange: (on: boolean) => void,
+    onNotificationToken: (token: string) => void,
 }
 
 export interface EventsHeaderProps extends WithUser {
-    onLogoDoubleClicked : Callback,
+    onLogoDoubleClicked: Callback,
     nickName: string,
     height: number | string,
     showDateTime: Dayjs,

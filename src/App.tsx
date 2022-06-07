@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
-import { MsgButton, NotificationMessage } from './types';
+import { MsgButton, NotificationMessage, NotificationToken } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
 import { User } from '@firebase/auth';
@@ -24,6 +24,9 @@ function App(props: any) {
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [synced, setSynced] = useState(false);
+  const [notificationOn, setNotificationOn] = useState<boolean | null>();
+  const [tokens, setTokens] = useState<NotificationToken[] | null>()
+  const [notificationToken, setNotificationToken] = useState<string | null>();
 
 
   useEffect(() => {
@@ -58,21 +61,36 @@ function App(props: any) {
   }
 
   useEffect(() => {
-    const success = api.initAPI(
+    api.initAPI(
       // Callback for AuthStateChanged
-      (user) => {
-        console.log("user:", JSON.stringify(user));
-        setUser(user?.email);
+      (userPersonalInfo) => {
+        setUser(userPersonalInfo._ref.id);
+        setNotificationOn(userPersonalInfo.notificationOn);
+        setTokens(userPersonalInfo.tokens);
         setSynced(true);
-      });
-    if (success) {
-      setConnected(true);
-    }
+      },
+      (msgPayload) => {
+        console.log(JSON.stringify(msgPayload, undefined, " "))
+        //notify.notification(msgPayload.fcmMessageId, msgPayload.notification.body, msgPayload.notification.title, msgPayload.notification.click_action)
+        //todo show the message
+      },
+      (notifToken) => setNotificationToken(notifToken)
+    );
+
+    setConnected(true);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
+  useEffect(() => {
+    //Update server with notification info if needed
+    if (notificationToken && notificationToken !== "" && user &&
+      (!tokens || !tokens.find(n => n.token === notificationToken))) {
+      const isSafari = 'safari' in window;
+      api.updateUserNotification(notificationOn === true, notificationToken, isSafari);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationToken, notificationOn, user, tokens]);
 
   return (
     <div className="App" dir="rtl">
@@ -127,11 +145,14 @@ function App(props: any) {
                 <Admin connected={connected} notify={notify} user={user} />
 
           } />
-          <Route path="/" element={<UserEvents 
-            windowSize={windowSize} 
-            connected={connected} 
+          <Route path="/" element={<UserEvents
+            notificationOn={notificationOn === true}
+            onNotificationToken={(notifToken) => setNotificationToken(notifToken)}
+            onNotificationOnChange={(on) => setNotificationOn(on)}
+            windowSize={windowSize}
+            connected={connected}
             user={user}
-            notify={notify} />} 
+            notify={notify} />}
           />
         </Routes>
       </BrowserRouter>

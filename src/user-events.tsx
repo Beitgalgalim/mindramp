@@ -260,7 +260,8 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
     );
 }
 
-export default function UserEvents({ windowSize, connected, notify, user }: UserEventsProps) {
+export default function UserEvents({ windowSize, connected, notify, user, 
+    notificationOn, onNotificationOnChange, onNotificationToken }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
@@ -361,8 +362,12 @@ export default function UserEvents({ windowSize, connected, notify, user }: User
     if (showUserSettings) {
         return <UserSettings user={user} onDone={(newNick) => {
             setShowUserSettings(false);
-            setNickName(newNick)
+            setNickName(newNick);
+
         }}
+            notificationOn={notificationOn}
+            onNotificationOnChange={onNotificationOnChange}
+            onNotificationToken={onNotificationToken}
             notify={notify} nickName={nickName} />
     }
 

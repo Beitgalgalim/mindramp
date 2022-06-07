@@ -9,29 +9,160 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from "firebase/storage";
 
 import {
-    getAuth, onAuthStateChanged, NextOrObserver, User, Auth,
+    getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
 } from "firebase/auth";
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, GuideInfo, UserInfo } from './types';
+import { Collections, MediaResource, GuideInfo, UserInfo, UserPersonalInfo, isDev } from './types';
 import { Event } from './event';
+import dayjs from 'dayjs';
 
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
+let functions: any = undefined;
 
 
-export function initAPI(onAuth: NextOrObserver<User>): boolean {
+export function initAPI(
+    onAuth: (userPersonalInfo: UserPersonalInfo) => void,
+    onPushNotification: (msgPayload: any) => void,
+    onNotificationToken: (notificationToken: string) => void
+): boolean {
     if (!app) {
         app = initializeApp({ ...firebaseConfig });
         db = getFirestore(app);
+        auth = getAuth(app);
+        functions = getFunctions(app, 'europe-west1');
     }
-    auth = getAuth(app);
-    onAuthStateChanged(auth, onAuth);
+
+    onAuthStateChanged(auth, (user) => {
+        const email = user?.email;
+        if (email) {
+            const docRef = doc(db, Collections.USERS_COLLECTION, email, Collections.USER_PERSONAL_SUBCOLLECTION, "Default")
+            getDoc(docRef).then((userPersonallDoc => {
+                if (userPersonallDoc.exists()) {
+
+                    if (userPersonallDoc.data().notificationOn === true) {
+                        initializeNotification(onPushNotification, onNotificationToken);
+                    }
+
+                    onAuth({
+                        _ref: userPersonallDoc.ref,
+                        ...userPersonallDoc.data(),
+                    });
+                }
+            }));
+        }
+    });
     return true;
+}
+
+export function initializeNotification(
+    onPushNotification: (msgPayload: any) => void,
+    onNotificationToken: (notificationToken: string) => void
+) {
+
+    try {
+        const messaging = getMessaging(app);
+        if ('safari' in window) {// && 'pushNotification' in window.safari) {
+            // requires user gesture...
+            // todo
+        } else {
+            Notification.requestPermission().then(perm => {
+                if (perm === "granted") {
+                    console.log("permission granted");
+                    getToken(messaging, { vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ' }).then((currentToken) => {
+                        if (currentToken) {
+                            // Send the token to your server and update the UI if necessary
+                            console.log("Web notification", currentToken);
+                            if (onNotificationToken) {
+                                onNotificationToken(currentToken);
+                            }
+                        } else {
+                            // Show permission request UI
+                            console.log('No registration token available. Request permission to generate one.');
+                            // ...
+                        }
+                    }).catch((err) => {
+                        console.log('An error occurred while retrieving token. ', err);
+                        // ...
+                    });
+                } else {
+                    console.log("Permission denied to notifications");
+                }
+
+                onMessage(messaging, (payload) => {
+                    console.log('Message received. ', JSON.stringify(payload));
+                    if (onPushNotification) {
+                        onPushNotification(payload);
+                    }
+                });
+            });
+        }
+    } catch (err: any) {
+        console.log("Cannot initialize messaging", err.message);
+    }
+}
+
+export const checkSafariRemotePermission = (permissionData: any) => {
+    // todo
+    // if (permissionData.permission === 'default') {
+    //     // This is a new web service URL and its validity is unknown.
+    //     return window.safari.pushNotification.requestPermission(
+    //         'https://todo', // The web service URL.
+    //         'todo',     // The Website Push ID.
+    //         {}, // Data that you choose to send to your server to help you identify the user.
+    //         checkSafariRemotePermission         // The callback function.
+    //     );
+    // }
+    // else if (permissionData.permission === 'denied') {
+    //     console.log("Safari push is denied");
+    //     // The user said no.
+    // }
+    // else if (permissionData.permission === 'granted') {
+    //     // The web service URL is a valid push provider, and the user said yes.
+    //     // permissionData.deviceToken is now available to use.
+    //     console.log("Safari push is ready. deviceToken:", permissionData.deviceToken);
+    //     return permissionData.deviceToken;
+    // }
+    // return undefined;
+};
+
+export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string, isSafari?: boolean) {
+    const updateNotification = httpsCallable(functions, 'updateNotification');
+
+    const payload: any = {};
+    if (notificationOn !== undefined) {
+        payload.notificationOn = notificationOn;
+    }
+
+    if (newNotificationToken !== undefined) {
+        payload.notificationToken = {
+            isSafari,
+            token: newNotificationToken,
+            ts: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        };
+    }
+
+    return updateNotification(payload);
+}
+
+
+export function testNotif() {
+    const sendNotificationTest = httpsCallable(functions, 'sendNotificationTest');
+    const payload: any = {
+        title:"בדיקת הודעה",
+        body: "זוהי הודעת בדיקה",
+        link: "https://mindramp-58e89.web.app/",
+        isDev: isDev(),
+    };
+    return sendNotificationTest(payload);
 }
 
 export async function getUserInfo(user: string, pwd: string) {
