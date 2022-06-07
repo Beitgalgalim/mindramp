@@ -190,13 +190,8 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
 }
 
 export interface EditGuideInfoProps {
-<<<<<<< HEAD
-    guide_info: GuideInfo;
-    afterSaved: (guide_info: GuideInfo) => void;
-=======
    guide_info : GuideInfo;
    afterSaved: () => void;
->>>>>>> Adding the option to edit guide name or picture
 }
 
 export interface DatePickerProps {
