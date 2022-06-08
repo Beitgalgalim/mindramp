@@ -21,6 +21,8 @@ import { ExpandMore } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
+import "./elem.css";
+
 
 
 export const ResponsiveTab = withStyles({
@@ -284,7 +286,9 @@ export function HBox(props: any) {
 }
 
 export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
-    return <img src={imageSrc} alt="" style={{ borderRadius: size / 2, width: size, height: size }} />
+    return <img src={imageSrc} 
+        className={"cover"}
+        alt="" style={{ borderRadius: size / 2, width: size, height: size }} />
 }
 
 export function Spacer(props: any) {

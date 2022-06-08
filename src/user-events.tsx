@@ -9,7 +9,7 @@ import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 import { Event } from './event';
 
-import { AccessTime, Mic } from "@mui/icons-material";
+import { AccessTime, Mic, MicOutlined } from "@mui/icons-material";
 import "./user-events.css";
 
 import { Design } from "./theme";
@@ -17,6 +17,7 @@ import { CircularProgress } from "@material-ui/core";
 
 import dayjs from './localDayJs'
 import UserSettings from "./user-settings";
+import { borderRadius } from "@mui/system";
 
 
 
@@ -206,7 +207,12 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
             }}>
                 {
                     event.imageUrl && <div style={{ width: 78 }}>
-                        <img src={event.imageUrl} style={{ maxWidth: Design.eventImageSize, maxHeight: Design.eventImageSize }} alt="תמונה" />
+                        <img src={event.imageUrl} style={{
+                            maxWidth: Design.eventImageSize,
+                            maxHeight: Design.eventImageSize,
+                            borderRadius: 10,
+
+                        }} alt="תמונה" />
                     </div>
                 }
                 {!isSingle && event.guide && <Avatar size={buttonSize} imageSrc={event.guide?.icon} />}
@@ -229,12 +235,24 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                 <HBox>
                     {eventAudioLoading && <CircularProgress size={buttonSize} />}
                     {
-                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize, display: "flex", justifyContent: "flex-end" }}>
-                            <Mic style={{ fontSize: buttonSize }} />
+                        event.audioUrl &&
+                        <div style={{
+                            height: buttonSize, minWidth: buttonSize,
+                            display: "flex", 
+                            justifyContent: "center",
+                            alignItems:"center",
+                            color: "white",
+                            backgroundColor: "#6F9CB6",
+                            borderRadius: buttonSize / 2,
+                        }}>
+                            <MicOutlined style={{
+                                fontSize: buttonSize * .7,
+                            }} />
                         </div>
                     }
+                    <Spacer />
                     {isSingle && event.guide ? <Avatar size={buttonSize} imageSrc={event.guide?.icon} /> : isSingle && <Spacer width={buttonSize} />}
-                    {<Spacer height={buttonSize} />}
+                    <Spacer height={buttonSize} />
                 </HBox>
             </HBoxSB>
 
@@ -260,7 +278,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
     );
 }
 
-export default function UserEvents({ windowSize, connected, notify, user, 
+export default function UserEvents({ windowSize, connected, notify, user,
     notificationOn, onNotificationOnChange, onNotificationToken, onPushNotification }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
@@ -385,7 +403,7 @@ export default function UserEvents({ windowSize, connected, notify, user,
     >
 
 
-        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} nickName={nickName} 
+        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} nickName={nickName}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
             user={user}
         />

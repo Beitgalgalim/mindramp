@@ -1,0 +1,14 @@
+.scale-down {
+    object-fit: scale-down;
+}
+.fill {
+    object-fit: fill;
+  }
+  
+  .contain {
+    object-fit: contain;
+  }
+  
+  .cover {
+    object-fit: cover;
+  }
