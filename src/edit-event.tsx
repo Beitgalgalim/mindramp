@@ -211,7 +211,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                         const newParticipant = {
                                             displayName: selectedUser.displayName,
                                             email: selectedUser._ref?.id || "",
-                                            ...(selectedUser.avatar && { iconUrl: selectedUser.avatar.url }),
+                                            ...(selectedUser.avatar && { icon: selectedUser.avatar.url }),
                                         }
                                         setParticipants((curr: Participant[] | null) => curr !== null ? [newParticipant, ...curr] : [newParticipant]);
                                     }
@@ -259,7 +259,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <Repeat />
                     </Grid>
-                    <Grid container item xs={5} spacing={2} >
+                    <Grid container item xs={4} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
                             <Checkbox onChange={(evt) => {
@@ -272,29 +272,30 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                 disabled={inEvent.editAllSeries === false}
                                 style={{ paddingRight: 0 }} />
                             <Text fontSize={13}>חוזר</Text>
-
-
-                            <Spacer width={25} />
-                            {recurrent && <ComboBox
-                                style={{ width: "30vw", textAlign: "right" }}
-                                value={recurrent}
-                                items={RecurrentEventFieldKeyValue}
-                                onSelect={(newValue: string) => setRecurrent(newValue as EventFrequency)}
-                                readOnly={true}
-                            />
-                            }
-                            <Spacer width={25} />
                         </HBox>
+
+                    </Grid>
+                    <Grid container item xs={4} spacing={2} >
+
+                        {recurrent && <ComboBox
+                            style={{ width: "20vw", textAlign: "right" }}
+                            value={recurrent}
+                            items={RecurrentEventFieldKeyValue}
+                            onSelect={(newValue: string) => setRecurrent(newValue as EventFrequency)}
+                            readOnly={true}
+                        />
+                        }
+                        <Spacer width={25} />
                     </Grid>
                 </Grid>
                 <Spacer height={25} />
-                {/*reminder*/}
 
+                {/*reminder*/}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
                         <NotificationsActive />
                     </Grid>
-                    <Grid container item xs={9} spacing={2} >
+                    <Grid container item xs={4} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
 
                             <Checkbox onChange={(evt) => {
@@ -304,28 +305,29 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                                     setReminderMinutes(null);
                                 }
                             }}
-                                checked={(reminderMinutes || reminderMinutes === 0)?true:false}
+                                checked={(reminderMinutes || reminderMinutes === 0) ? true : false}
                                 style={{ paddingRight: 0 }} />
                             <Text fontSize={13}>תזכורת</Text>
-
-
-                            <Spacer width={25} />
-                            {(reminderMinutes || reminderMinutes === 0) && <ComboBox
-                                style={{ width: "100%", textAlign: "right" }}
-                                value={reminderMinutes || reminderMinutes === 0 ? reminderMinutes + "" : ""}
-                                items={ReminderFieldKeyValue}
-                                onSelect={(newValue: string) => {
-                                    const minutes = parseInt(newValue);
-                                    if (!isNaN(minutes) && minutes >= 0 && minutes <= 720) {
-                                        // 0 to 1 day
-                                        setReminderMinutes(minutes);
-                                    }
-                                }}
-                                readOnly={true}
-                            />
-                            }
-                            <Spacer width={25} />
                         </HBox>
+                    </Grid>
+                    <Grid container item xs={4} spacing={2} >
+
+
+                        {(reminderMinutes || reminderMinutes === 0) && <ComboBox
+                            style={{ width: "20vw", textAlign: "right" }}
+
+                            value={reminderMinutes || reminderMinutes === 0 ? reminderMinutes + "" : ""}
+                            items={ReminderFieldKeyValue}
+                            onSelect={(newValue: string) => {
+                                const minutes = parseInt(newValue);
+                                if (!isNaN(minutes) && minutes >= 0 && minutes <= 720) {
+                                    // 0 to 1 day
+                                    setReminderMinutes(minutes);
+                                }
+                            }}
+                            readOnly={true}
+                        />
+                        }
                     </Grid>
                 </Grid>
             </Grid>

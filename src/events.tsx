@@ -310,26 +310,41 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                 }}
 
                 onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
-                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
-                        // deletion of an instance that has no persistance
-                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
-                            (updatedEventSeries)=>{
-                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id? e : updatedEventSeries));
-                                setNewEvent(undefined);
-                                notify.success("מופע זה נמחק בהצלחה");
+                    notify.ask("האם למחוק אירוע?", "מחיקה",
+                        [
+                            {
+                                caption: "כן",
+                                callback: () => {
+                                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
+                                        // deletion of an instance that has no persistance
+                                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
+                                            (updatedEventSeries) => {
+                                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id ? e : updatedEventSeries));
+                                                setNewEvent(undefined);
+                                                notify.success("מופע זה נמחק בהצלחה");
+                                            },
+                                            (err: any) => notify.error(err)
+                                        )
+                                    } else {
+                                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
+                                            (removedIDs) => {
+                                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
+                                                setNewEvent(undefined);
+                                                notify.success("נמחק בהצלחה")
+                                            },
+                                            (err: any) => notify.error(err)
+                                        );
+                                    }
+                                }
                             },
-                            (err: any) => notify.error(err)
-                        )
-                    } else {
-                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
-                            (removedIDs) => {
-                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
-                                setNewEvent(undefined);
-                                notify.success("נמחק בהצלחה")
-                            },
-                            (err: any) => notify.error(err)
-                        );
-                    } 
+                            {
+                                caption: "בטל",
+                                callback: () => { }
+                            }
+                        ]
+
+                    )
+
                 }}
             />
         }

@@ -178,7 +178,7 @@ export function ComboBox(props: ComboBoxProps) {
         }
 
 
-        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }}
+        return <ListItem style={{ padding: 0, ...renderProps.style, ...style}}
             key={renderProps.index}
             selected={currentIndex === renderProps.index}
         >
@@ -191,9 +191,9 @@ export function ComboBox(props: ComboBoxProps) {
                     primary={
                         props.renderItem ?
                             props.renderItem(items[renderProps.index], hoverItem === renderProps.index, false) :
-                            <Typography style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>
+                            <Text style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>
                                 {txtValue}
-                            </Typography>
+                            </Text>
                     }
                 />
             </ListItemButton>
@@ -231,7 +231,7 @@ export function ComboBox(props: ComboBoxProps) {
                     }
                     }
                     placeholder={placeholder}
-                    value={value || localValue}
+                    value={localValue}
                     readOnly={props.readOnly === true}
                     invalid={props.invalid}
                     onArrowUp={() => console.log("up")}

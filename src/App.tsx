@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './App.css';
@@ -21,12 +21,13 @@ function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
+
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [notificationOn, setNotificationOn] = useState<boolean | null>();
   const [tokens, setTokens] = useState<NotificationToken[] | null>()
   const [notificationToken, setNotificationToken] = useState<string | null>();
-
+  const msgTimerRef = useRef<NodeJS.Timer>();
 
   useEffect(() => {
     function handleResize() {
@@ -38,22 +39,28 @@ function App(props: any) {
 
   }, [])
 
+  const clearMsg = () => {
+    setMsg(undefined);
+    if (msgTimerRef.current) {
+      clearTimeout(msgTimerRef.current);
+      msgTimerRef.current = undefined;
+    }
+  }
   const notify = {
     success: (body: string, title?: string) => {
       setMsg({ open: true, severity: "success", title, body, progress: false });
-      setTimeout(() => setMsg(undefined), 5000);
+      msgTimerRef.current = setTimeout(clearMsg, 5000);
     },
     error: (body: string, title?: string) => {
       setMsg({ open: true, severity: "error", title, body, progress: false });
-      setTimeout(() => setMsg(undefined), 5000);
+      msgTimerRef.current = setTimeout(clearMsg, 5000);
 
     },
     ask: (body: string, title: string, buttons: MsgButton[], details?: string) => {
+      clearMsg();
       setMsg({ open: true, severity: "info", title, body, buttons, details, progress: false });
     },
-    clear: () => {
-      setMsg(undefined);
-    },
+    clear: clearMsg,
     inProgress: () => {
       setMsg({ progress: true, open: true })
     },
@@ -114,7 +121,7 @@ function App(props: any) {
           borderColor: "gray",
           justifyContent: "center",
         }} severity={msg.severity}>
-          {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => setMsg(undefined)} /></div>}
+          {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => notify.clear()} /></div>}
           {msg.title ? <AlertTitle>{msg.title}</AlertTitle> : null}
           <Text>{msg.body}</Text>
           {msg.details ? msg.details.split("\n").map(d => <Text fontSize={15}>{d}</Text>) : null}

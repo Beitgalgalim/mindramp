@@ -87,7 +87,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
 
     return (
         <HBox style={style}>
-            <div style={{ width: "33%" }}>
+            <div style={{ width: "35%" }}>
                 <ReactDatePicker
                     ref={datePicker}
 
@@ -107,17 +107,19 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
 
 
             <ComboBox
-                style={{ width:"28%" }}
+                style={{ textAlign: "left" }}
                 value={getTime(start)} items={times}
                 onSelect={(newValue: string) => setStartTime(newValue)}
-                onChange={(newValue: string) => setStartTime(newValue)}
+                onChange={(newValue: string) => {
+                    setStartTime(newValue)
+                }}
                 invalid={invalidStart} />
             <Spacer width={"2%"} />
             -
             <Spacer width={"2%"} />
 
             <ComboBox
-                style={{ width:"28%" }}
+                style={{  textAlign: "left"}}
                 value={getTime(end)} items={getTimes(dayjs(start))}
                 onSelect={(newValue: string) => setEndTime(newValue)}
                 onChange={(newValue: string) => setEndTime(newValue)}
