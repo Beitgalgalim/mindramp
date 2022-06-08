@@ -19,6 +19,7 @@ export default function UserSettings({ onDone, user, notify, nickName,
     notificationOn,
     onNotificationOnChange,
     onNotificationToken,
+    onPushNotification,
 }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName);
     const savePersonalization = (value: string | null) => {
@@ -33,7 +34,7 @@ export default function UserSettings({ onDone, user, notify, nickName,
             {
                 caption: "כן", callback: () => {
                     if (notificationOn === false) {
-                        api.initializeNotification(() => { }, onNotificationToken);
+                        api.initializeNotification(onPushNotification, onNotificationToken);
                     }
                     api.updateUserNotification(!notificationOn).then(
                         () => {

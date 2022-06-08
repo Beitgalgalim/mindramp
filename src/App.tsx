@@ -23,7 +23,6 @@ function App(props: any) {
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [synced, setSynced] = useState(false);
   const [notificationOn, setNotificationOn] = useState<boolean | null>();
   const [tokens, setTokens] = useState<NotificationToken[] | null>()
   const [notificationToken, setNotificationToken] = useState<string | null>();
@@ -60,9 +59,9 @@ function App(props: any) {
     },
   }
 
-  const onPushNotification = (msgPayload:any) => {
+  const onPushNotification = (msgPayload: any) => {
     console.log(JSON.stringify(msgPayload, undefined, " "))
-    
+
     notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
   };
 
@@ -70,10 +69,15 @@ function App(props: any) {
     api.initAPI(
       // Callback for AuthStateChanged
       (userPersonalInfo) => {
-        setUser(userPersonalInfo._ref.id);
-        setNotificationOn(userPersonalInfo.notificationOn);
-        setTokens(userPersonalInfo.tokens);
-        setSynced(true);
+        if (userPersonalInfo) {
+          setUser(userPersonalInfo._ref.id);
+          setNotificationOn(userPersonalInfo.notificationOn);
+          setTokens(userPersonalInfo.tokens);
+        } else {
+          setUser(null);
+          setNotificationOn(false);
+          setTokens(null);
+        }
       },
       onPushNotification,
       (notifToken) => setNotificationToken(notifToken)
@@ -133,7 +137,7 @@ function App(props: any) {
         <Routes>
           <Route path="/admin" element={
             // ---- Loading bar ----
-            !synced ? <LinearProgress />
+            !connected ? <LinearProgress />
               :
               // ---- Login -----
               !user ? <Login

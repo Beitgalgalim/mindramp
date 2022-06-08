@@ -30,7 +30,7 @@ let functions: any = undefined;
 
 
 export function initAPI(
-    onAuth: (userPersonalInfo: UserPersonalInfo) => void,
+    onAuth: (userPersonalInfo: UserPersonalInfo | null) => void,
     onPushNotification: onPushNotificationHandler,
     onNotificationToken: (notificationToken: string) => void
 ): boolean {
@@ -58,6 +58,8 @@ export function initAPI(
                     });
                 }
             }));
+        } else {
+            onAuth(null);
         }
     });
     return true;
