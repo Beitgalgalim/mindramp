@@ -47,9 +47,8 @@ const db = admin.firestore();
 //     });
 
 exports.updateNotification = functions.region("europe-west1").https.onCall((data, context) => {
-    const notificationOn = data.notificationOn;
-    const notificationToken = data.notificationToken;
-    return db.collection("users_dev").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
+    const { notificationOn, notificationToken, isDev } = data;
+    return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
         if (doc.exists) {
             const update = {};
             if (notificationOn !== undefined) {
@@ -89,7 +88,7 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
     };
 
     return getAccessToken().then((accessToken) => {
-        return db.collection(isDev?"users_dev":"users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
+        return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
             if (doc.exists && doc.data().notificationTokens && doc.data().notificationTokens.length > 0) {
                 const headers = {
                     "Authorization": "Bearer " + accessToken.access_token,
@@ -101,8 +100,19 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
 
                 return axios.post(url, postData, {
                     headers,
-                }).then((res)=>({success:true}));
+                }).then((res) => ({ success: true }));
             }
         });
     });
 });
+
+
+exports.notifications = functions.region("europe-west1").pubsub
+    // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
+    .schedule("every 1 minutes")
+    .timeZone("Asia/Jerusalem")
+    .onRun(async (context) => {
+        return db.collection("event").get().then(docs => {
+            functions.logger.error("Notifications", "event-count", docs.length);
+        });
+    });
