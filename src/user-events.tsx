@@ -209,7 +209,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                         <img src={event.imageUrl} style={{ maxWidth: Design.eventImageSize, maxHeight: Design.eventImageSize }} alt="תמונה" />
                     </div>
                 }
-                {!isSingle && event.guideUrl && <Avatar size={buttonSize} imageSrc={event.guideUrl} />}
+                {!isSingle && event.guide && <Avatar size={buttonSize} imageSrc={event.guide?.icon} />}
                 {/* {<Spacer height={buttonSize} />} */}
                 {isSingle && titleAndRoom}
             </div>
@@ -233,7 +233,7 @@ function EventElement({ event, single, firstInGroup, now, audioRef }:
                             <Mic style={{ fontSize: buttonSize }} />
                         </div>
                     }
-                    {isSingle && event.guideUrl ? <Avatar size={buttonSize} imageSrc={event.guideUrl} /> : isSingle && <Spacer width={buttonSize} />}
+                    {isSingle && event.guide ? <Avatar size={buttonSize} imageSrc={event.guide?.icon} /> : isSingle && <Spacer width={buttonSize} />}
                     {<Spacer height={buttonSize} />}
                 </HBox>
             </HBoxSB>

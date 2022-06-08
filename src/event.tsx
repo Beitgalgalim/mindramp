@@ -20,7 +20,7 @@ export interface RecurrentEventField {
 export interface Participant {
     email: string,
     displayName: string,
-    iconUrl?: string,
+    icon?: string,
     optional?:boolean,
 }
 
