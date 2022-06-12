@@ -106,7 +106,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         <Title />
                     </Grid>
                     <Grid container item xs={9} spacing={2} >
-                        <TextField variant="standard" helperText="כותרת" onChange={(e => setTitle(e.currentTarget.value))} value={title || ""} />
+                        <TextField autoFocus variant="standard" helperText="כותרת" onChange={(e => setTitle(e.currentTarget.value))} value={title || ""} />
                     </Grid>
                 </Grid>
                 <Spacer height={30} />

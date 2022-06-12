@@ -202,6 +202,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
             }}
 
             initialView='timeGridDay'
+            height={"100%"}
             editable={true}
             direction={"rtl"}
             locale={"he"}

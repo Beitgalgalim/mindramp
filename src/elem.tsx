@@ -1,5 +1,5 @@
 
-import React, { MutableRefObject, ReactElement, useEffect } from 'react';
+import React, { MutableRefObject, ReactElement, useEffect, useRef, useState } from 'react';
 import {
     Box, ListItemButton, TextField, Typography, InputAdornment,
 } from '@mui/material';
@@ -22,6 +22,7 @@ import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
 import "./elem.css";
+import { style } from '@mui/system';
 
 
 
@@ -71,49 +72,49 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
     const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand } = props;
     return (
         //<HBoxC onClick={onClick} style={{ width: "100%" }}>
-            <TextField
-                hiddenLabel
-                variant="standard"
-                onClick={onClick}
-                style={{
-                    //width: "80%",
-                    height: 30,
-                    borderWidth: 0,
-                    //borderRadius: 4,
-                    backgroundColor: (invalid ? "red" : "transparent"),
-                    direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
-                    textAlign: props.style?.textAlign || "left"
-                }}
-                placeholder={placeholder}
-                type="text"
-                ref={ref}
-                InputProps={{
-                    readOnly: props.readOnly === true,
-                    startAdornment: showExpand && (
-                        <InputAdornment position="end">
-                          <ExpandMore />
-                        </InputAdornment>
-                      ),
-                  }}
-                onMouseOver={(e) => {
-                    if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
-                    //e.currentTarget.style.textDecoration = "underline";
-                }}
-                onMouseLeave={(e) => {
-                    if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
-                    //e.currentTarget.style.textDecoration = "none";
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === "ArrowDown") {
-                        if (onArrowDown) onArrowDown();
-                    } else if (e.key === "ArrowUp") {
-                        if (onArrowUp) onArrowUp();
-                    }
-                }}
-                onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
-                onChange={(e) => onChange && onChange(e.currentTarget.value)}
-                value={props.value}
-            />
+        <TextField
+            hiddenLabel
+            variant="standard"
+            onClick={onClick}
+            style={{
+                //width: "80%",
+                height: 30,
+                borderWidth: 0,
+                //borderRadius: 4,
+                backgroundColor: (invalid ? "red" : "transparent"),
+                direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
+                textAlign: props.style?.textAlign || "left"
+            }}
+            placeholder={placeholder}
+            type="text"
+            ref={ref}
+            InputProps={{
+                readOnly: props.readOnly === true,
+                startAdornment: showExpand && (
+                    <InputAdornment position="end">
+                        <ExpandMore />
+                    </InputAdornment>
+                ),
+            }}
+            onMouseOver={(e) => {
+                if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
+                //e.currentTarget.style.textDecoration = "underline";
+            }}
+            onMouseLeave={(e) => {
+                if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
+                //e.currentTarget.style.textDecoration = "none";
+            }}
+            onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                    if (onArrowDown) onArrowDown();
+                } else if (e.key === "ArrowUp") {
+                    if (onArrowUp) onArrowUp();
+                }
+            }}
+            onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
+            onChange={(e) => onChange && onChange(e.currentTarget.value)}
+            value={props.value}
+        />
 
     );
 });
@@ -180,7 +181,7 @@ export function ComboBox(props: ComboBoxProps) {
         }
 
 
-        return <ListItem style={{ padding: 0, ...renderProps.style, ...style}}
+        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }}
             key={renderProps.index}
             selected={currentIndex === renderProps.index}
         >
@@ -286,7 +287,7 @@ export function HBox(props: any) {
 }
 
 export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
-    return <img src={imageSrc} 
+    return <img src={imageSrc}
         className={"cover"}
         alt="" style={{ borderRadius: size / 2, width: size, height: size }} />
 }
@@ -342,32 +343,19 @@ export function Text(props: any) {
     > {props.children}</div >
 }
 
-export function EventsMain({ children, height }: { children: any, height: string }) {
+export function EventsMain({ children, height, width, style }: any) {
     return <div style={{
-        width: window.innerWidth,
+        width: width || window.innerWidth,
         height,
         backgroundColor: Colors.EventBackground,
         borderTopRightRadius: 40,
         borderTopLeftRadius: 40,
-
+        ...style
     }}>
         {children}
     </div>
 }
 
-export function EventsContainer(props: any) {
-    return <div style={{
-        width: "100%",
-        height: props.height,
-        backgroundColor: "#EBF0F2",
-        // borderTopRightRadius: 40,
-        // borderTopLeftRadius: 40,
-        overflowY: "auto",
-        flexWrap: "nowrap",
-    }}>
-        {props.children}
-    </div>
-}
 
 export function EventProgress(props: any) {
     const pastColor = "#6F9CB6";

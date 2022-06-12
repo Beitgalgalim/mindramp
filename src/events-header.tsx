@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import {  Text } from './elem';
+import { Text } from './elem';
 import { EventsHeaderProps } from './types';
 const logo = require("./logo-small.png");
 
@@ -24,7 +24,7 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
     return () => setClick(prev => prev + 1);
 }
 
-export default function EventsHeader({user, onLogoDoubleClicked, nickName, showDateTime, height}: EventsHeaderProps) {
+export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered }: EventsHeaderProps) {
 
     const handleClick = useSingleAndDoubleClick(() => {
         // Double click
@@ -59,18 +59,20 @@ export default function EventsHeader({user, onLogoDoubleClicked, nickName, showD
         marginRight: 15, marginLeft: 15,
     }}>
         {
-        user && <div style={{position:"absolute", right:3, top:3, width:12, height:12, borderRadius:7, 
-            backgroundColor:"#00FF04", 
-            //borderStyle:"solid", borderWidth:1, borderColor:"white"
-            }}>
-
-            </div>
-            }
-        <Text>{headerMsg}</Text>
+            // Connected sign
+            user && <div style={{
+                position: "absolute", right: 3, top: 3, width: 12, height: 12, borderRadius: 7,
+                backgroundColor: "#00FF04",
+            }} />
+        }
+        <Text textAlign={centered?"center":"right"}>{headerMsg}</Text>
 
         <img
             src={logo}
-            style={{ height: 60, borderRadius: 7 }}
+            style={{ 
+                position:'absolute',
+                left: 20,
+                height: 60, borderRadius: 7 }}
             onClick={handleClick}
             alt={"לוגו של בית הגלגלים"}
             aria-hidden="true" />

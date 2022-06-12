@@ -146,7 +146,7 @@ export interface Notifying {
     notify: Notify;
 }
 
-export type onPushNotificationHandler = (msgPayload:MessagePayload)=>void
+export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
@@ -167,8 +167,9 @@ export interface LoginProps {
 }
 
 export interface UserSettingsProps extends WithUser, Notifying {
-    onDone: (newNick: string) => void,
+    onDone: (newNick: string, isTV:boolean) => void,
     nickName: string,
+    isTV: boolean,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
@@ -180,6 +181,7 @@ export interface EventsHeaderProps extends WithUser {
     nickName: string,
     height: number | string,
     showDateTime: Dayjs,
+    centered: boolean,
 }
 
 export interface EditEventsProps extends WithMedia, Notifying, WithUsers {

@@ -16,18 +16,24 @@ const useStyles = makeStyles(() => ({
 }));
 
 export default function UserSettings({ onDone, user, notify, nickName,
+    isTV,
     notificationOn,
     onNotificationOnChange,
     onNotificationToken,
     onPushNotification,
 }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName);
-    const savePersonalization = (value: string | null) => {
-        if (value) {
-            const state = { name: value }
-            localStorage.setItem("state", JSON.stringify(state));
+    const [editIsTV, setEditIsTv] = useState<boolean>(isTV);
+
+    const savePersonalization = (newName: string | null, isTV: boolean) => {
+        const state: any = {};
+        if (newName) {
+            state.name = newName;
         }
+        state.isTV = isTV;
+        localStorage.setItem("state", JSON.stringify(state));
     }
+
 
     const handleNotificationOnClick = useCallback(() => {
         notify.ask(`האם ל${notificationOn ? "בטל" : "אפשר"} הודעות בדחיפה?`, undefined, [
@@ -101,6 +107,16 @@ export default function UserSettings({ onDone, user, notify, nickName,
                     בדיקת התראות
                 </Button>
             </HBox>}
+
+            <Spacer height={20} />
+            <HBox>
+                <Checkbox onChange={(evt) => {
+                    setEditIsTv(prev=>!prev)
+                }} checked={editIsTV}
+                    style={{ paddingRight: 0 }} />
+                <Text fontSize={13}>מסך טלויזיה</Text>
+            </HBox>
+
             <Spacer height={20} />
             <HBoxC>
                 <Button
@@ -108,8 +124,8 @@ export default function UserSettings({ onDone, user, notify, nickName,
                     endIcon={<Save />}
                     classes={{ endIcon: classes.buttonIcon }}
                     onClick={() => {
-                        savePersonalization(editName);
-                        onDone(editName);
+                        savePersonalization(editName, editIsTV);
+                        onDone(editName, editIsTV);
                     }}>שמור</Button>
                 <Spacer />
                 <Button
@@ -118,7 +134,7 @@ export default function UserSettings({ onDone, user, notify, nickName,
                     classes={{ endIcon: classes.buttonIcon }}
 
                     onClick={() => {
-                        onDone(nickName);
+                        onDone(nickName, isTV);
                     }}>בטל</Button>
 
                 {

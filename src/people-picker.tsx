@@ -38,6 +38,7 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
         }}
         filterItem={(item: any, txtValue: string | undefined) => item && item?.value?.includes(txtValue)}
         renderItem={(item: any, hover: boolean, selected: boolean) => (<Person
+            flat={true}
             name={item.value}
             icon={item.icon}
             selected={selected}
@@ -47,7 +48,7 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 }
 
 
-export function Person({ name, icon, hover, selected, onRemove }: any) {
+export function Person({ name, icon, hover, selected, onRemove, flat }: any) {
     return <div
         style={{
             direction: "rtl",
@@ -57,7 +58,7 @@ export function Person({ name, icon, hover, selected, onRemove }: any) {
             justifyContent: "flex-start",
             backgroundColor: hover ? "#F5F5F5" : selected ? "#E1E1E1" : "white",
             height: 35,
-            borderRadius: 15,
+            borderRadius: flat ? 0 : 15,
             margin: 2,
         }}>
         <HBoxSB>
@@ -68,12 +69,13 @@ export function Person({ name, icon, hover, selected, onRemove }: any) {
                 {name}
             </HBox>
             <Spacer />
-            {onRemove && <div style={{ 
-                display:"flex",
+            {onRemove && <div style={{
+                display: "flex",
                 //position: "relative", 
-                justifyContent:"center",
-                width: 25, height: 25, borderRadius:12,
-                backgroundColor: "#F5F5F5" }}
+                justifyContent: "center",
+                width: 25, height: 25, borderRadius: 12,
+                backgroundColor: "#F5F5F5"
+            }}
                 onClick={() => onRemove()}>x</div>}
         </HBoxSB>
     </div>

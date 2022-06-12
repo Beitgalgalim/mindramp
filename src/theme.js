@@ -9,6 +9,10 @@ export const Colors = {
 export const Design = {
     boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
     popUpboxShadow: "0px 18px 22px rgba(44, 85, 102, 0.26)",
+    singleEventHeight: 150,
+    multiEventHeight:205,
     eventImageSize: 78,
-    avatarSize:45,
+    avatarSize:50,
+    buttonSize: 50,
+
 }

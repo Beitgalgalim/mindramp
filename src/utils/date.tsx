@@ -332,3 +332,74 @@ function number2Text(num: number, isHour: boolean): string {
     }
     return "";
 }
+
+function isBetween(num: number, from: number, to: number) {
+    return num >= from && num <= to;
+}
+
+export function getBeforeTimeText(minutes: number): string {
+    if (minutes <= 0)
+        return ""
+
+    if (isBetween(minutes, 0, 10)) {
+        return "עוד כמה דקות";
+    }
+
+    if (isBetween(minutes, 10, 15)) {
+        return "עוד רבע שעה";
+    }
+
+    if (isBetween(minutes, 15, 23)) {
+        return "עוד 20 דקות";
+    }
+    if (isBetween(minutes, 23, 37)) {
+        return "עוד חצי שעה";
+    }
+    if (isBetween(minutes, 37, 51)) {
+        return "עוד שלושת רבעי שעה";
+    }
+    if (isBetween(minutes, 51, 75)) {
+        return "עוד שעה";
+    }
+    if (isBetween(minutes, 75, 100)) {
+        return "עוד שעה וחצי";
+    }
+    if (isBetween(minutes, 100, 130)) {
+        return "עוד שעתיים";
+    }
+
+    return "עוד מעל שעתיים";
+}
+
+export function organizeEventsForDisplay(events: any[]): any[][] {
+    const eventsArray: any[][] = [];
+
+
+    let groupCount = 0;
+    let eventGroupIndex = -1;
+    for (let i = 0; i < events.length; i++) {
+        const ev = events[i];
+
+        if (groupCount === 0) {
+            //Previous group finished
+
+            eventGroupIndex++;
+            //look ahead to group all events in same time slot
+            for (let j = i + 1; j < events.length; j++) {
+                if (events[j].start === ev.start) {
+                    groupCount++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            groupCount--;
+        }
+
+        if (eventsArray.length === eventGroupIndex) {
+            eventsArray.push([]);
+        }
+        eventsArray[eventGroupIndex].push(ev);
+    }
+    return eventsArray;
+}
