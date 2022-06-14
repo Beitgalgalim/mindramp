@@ -47,7 +47,7 @@ export default function Admin(props: AdminProps) {
             
             <ResponsiveTab label={"מדיה"} />
 
-            <ResponsiveTab label={"מנחים"} />
+            <ResponsiveTab label={"ניהול משתמשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
             <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
