@@ -193,7 +193,7 @@ export function getEvents(): Promise<Event[]> {
 
         if (results.length > 1) {
             if (results[1].status === "fulfilled") {
-                events = events.concat(results[1].value.map((doc: any) => Event.fromDbObj(doc)));
+                events = events.concat(results[1].value.map((doc: any) => Event.fromDbObj(doc, undefined, true)));
             } else {
                 console.log("fail calling personal_events", results[1].reason);
             }

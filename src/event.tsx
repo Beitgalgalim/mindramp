@@ -60,6 +60,7 @@ export class Event {
     reminderMinutes?:number;
 
     clearAudio?: boolean;
+    isPersonal?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
@@ -72,7 +73,7 @@ export class Event {
         return evt as Event;
     }
 
-    static fromDbObj(doc: any, ref?:DocumentReference): Event {
+    static fromDbObj(doc: any, ref?:DocumentReference, isPersonal:boolean = false): Event {
         const evt: Event = new Event();
         evt.title = doc.title;
         evt.start = dayjs(doc.start).format(DateFormats.DATE_TIME);
@@ -95,6 +96,8 @@ export class Event {
         assignIfExists(evt, "guide", doc);
         assignIfExists(evt, "keyEvent", doc);
         assignIfExists(evt, "reminderMinutes", doc);
+
+        evt.isPersonal = isPersonal;
 
         return evt;
     }
@@ -145,7 +148,7 @@ export class Event {
         delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
-
+        delete eventObj.isPersonal;
         return eventObj;
     }
 

@@ -86,7 +86,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     }
 
     const isSingle = !!single;
-    const widthPixels = window.innerWidth * (width /100);
+    const widthPixels = window.innerWidth * (width / 100);
     return (
         <div style={{
             flex: "0 0 auto",
@@ -101,7 +101,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             marginLeft: 24,
             marginBottom: 30,
             marginTop: 1,
-            boxShadow: Design.boxShadow,
+            boxShadow: event.isPersonal === true ? Design.boxShadowPersonal : Design.boxShadow,
         }}
             onClick={() => {
                 // plays the audio if exists
@@ -157,9 +157,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                             maxWidth: Design.eventImageSize,
                             maxHeight: Design.eventImageSize,
                             borderRadius: 10,
-                            objectFit:"cover",
+                            objectFit: "cover",
                         }} alt="תמונה"
-                         />
+                        />
                     </div>
                 }
                 {!isSingle && event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
@@ -185,9 +185,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                         event.audioUrl &&
                         <div style={{
                             height: Design.buttonSize, minWidth: Design.buttonSize,
-                            display: "flex", 
+                            display: "flex",
                             justifyContent: "center",
-                            alignItems:"center",
+                            alignItems: "center",
                             color: "white",
                             backgroundColor: "#6F9CB6",
                             borderRadius: Design.buttonSize / 2,
