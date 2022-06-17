@@ -100,6 +100,12 @@ export interface EditEvent {
     editAllSeries?: boolean
 }
 
+export interface MessageInfo {
+    title: string,
+    body: string,
+    unread: boolean,
+}
+
 export type Callback = () => void;
 
 export interface WithUser {
@@ -182,7 +188,17 @@ export interface EventsHeaderProps extends WithUser {
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
+    onNotificationClick: Callback,
+    showingNotifications: boolean,
+    newNotificationCount:number,
 }
+
+
+export interface MessageProps {
+    msg: MessageInfo;
+    onSetRead: Callback,
+}
+
 
 export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     inEvent: EditEvent;

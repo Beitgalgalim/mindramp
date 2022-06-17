@@ -1,10 +1,10 @@
 import { Dayjs } from "dayjs";
-import { useEffect, useRef, useState, Fragment } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as api from './api'
-import { Text, HBox, EventsMain, VBoxC, Spacer } from "./elem";
+import { Text, HBox, EventsMain, VBoxC } from "./elem";
 import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents } from "./utils/date";
 import { useLocation } from "react-router-dom";
-import { UserEventsProps } from "./types";
+import { MessageInfo, UserEventsProps } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 
@@ -17,6 +17,9 @@ import dayjs from './localDayJs'
 import UserSettings from "./user-settings";
 import EventElement from "./event-element";
 import { EventsContainer } from "./events-container";
+import Message from "./message";
+import { Event } from './event'
+import useLocalStorageState from "use-local-storage-state";
 
 export default function UserEvents({ connected, notify, user,
     notificationOn, onNotificationOnChange, onNotificationToken, onPushNotification }: UserEventsProps) {
@@ -29,6 +32,11 @@ export default function UserEvents({ connected, notify, user,
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
     const [nickName, setNickName] = useState<string>("");
     const [isTV, setIsTV] = useState<boolean>(false);
+    const [showNotifications, setShowNotifications] = useState<boolean>(false);
+    const [notificationsPane, setNotificationsPane] = useState<number>(0);
+    const [alerts, setAlerts, alertsMore] = useLocalStorageState<MessageInfo[]>("alerts");
+    const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
+
     const audioRef = useRef<HTMLAudioElement>(new Audio());
 
     const location = useLocation();
@@ -56,10 +64,22 @@ export default function UserEvents({ connected, notify, user,
         setLoadingEvents(true);
         api.getEvents().then(evts => {
             const evtsWithId = evts.map((e, i) => {
-                e.tag = "" + i
+                e.tag = e._ref?.id || (""+i);
                 return e;
             })
-            setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
+            const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
+            setEvents(sortedEvents);
+
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent);
+            setKeyEvents(curr => {
+                const newKeyEvents = keyEvts.filter(ke => !curr?.some(c => Event.equals(ke, c)));
+                const relevantKeyEvents = curr?.filter(c => keyEvts.some(ke => Event.equals(ke,c ))) || [];
+                return [
+                    ...(relevantKeyEvents),
+                    ...(newKeyEvents.map(ke => ({ ...ke, unread: true } as Event)))
+                ];
+            })
+
         }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
 
@@ -80,35 +100,66 @@ export default function UserEvents({ connected, notify, user,
         })
     }, [])
     const days = [];
+    const showingKeyEvents = showNotifications && notificationsPane == 2;
+    const NoEventsMsg = "אין אירועים";
 
-    const showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
-        e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
-
-    days.push({
-        caption: "היום",
-        events: organizeEventsForDisplay(showingEvents),
-    });
-
-    if (isTV) {
-        // Also calculate tomorrow and 2 days ahead
-        const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
-            e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
+    if (!showNotifications) {
+        const showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
+            e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
 
         days.push({
-            caption: "מחר",
-            events: organizeEventsForDisplay(tomorrow),
-        })
+            caption: "היום",
+            emptyMsg: NoEventsMsg,
+            eventGroup: organizeEventsForDisplay(showingEvents),
+        });
 
-        const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
-            e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
+        if (isTV) {
+            // Also calculate tomorrow and 2 days ahead
+            const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
+                e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
 
-        days.push({
-            caption: "מחרתיים",
-            events: organizeEventsForDisplay(dayAfterTomorrow),
-        })
+            days.push({
+                caption: "מחר",
+                emptyMsg: NoEventsMsg,
+                eventGroup: organizeEventsForDisplay(tomorrow),
+            })
+
+            const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
+                e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
+
+            days.push({
+                caption: "מחרתיים",
+                emptyMsg: NoEventsMsg,
+                eventGroup: organizeEventsForDisplay(dayAfterTomorrow),
+            })
+        }
+    } else {
+        if (showingKeyEvents) {
+            //const showingEvents = events.filter(e => e.keyEvent);
+
+            days.push({
+                caption: "אירועים מיוחדים",
+                emptyMsg: NoEventsMsg,
+                eventGroup: keyEvents ? organizeEventsForDisplay(keyEvents) : [],
+            });
+        } else if (notificationsPane == 0) {
+            days.push({
+                caption: "התראות",
+                emptyMsg: "אין התראות",
+                messages: alerts,
+            });
+        } else if (notificationsPane == 1) {
+            days.push({
+                caption: "הודעות",
+                emptyMsg: "אין הודעות",
+                messages: [],
+            });
+        }
     }
 
+
     const columnWidth = 100 / days.length;
+    const newNotificationCount = keyEvents?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
 
 
     if (showUserSettings) {
@@ -142,45 +193,91 @@ export default function UserEvents({ connected, notify, user,
             showDateTime={dateTimeNoOffset}
             nickName={nickName}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
+            onNotificationClick={() => setShowNotifications(prev => !prev)}
+            showingNotifications={showNotifications}
+            newNotificationCount={newNotificationCount}
             user={user}
         />
+
         <HBox style={{ backgroundColor: "#0078C3", justifyContent: "space-evenly" }}>
             {days.map((day, dayIndex) =>
                 <EventsMain height={"88vh"} width={(columnWidth - 1) + "vw"}
                 >
-                    {!isTV && <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />}
+                    {!isTV && !showNotifications ? <EventsNavigation
+                        height={"10vh"}
+                        currentNavigation={daysOffset}
+                        onNavigate={(offset: number) => setDaysOffset(offset)}
+                        buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
+                    /> :
+                        showNotifications && <EventsNavigation
+                            height={"10vh"}
+                            currentNavigation={notificationsPane}
+                            onNavigate={(offset: number) => setNotificationsPane(offset)}
+                            buttons={[{ caption: "התראות" }, { caption: "הודעות" }, { caption: "אירועים" }]}
+                        />}
 
                     {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
+
                     <EventsContainer
                         vhHeight={78}
                         scrollTop={100}
                         autoScroll={isTV}
                     >
-                        {day.events.map((evGroup, i) => (<HBox
-                            style={{
-                                width: "100%",
-                                overflowX: evGroup.length > 1 ? "auto" : "hidden",
-                                flexWrap: "nowrap",
-                            }}
-                            key={evGroup.length > 0 ? evGroup[0].tag : i}
-                            itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
-                        >
-                            {
-                                evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
-                                    width={columnWidth - 1}
-                                    single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
-                                    audioRef={audioRef}
-                                />))
-                            }
-                        </HBox>))}
-                        {day.events.length === 0 && <VBoxC style={{ height: "50vh" }}>
-                            <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : "אין אירועים"}</Text>
-                            {loadingEvents && <CircularProgress size={Design.buttonSize} />}
+                        {day.eventGroup?.map((evGroup, i) =>
+                            <HBox
+                                style={{
+                                    width: "100%",
+                                    overflowX: evGroup.length > 1 ? "auto" : "hidden",
+                                    flexWrap: "nowrap",
+                                }}
+                                key={evGroup.length > 0 ? evGroup[0].tag : i}
+                                itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
+                            >
+                                {
+                                    evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                        showingKeyEvent={showingKeyEvents}
+                                        width={columnWidth - 1}
+                                        single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
+                                        audioRef={audioRef}
+                                        onSetRead={showingKeyEvents ?
+                                            () => {
+                                                setKeyEvents(curr =>
+                                                (curr ?
+                                                    curr.map(ke => {
+                                                        if (Event.equals(ke, ev)) {
+                                                            return {...ke, unread:false} as Event;
+                                                        }
+                                                        return ke
+                                                    }) :
+                                                    undefined));
+                                            }
+                                            : undefined}
+                                    />))
+                                }
+                            </HBox>)
+                        }
+                        {day.messages?.map((msg, i) =>
+                            <Message
+                                msg={msg}
+                                onSetRead={() =>
+                                    // setAlerts((curr) => {
+                                    //     const newMsg = { title: "הודעה" + (curr ? curr.length + 1 : 1), body: "", unread: true }
+                                    //     return curr ? [...curr, newMsg] : [newMsg];
+                                    // });
+                                    setAlerts((curr) => curr?.map(alert => alert == msg ? { ...msg, unread: false } : alert))
+                                }
+                            />)
+                        }
+                        {(!day.messages || day.messages.length === 0) && (!day.eventGroup || day.eventGroup.length == 0) &&
+                            <VBoxC style={{ height: "50vh" }}>
+                                <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : day.emptyMsg}</Text>
+                                {loadingEvents && <CircularProgress size={Design.buttonSize} />}
 
-                        </VBoxC>}
+                            </VBoxC>}
                     </EventsContainer>
                 </EventsMain>
             )}
         </HBox>
+
     </div>
 }

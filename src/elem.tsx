@@ -17,7 +17,7 @@ import {
 } from "@material-ui/core/styles";
 
 import { FixedSizeList } from 'react-window';
-import { ExpandMore } from '@mui/icons-material';
+import { ExpandMore, MarkEmailRead, StarRate } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
@@ -408,6 +408,17 @@ export function NowLine({ offset, length, start, vertical }: { offset: number, l
     }} />
 }
 
+export function UnRead(props: any) {
+    return <div style={{
+        display: "flex", flexDirection: "row",
+        position: "absolute", right: 5,
+        top: 5, width: 100,
+        color:"gold",
+        zIndex:1000,
+    }}>
+        <StarRate />
+    </div>
+}
 
 export function HourLines({ sliceWidth, height, hours, sliceEachHour, vertical, windowSize }: HourLinesProps) {
 

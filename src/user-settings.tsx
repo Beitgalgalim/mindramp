@@ -135,7 +135,7 @@ export default function UserSettings({ onDone, user, notify, nickName,
 
                     onClick={() => {
                         onDone(nickName, isTV);
-                    }}>בטל</Button>
+                    }}>סגור</Button>
 
                 {
                     user && <Fragment>

@@ -163,6 +163,8 @@ export function sortEvents(events: any[]): any[] {
     return events.sort((e1, e2) => {
         if (e1.start < e2.start) return -1;
         if (e1.start > e2.start) return 1;
+        if (e1.start === e2.start && e1.isPersonal && !e2.isPersonal) return -1;
+        if (e1.start === e2.start && !e1.isPersonal && e2.isPersonal) return 1;
         if (e1.end < e2.end) return -1;
 
         return 1;
@@ -402,4 +404,15 @@ export function organizeEventsForDisplay(events: any[]): any[][] {
         eventsArray[eventGroupIndex].push(ev);
     }
     return eventsArray;
+}
+
+
+export function getNiceDate(d: string, withDay: boolean = false) {
+    const djs = dayjs(d);
+    let res = withDay ? "יום א׳ " : "";
+    res += MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
+    if (djs.year() !== dayjs().year()) {
+        res += ", " + djs.year();
+    }
+    return res;
 }

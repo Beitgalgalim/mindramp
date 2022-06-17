@@ -1,18 +1,20 @@
 import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar } from "./elem";
-import { DateFormats, getBeforeTimeText } from "./utils/date";
+import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar, UnRead } from "./elem";
+import { DateFormats, getBeforeTimeText, getNiceDate } from "./utils/date";
 import { Event } from './event';
-import { Design } from "./theme";
+import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
-import { AccessTime, MicOutlined } from "@mui/icons-material";
-export default function EventElement({ event, single, firstInGroup, now, width, audioRef }:
+import { AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
+export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
         width: number,
         audioRef: MutableRefObject<HTMLAudioElement>,
+        showingKeyEvent: boolean,
+        onSetRead?:()=>void
     }
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
@@ -90,6 +92,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     return (
         <div style={{
             flex: "0 0 auto",
+            position: "relative",
             //width: (isSingle ? width : width * 0.7) - 48,
             width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
             height: isSingle ? Design.singleEventHeight : Design.multiEventHeight,
@@ -101,9 +104,13 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             marginLeft: 24,
             marginBottom: 30,
             marginTop: 1,
-            boxShadow: event.isPersonal === true ? Design.boxShadowPersonal : Design.boxShadow,
+            boxShadow: Design.boxShadow,
         }}
             onClick={() => {
+                if (event.unread === true && onSetRead) {
+                    onSetRead();
+                }
+
                 // plays the audio if exists
                 if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
                     // console.log(e.detail)
@@ -140,7 +147,15 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             }}
 
         >
+            { showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
 
+
+            {/** pin for personal events */
+                event.isPersonal === true &&
+                <div style={{ position: "absolute", top: 0, right: 0, transform: "rotate(45deg)" }}>
+                    <PushPin style={{ color: Colors.EventIcons }} />
+                </div>
+            }
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -172,8 +187,11 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
                     <HBox style={{ alignItems: "center", width: "100%" }}>
-                        <AccessTime style={{ color: "#6F9CB6" }} />
+                        <AccessTime style={{ color: Colors.EventIcons }} />
+
                         <Spacer />
+                        {showingKeyEvent && <Text width={"70%"} aria-hidden="true" fontSize="0.7em">{getNiceDate(event.date, true)}</Text>}
+
                         <Text aria-hidden="true" fontSize="0.7em">{t1 + " - " + t2}</Text>
                     </HBox>
                     <Spacer />
@@ -189,7 +207,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                             justifyContent: "center",
                             alignItems: "center",
                             color: "white",
-                            backgroundColor: "#6F9CB6",
+                            backgroundColor: Colors.EventIcons,
                             borderRadius: Design.buttonSize / 2,
                         }}>
                             <MicOutlined style={{

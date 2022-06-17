@@ -1,6 +1,6 @@
 import {
-     deleteField, DocumentReference
-    
+    deleteField, DocumentReference
+
 } from 'firebase/firestore/lite';
 import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
@@ -21,7 +21,7 @@ export interface Participant {
     email: string,
     displayName: string,
     icon?: string,
-    optional?:boolean,
+    optional?: boolean,
 }
 
 export const RecurrentEventFieldKeyValue = [
@@ -49,7 +49,7 @@ export class Event {
     keyEvent?: boolean;
     notes?: string;
     imageUrl?: string;
-    guideUrl?:string;
+    guideUrl?: string;
     audioUrl?: string;
     audioPath?: string;
     audioBlob?: Blob;
@@ -57,10 +57,11 @@ export class Event {
     guide?: Participant;
     participants?: Participant[];
     instanceStatus?: boolean;
-    reminderMinutes?:number;
+    reminderMinutes?: number;
 
     clearAudio?: boolean;
     isPersonal?: boolean;
+    unread?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
@@ -73,7 +74,7 @@ export class Event {
         return evt as Event;
     }
 
-    static fromDbObj(doc: any, ref?:DocumentReference, isPersonal:boolean = false): Event {
+    static fromDbObj(doc: any, ref?: DocumentReference, isPersonal: boolean = false): Event {
         const evt: Event = new Event();
         evt.title = doc.title;
         evt.start = dayjs(doc.start).format(DateFormats.DATE_TIME);
@@ -105,6 +106,11 @@ export class Event {
     static fromAny(obj: any) {
         return Event.fromDbObj(obj);
     }
+
+    static equals(src:any, comp: any): boolean {
+        return src.date === comp.date && src.title === comp.title;
+    }
+
 
     toDbObj(isCreate: boolean = true): any {
         let eventObj = { ...this };
@@ -143,12 +149,13 @@ export class Event {
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
         clearFieldIfEmpty("reminderMinutes");
-        
+
         delete eventObj._ref;
         delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
         delete eventObj.isPersonal;
+        delete eventObj.unread;
         return eventObj;
     }
 

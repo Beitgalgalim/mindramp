@@ -11,3 +11,18 @@ V - Personal meeting visual
 - In admin
   - close list on second click on down arrow
 
+
+
+---------
+V - smaller font of the buttons
+V - smaller font of greeting message
+star/pin/... as indicator for private meetings
+V - sort mine first
+less space between cards?
+
+Key events:
+- can we replace "day after tomorrow" with key-events? -or alternatively, use start on the title
+- another option: treat as notification, in an overlay. have a separation between reminders and key events
+
+TV:
+- only one column moves. lateral movement only when the top one

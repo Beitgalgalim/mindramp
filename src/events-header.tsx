@@ -1,3 +1,5 @@
+import { red } from '@material-ui/core/colors';
+import { NotificationsActive } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { Text } from './elem';
 import { EventsHeaderProps } from './types';
@@ -24,7 +26,8 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
     return () => setClick(prev => prev + 1);
 }
 
-export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered }: EventsHeaderProps) {
+export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
+    onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
 
     const handleClick = useSingleAndDoubleClick(() => {
         // Double click
@@ -50,7 +53,7 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
 
     return <div style={{
         height: height,
-        fontSize: '1.9rem',
+        fontSize: '1.7rem',
         fontWeight: 900,
         color: "white",
         display: "flex",
@@ -61,18 +64,49 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
         {
             // Connected sign
             user && <div style={{
-                position: "absolute", right: 3, top: 3, width: 12, height: 12, borderRadius: 7,
+                position: "absolute", left: 3, top: 3, width: 12, height: 12, borderRadius: 7,
                 backgroundColor: "#00FF04",
             }} />
         }
-        <Text textAlign={centered?"center":"right"}>{headerMsg}</Text>
+
+        {
+            /** Notifications */
+            <div style={{
+                position: "absolute", right: 0, top: 0, width: 50, height: 50,
+
+            }} onClick={onNotificationClick}>
+                {newNotificationCount > 0 &&
+                    <div style={{
+                        position: "absolute",
+                        top: 0,
+                        right: 10,
+                        backgroundColor: "red",
+                        fontSize:"0.9rem",
+                        lineHeight:"0.8rem",
+                        width: 16,
+                        height: 16, 
+                        borderRadius: 8,
+                        zIndex:1000,
+                    }}
+                    >{newNotificationCount}</div>
+                }
+                <NotificationsActive style={{
+                    borderRadius: 15,
+                    padding: 2,
+                    backgroundColor: showingNotifications ? "gray" : "transparent"
+                }} />
+
+            </div>
+        }
+        <Text textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
 
         <img
             src={logo}
-            style={{ 
-                position:'absolute',
-                left: 20,
-                height: 60, borderRadius: 7 }}
+            style={{
+                position: 'absolute',
+                left: 15,
+                height: 60, borderRadius: 7
+            }}
             onClick={handleClick}
             alt={"לוגו של בית הגלגלים"}
             aria-hidden="true" />
