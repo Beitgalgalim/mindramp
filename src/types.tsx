@@ -16,6 +16,7 @@ export const Collections =
             USERS_COLLECTION: "users_dev",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
         }
         :
         {
@@ -24,6 +25,7 @@ export const Collections =
             USERS_COLLECTION: "users",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
         }
 
 
