@@ -19,7 +19,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserType, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
+import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -203,14 +203,14 @@ export function getEvents(): Promise<Event[]> {
 
 export function getUsers(): Promise<UserInfo[]> {
     return _getCollection(Collections.USERS_COLLECTION).then(items => items.map(d =>
-    ({
-        fname: d.fname,
-        lname: d.lname,
-        avatar: d.avatar,
-        _ref: d._ref,
-        displayName: d.fname + " " + d.lname,
-        type: d.type,
-    })));
+        ({
+            fname: d.fname,
+            lname: d.lname,
+            avatar: d.avatar,
+            _ref: d._ref,
+            displayName: d.fname + " " + d.lname,
+            type: d.type,
+        })));
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -426,8 +426,21 @@ function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     return resourceRef;
 }
 
-export async function editGuideInfo(_ref: DocumentReference, fname: string, lname: string, pic: File | null){
-    console.log("we got ref need to update " + fname + " " + lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
+export function isUserAdmin(user: UserInfo) : Promise<boolean> {
+    if (!user._ref) 
+        return new Promise(() => false);
+
+    const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
+    return getDoc(docRef).then(systemDoc => {return (systemDoc.exists() && systemDoc.data().admin)});
+}
+
+function UpdateUserAdminState(_ref: DocumentReference, isAdmin : boolean) {
+    const docRef = doc(db, Collections.USERS_COLLECTION, _ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
+    return setDoc(docRef, {admin : isAdmin});
+}
+
+export async function editUserInfo(_ref: DocumentReference, pic: File | null, userInfo : UserInfo, isAdmin : boolean) {
+    console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g)=> {
         let existing_info = g.data(); 
@@ -436,10 +449,11 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
             throw ("ref is not find any obj!");
         }
 
-        if (existing_info.fname !== fname || existing_info.lname !== lname) {
-            console.log("New name for " + existing_info.fname + " " + existing_info.lname + " : " + fname + " " + lname);
-            existing_info.fname = fname;
-            existing_info.lname = lname;
+        if (existing_info.fname !== userInfo.fname || existing_info.lname !== userInfo.lname || existing_info.type !== userInfo.type) {
+            console.log("New name for " + existing_info.fname + " " + existing_info.lname + " : " + userInfo.fname + " " + userInfo.lname);
+            existing_info.fname = userInfo.fname;
+            existing_info.lname = userInfo.lname;
+            existing_info.type = userInfo.type;
         } else if (!pic){
             console.log("nothing changed!");
             return;
@@ -449,7 +463,7 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
         res._ref = _ref;
 
         if (pic){
-            console.log("got new pic for " + fname + " " + lname);
+            console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);
             const resourceRef = GetResourceRefOfGuidePic(pic);
             const metadata = {
                 contentType: 'image/jpeg',
@@ -466,20 +480,20 @@ export async function editGuideInfo(_ref: DocumentReference, fname: string, lnam
                             res.avatar.url = url;
                             res.avatar.path =  val.ref.fullPath;
                            
-                            updateDoc(_ref, res).then(() => (console.log("השינוי הוחל בהצלחה")));
+                            updateDoc(_ref, res).then(() => (UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))));
                         });
                     });
                 });
         } else {
             // stay with the old pic
-            updateDoc(_ref, res).then();
+            updateDoc(_ref, res).then(() => (UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))));
         }
     });
     
 }
 
 
-export async function addGuideInfo(fname: string, lname: string, email:string, pic: File) {
+export async function addGuideInfo(userInfo:UserInfo, isAdmin:boolean, email:string, pic: File) {
     const resourceRef = GetResourceRefOfGuidePic(pic);
 
     /** @type {any} */
@@ -498,16 +512,16 @@ export async function addGuideInfo(fname: string, lname: string, email:string, p
             return uploadTask.then(val => {
                 return getDownloadURL(val.ref).then(url => {
                     const res = {
-                        fname: fname,
-                        lname: lname,
+                        fname: userInfo.fname,
+                        lname: userInfo.lname,
                         avatar: {path: val.ref.fullPath, url: url},
-                        type: UserType.GUIDE,
+                        type: userInfo.type,
                     };
                     console.log("log to DB:");
                     console.log(res);
                     const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
   
-                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                    return setDoc(docRef, res).then(() => UpdateUserAdminState(docRef, isAdmin));
                 });
             });
 
