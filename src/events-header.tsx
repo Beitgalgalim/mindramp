@@ -1,5 +1,4 @@
-import { red } from '@material-ui/core/colors';
-import { NotificationsActive } from '@mui/icons-material';
+import { Home, NotificationsActive, NotificationsNone } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { Text } from './elem';
 import { EventsHeaderProps } from './types';
@@ -27,6 +26,7 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
 }
 
 export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
+    notificationOn,
     onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
 
     const handleClick = useSingleAndDoubleClick(() => {
@@ -50,6 +50,11 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
             headerMsg += "לילה טוב";
         }
     }
+
+    const NotificationIcon = showingNotifications ?
+        Home : (
+            notificationOn ?
+                NotificationsActive : NotificationsNone);
 
     return <div style={{
         height: height,
@@ -75,25 +80,26 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
                 position: "absolute", right: 0, top: 0, width: 50, height: 50,
 
             }} onClick={onNotificationClick}>
-                {newNotificationCount > 0 &&
+                {newNotificationCount > 0 && !showingNotifications &&
                     <div style={{
                         position: "absolute",
                         top: 0,
                         right: 10,
                         backgroundColor: "red",
-                        fontSize:"0.9rem",
-                        lineHeight:"0.8rem",
+                        fontSize: "0.9rem",
+                        lineHeight: "0.8rem",
                         width: 16,
-                        height: 16, 
+                        height: 16,
                         borderRadius: 8,
-                        zIndex:1000,
+                        zIndex: 1000,
                     }}
                     >{newNotificationCount}</div>
                 }
-                <NotificationsActive style={{
+                <NotificationIcon style={{
+                    width: 30, height: 30,
                     borderRadius: 15,
                     padding: 2,
-                    backgroundColor: showingNotifications ? "gray" : "transparent"
+                    //backgroundColor: showingNotifications ? "gray" : "transparent"
                 }} />
 
             </div>

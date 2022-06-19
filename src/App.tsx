@@ -3,19 +3,20 @@ import * as api from './api'
 
 import './App.css';
 import { Alert, AlertTitle } from '@mui/material'
-import { Text, HBox, Spacer, HBoxC } from './elem';
+import { Text, Spacer, HBoxC } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
-import { MsgButton, NotificationMessage, NotificationToken } from './types';
+import { MessageInfo, MsgButton, NotificationMessage, NotificationToken } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
 import { User } from '@firebase/auth';
 import Login from './login';
 import { Close } from '@mui/icons-material';
+import useLocalStorageState from 'use-local-storage-state';
 
 function App(props: any) {
 
@@ -28,6 +29,8 @@ function App(props: any) {
   const [tokens, setTokens] = useState<NotificationToken[] | null>()
   const [notificationToken, setNotificationToken] = useState<string | null>();
   const msgTimerRef = useRef<NodeJS.Timer>();
+  const [notifications, setNotifications] = useLocalStorageState<MessageInfo[]>("notifications");
+
 
   useEffect(() => {
     function handleResize() {
@@ -38,6 +41,7 @@ function App(props: any) {
     window.addEventListener('orientationchange', handleResize);
 
   }, [])
+
 
   const clearMsg = () => {
     setMsg(undefined);
@@ -67,9 +71,14 @@ function App(props: any) {
   }
 
   const onPushNotification = (msgPayload: any) => {
-    console.log(JSON.stringify(msgPayload, undefined, " "))
-
     notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
+    const newNotif = {
+      title: msgPayload.notification?.title || "",
+      body: msgPayload.notification.body,
+      unread:true,
+    }
+    setNotifications(curr=>curr?[...curr, newNotif]:[newNotif]);
+
   };
 
   useEffect(() => {
@@ -77,8 +86,8 @@ function App(props: any) {
       // Callback for AuthStateChanged
       (userPersonalInfo) => {
         if (userPersonalInfo) {
-          setUser(userPersonalInfo._ref.id);
-          setNotificationOn(userPersonalInfo.notificationOn);
+          setUser(userPersonalInfo.email);
+          setNotificationOn(userPersonalInfo.notificationOn === true);
           setTokens(userPersonalInfo.tokens);
         } else {
           setUser(null);
@@ -163,6 +172,16 @@ function App(props: any) {
             onNotificationToken={(notifToken) => setNotificationToken(notifToken)}
             onPushNotification={onPushNotification}
             onNotificationOnChange={(on) => setNotificationOn(on)}
+            notifications={notifications}
+            onSetNotificationRead={notif=>{
+              // in case of notification - delete read messages
+              setNotifications(curr=>{
+                if (curr) {
+                  return curr.filter(c=>(notif.title !== c.title || notif.body !== c.body));
+                }
+                return undefined;
+              })
+            }}
             windowSize={windowSize}
             connected={connected}
             user={user}

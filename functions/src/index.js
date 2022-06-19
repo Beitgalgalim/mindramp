@@ -53,6 +53,10 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
             const update = {};
             if (notificationOn !== undefined) {
                 update.notificationOn = notificationOn;
+                if (update.notificationOn === false) {
+                    // remove existing tokens
+                    update.notificationTokens = FieldValue.delete();
+                } 
             }
 
             if (notificationToken != undefined) {
@@ -60,7 +64,11 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
                     update.notificationTokens = FieldValue.arrayUnion(notificationToken);
                 }
             }
+            functions.logger.error("Update Notifications", "update", update);    
+
             return doc.ref.update(update);
+        } else {
+            functions.logger.error("Update Notifications", "user-not-found", context.auth.token.email);    
         }
     });
 });
@@ -113,6 +121,6 @@ exports.notifications = functions.region("europe-west1").pubsub
     .timeZone("Asia/Jerusalem")
     .onRun(async (context) => {
         return db.collection("event").get().then(docs => {
-            functions.logger.error("Notifications", "event-count", docs.length);
+            functions.logger.error("Notifications", "event-count", docs.length);    
         });
     });

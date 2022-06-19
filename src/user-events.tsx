@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { Text, HBox, EventsMain, VBoxC } from "./elem";
 import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents } from "./utils/date";
-import { useLocation } from "react-router-dom";
-import { MessageInfo, UserEventsProps } from "./types";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { UserEventsProps } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 
@@ -22,7 +22,8 @@ import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 
 export default function UserEvents({ connected, notify, user,
-    notificationOn, onNotificationOnChange, onNotificationToken, onPushNotification }: UserEventsProps) {
+    notificationOn, onNotificationOnChange, onNotificationToken, 
+    onPushNotification, notifications, onSetNotificationRead}: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
@@ -30,12 +31,10 @@ export default function UserEvents({ connected, notify, user,
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
-    const [nickName, setNickName] = useState<string>("");
-    const [isTV, setIsTV] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [notificationsPane, setNotificationsPane] = useState<number>(0);
-    const [alerts, setAlerts, alertsMore] = useLocalStorageState<MessageInfo[]>("alerts");
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
+    const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
 
@@ -57,6 +56,9 @@ export default function UserEvents({ connected, notify, user,
     if (startDate !== dateTimeNoOffset.format(DateFormats.DATE)) {
         setStartDate(dateTimeNoOffset.format(DateFormats.DATE))
     }
+
+    const [searchParams] = useSearchParams();
+    const isTV = searchParams.get("isTv") === "true";
 
     useEffect(() => {
         if (!connected || startDate === "")
@@ -82,16 +84,6 @@ export default function UserEvents({ connected, notify, user,
 
         }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
-
-    useEffect(() => {
-        // Init personalized name on mount
-        const savedState = localStorage.getItem("state");
-        if (savedState && savedState.length > 0) {
-            const obj = JSON.parse(savedState)
-            setNickName(obj.name);
-            setIsTV(obj.isTV);
-        }
-    }, [])
 
     useEffect(() => {
         let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)
@@ -146,7 +138,7 @@ export default function UserEvents({ connected, notify, user,
             days.push({
                 caption: "התראות",
                 emptyMsg: "אין התראות",
-                messages: alerts,
+                messages: notifications,
             });
         } else if (notificationsPane == 1) {
             days.push({
@@ -159,23 +151,23 @@ export default function UserEvents({ connected, notify, user,
 
 
     const columnWidth = 100 / days.length;
-    const newNotificationCount = keyEvents?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
+    const newKeyEventsCount = keyEvents?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
+    const newAlertsCount = notifications?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
 
+    const newNotificationCount = newKeyEventsCount+newAlertsCount;
 
     if (showUserSettings) {
         return <UserSettings
             user={user}
-            isTV={isTV}
-            onDone={(newNick, newIsTV) => {
-                setShowUserSettings(false);
-                setNickName(newNick);
-                setIsTV(newIsTV);
+            onSaveNickName={(newNick) => {
+                setNickName({name:newNick});
             }}
+            onClose={()=>setShowUserSettings(false)}
             notificationOn={notificationOn}
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
             onPushNotification={onPushNotification}
-            notify={notify} nickName={nickName} />
+            notify={notify} nickName={nickName?.name} />
     }
 
     return <div dir={"rtl"} style={{
@@ -191,8 +183,9 @@ export default function UserEvents({ connected, notify, user,
             centered={isTV}
             height={"12vh"}
             showDateTime={dateTimeNoOffset}
-            nickName={nickName}
+            nickName={nickName?.name}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
+            notificationOn={notificationOn}
             onNotificationClick={() => setShowNotifications(prev => !prev)}
             showingNotifications={showNotifications}
             newNotificationCount={newNotificationCount}
@@ -201,7 +194,7 @@ export default function UserEvents({ connected, notify, user,
 
         <HBox style={{ backgroundColor: "#0078C3", justifyContent: "space-evenly" }}>
             {days.map((day, dayIndex) =>
-                <EventsMain height={"88vh"} width={(columnWidth - 1) + "vw"}
+                <EventsMain key={dayIndex} height={"88vh"} width={(columnWidth - 1) + "vw"}
                 >
                     {!isTV && !showNotifications ? <EventsNavigation
                         height={"10vh"}
@@ -213,7 +206,7 @@ export default function UserEvents({ connected, notify, user,
                             height={"10vh"}
                             currentNavigation={notificationsPane}
                             onNavigate={(offset: number) => setNotificationsPane(offset)}
-                            buttons={[{ caption: "התראות" }, { caption: "הודעות" }, { caption: "אירועים" }]}
+                            buttons={[{ caption: "התראות", badge:newAlertsCount }, { caption: "הודעות", badge:0 }, { caption: "אירועים", badge:newKeyEventsCount }]}
                         />}
 
                     {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
@@ -264,7 +257,8 @@ export default function UserEvents({ connected, notify, user,
                                     //     const newMsg = { title: "הודעה" + (curr ? curr.length + 1 : 1), body: "", unread: true }
                                     //     return curr ? [...curr, newMsg] : [newMsg];
                                     // });
-                                    setAlerts((curr) => curr?.map(alert => alert == msg ? { ...msg, unread: false } : alert))
+                                    //setAlerts((curr) => curr?.map(alert => alert == msg ? { ...msg, unread: false } : alert))
+                                    onSetNotificationRead(msg)
                                 }
                             />)
                         }

@@ -45,19 +45,28 @@ export function initAPI(
         const email = user?.email;
         if (email) {
             const docRef = doc(db, Collections.USERS_COLLECTION, email, Collections.USER_PERSONAL_SUBCOLLECTION, "Default")
-            getDoc(docRef).then((userPersonallDoc => {
-                if (userPersonallDoc.exists()) {
+            getDoc(docRef).then(
+                //Success
+                userPersonallDoc => {
+                    if (userPersonallDoc.exists()) {
 
-                    if (userPersonallDoc.data().notificationOn === true) {
-                        initializeNotification(onPushNotification, onNotificationToken);
+                        if (userPersonallDoc.data().notificationOn === true) {
+                            initializeNotification(onPushNotification, onNotificationToken);
+                        }
+
+                        onAuth({
+                            email,
+                            ...userPersonallDoc.data(),
+                        });
                     }
-
+                },
+                // No user record. for compatability - allow it
+                (err) => {
                     onAuth({
-                        _ref: userPersonallDoc.ref,
-                        ...userPersonallDoc.data(),
+                        email
                     });
                 }
-            }));
+            );
         } else {
             onAuth(null);
         }
@@ -76,35 +85,48 @@ export function initializeNotification(
             // requires user gesture...
             // todo
         } else {
+
+
             Notification.requestPermission().then(perm => {
                 if (perm === "granted") {
                     console.log("permission granted");
-                    getToken(messaging, { vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ' }).then((currentToken) => {
-                        if (currentToken) {
-                            // Send the token to your server and update the UI if necessary
-                            console.log("Web notification", currentToken);
-                            if (onNotificationToken) {
-                                onNotificationToken(currentToken);
+                    // deleteToken(messaging).then(ret => {
+                    //     if (ret) {
+                    //         console.log("deleted token");
+                    //         return
+                    //     }
+
+
+                        getToken(messaging, {
+                            vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
+                        }).then((currentToken) => {
+                            if (currentToken) {
+                                // Send the token to your server and update the UI if necessary
+                                console.log("Web notification", currentToken);
+                                if (onNotificationToken) {
+                                    onNotificationToken(currentToken);
+                                }
+
+                                onMessage(messaging, (payload) => {
+                                    console.log('Message received. ', JSON.stringify(payload));
+                                    if (onPushNotification) {
+                                        onPushNotification(payload);
+                                    }
+                                });
+                            } else {
+                                // Show permission request UI
+                                console.log('No registration token available. Request permission to generate one.');
+                                // ...
                             }
-                        } else {
-                            // Show permission request UI
-                            console.log('No registration token available. Request permission to generate one.');
+                        }).catch((err) => {
+                            console.log('An error occurred while retrieving token. ', err);
                             // ...
-                        }
-                    }).catch((err) => {
-                        console.log('An error occurred while retrieving token. ', err);
-                        // ...
-                    });
+                        });
+                   // })
                 } else {
                     console.log("Permission denied to notifications");
+                    return;
                 }
-
-                onMessage(messaging, (payload) => {
-                    console.log('Message received. ', JSON.stringify(payload));
-                    if (onPushNotification) {
-                        onPushNotification(payload);
-                    }
-                });
             });
         }
     } catch (err: any) {
@@ -139,7 +161,9 @@ export const checkSafariRemotePermission = (permissionData: any) => {
 export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string, isSafari?: boolean) {
     const updateNotification = httpsCallable(functions, 'updateNotification');
 
-    const payload: any = {};
+    const payload: any = {
+        isDev: isDev(),
+    };
     if (notificationOn !== undefined) {
         payload.notificationOn = notificationOn;
     }
@@ -159,9 +183,9 @@ export async function updateUserNotification(notificationOn: boolean | null, new
 export function testNotif() {
     const sendNotificationTest = httpsCallable(functions, 'sendNotificationTest');
     const payload: any = {
-        title:"בדיקת הודעה",
+        title: "בדיקת הודעה",
         body: "זוהי הודעת בדיקה",
-        link: "https://mindramp-58e89.web.app/",
+        link: isDev() ? "http://localhost:3000/" : "https://mindramp-58e89.web.app/",
         isDev: isDev(),
     };
     return sendNotificationTest(payload);

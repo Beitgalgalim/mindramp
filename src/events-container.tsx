@@ -10,7 +10,7 @@ export function EventsContainer(props: any) {
 
     // calculate how many items to scroll from top:
     let elementsToScroll = 0;
-    props.children && props.children.map((child: any) => {
+    props.children && props.children.forEach((child: any) => {
 
         if (Array.isArray(child)) {
             elementsToScroll = child.length - 1; //for now all of them

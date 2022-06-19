@@ -18,9 +18,10 @@ export default function Message({ msg, onSetRead }: MessageProps) {
         marginBottom: 30,
         marginTop: 1,
         boxShadow: Design.boxShadow,
-    }}>
+    }}         onClick={onSetRead}
+    >
         {/**unread */
-            msg.unread && <UnRead onSetRead={onSetRead} />
+            msg.unread && <UnRead/>
         }
 
         <Text fontSize="1em" textAlign={"center"}>{msg.title}</Text>

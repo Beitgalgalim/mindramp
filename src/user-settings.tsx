@@ -7,7 +7,7 @@ import { Checkbox, TextField } from '@mui/material';
 import { useState, Fragment, useCallback } from "react";
 import { Button, makeStyles } from "@material-ui/core";
 import * as api from './api'
-import { Cancel, Logout, Notifications, Save } from "@mui/icons-material";
+import {  Check, Close, Logout, Notifications } from "@mui/icons-material";
 
 const useStyles = makeStyles(() => ({
     buttonIcon: {
@@ -15,25 +15,13 @@ const useStyles = makeStyles(() => ({
     }
 }));
 
-export default function UserSettings({ onDone, user, notify, nickName,
-    isTV,
+export default function UserSettings({ onSaveNickName, onClose, user, notify, nickName,
     notificationOn,
     onNotificationOnChange,
     onNotificationToken,
     onPushNotification,
 }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName);
-    const [editIsTV, setEditIsTv] = useState<boolean>(isTV);
-
-    const savePersonalization = (newName: string | null, isTV: boolean) => {
-        const state: any = {};
-        if (newName) {
-            state.name = newName;
-        }
-        state.isTV = isTV;
-        localStorage.setItem("state", JSON.stringify(state));
-    }
-
 
     const handleNotificationOnClick = useCallback(() => {
         notify.ask(`האם ל${notificationOn ? "בטל" : "אפשר"} הודעות בדחיפה?`, undefined, [
@@ -57,7 +45,7 @@ export default function UserSettings({ onDone, user, notify, nickName,
     }, [notificationOn]);
 
 
-    const handleSafariNotifClick = () => {
+    // const handleSafariNotifClick = () => {
         // if ('safari' in window && 'pushNotification' in window.safari) {
         //   let permissionData = window.safari.pushNotification.permission('<todo>');
         //   let token = api.checkSafariRemotePermission(permissionData);
@@ -65,80 +53,65 @@ export default function UserSettings({ onDone, user, notify, nickName,
         //     onNotificationToken(token);
         //   }
         // };
-    };
+    // };
 
     const classes = useStyles();
 
-    return <div>
-        <Spacer height={35} />
-        {
-            !user && <Login
-                onLogin={(u: User) => { }}
-                onError={(err: Error) => notify.error(err.toString())}
-                onForgotPwd={() => {
-                    //todo
-                }}
-            />
-        }
+    return <div style={{ padding: 20 }}>
+        <HBox style={{ justifyContent: "flex-end" }}>
+            <Close
+                style={{ fontSize: 40 }}
+                onClick={() => {
+                    onClose();
+                }} />
+
+        </HBox>
+
         <VBoxC>
-            <TextField
-                autoFocus
-                label="כינוי"
-                variant="outlined"
-                dir="rtl"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-            />
+            <HBoxC style={{ width: "100%" }}>
+                <TextField
+                    autoFocus
+                    label="כינוי"
+                    variant="outlined"
+                    dir="rtl"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                />
+                {editName !== nickName &&
+                    <Check
+                        style={{ fontSize: 40 }}
+                        onClick={() => {
+                            onSaveNickName(editName);
+                        }} />
+                }
+            </HBoxC>
 
             <Spacer height={20} />
-            {!("safari" in window) && <HBox style={{ alignItems: "center" }}>
+            {!("safari" in window) && user && <HBox style={{ alignItems: "center" }}>
                 <Checkbox onChange={(evt) => {
                     handleNotificationOnClick()
                 }} checked={notificationOn}
                     style={{ paddingRight: 0 }} />
                 <Text fontSize={13}>אפשר התראות</Text>
                 <Spacer />
-                <Button
-                    disabled={!notificationOn}
-                    variant="outlined"
-                    endIcon={<Notifications />}
-                    classes={{ endIcon: classes.buttonIcon }}
-                    onClick={() => api.testNotif()} >
-                    בדיקת התראות
-                </Button>
+
             </HBox>}
 
             <Spacer height={20} />
-            <HBox>
-                <Checkbox onChange={(evt) => {
-                    setEditIsTv(prev=>!prev)
-                }} checked={editIsTV}
-                    style={{ paddingRight: 0 }} />
-                <Text fontSize={13}>מסך טלויזיה</Text>
-            </HBox>
-
-            <Spacer height={20} />
             <HBoxC>
-                <Button
-                    variant="outlined"
-                    endIcon={<Save />}
-                    classes={{ endIcon: classes.buttonIcon }}
-                    onClick={() => {
-                        savePersonalization(editName, editIsTV);
-                        onDone(editName, editIsTV);
-                    }}>שמור</Button>
-                <Spacer />
-                <Button
-                    variant="outlined"
-                    endIcon={<Cancel />}
-                    classes={{ endIcon: classes.buttonIcon }}
-
-                    onClick={() => {
-                        onDone(nickName, isTV);
-                    }}>סגור</Button>
-
                 {
                     user && <Fragment>
+                        <Button
+                            style={{ minWidth: 180 }}
+                            disabled={!notificationOn}
+                            variant="outlined"
+                            endIcon={<Notifications />}
+                            classes={{ endIcon: classes.buttonIcon }}
+                            onClick={() => api.testNotif().catch(e => {
+                                notify.error("בדיקה נכשלה. שגיאה:" + e.message);
+                            })} >
+                            בדיקת התראות
+                        </Button>
                         <Spacer width={20} />
                         <Button
                             variant="outlined"
@@ -152,5 +125,15 @@ export default function UserSettings({ onDone, user, notify, nickName,
             </HBoxC>
 
         </VBoxC>
+        <Spacer width={20} />
+        {
+            !user && <Login
+                onLogin={(u: User) => { }}
+                onError={(err: Error) => notify.error(err.toString())}
+                onForgotPwd={() => {
+                    //todo
+                }}
+            />
+        }
     </div >
 }

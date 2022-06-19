@@ -4,7 +4,7 @@ import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
 import { EditEventsProps, MediaResource, UserInfo, UserType } from './types';
-import { AccessTime, AddPhotoAlternateOutlined, CheckBox, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
+import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';

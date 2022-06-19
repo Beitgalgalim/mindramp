@@ -1,5 +1,5 @@
 
-import React, { MutableRefObject, ReactElement, useEffect, useRef, useState } from 'react';
+import React, { MutableRefObject, ReactElement, useEffect } from 'react';
 import {
     Box, ListItemButton, TextField, Typography, InputAdornment,
 } from '@mui/material';
@@ -12,17 +12,15 @@ import {
 } from '@material-ui/core';
 
 import {
-
     withStyles
 } from "@material-ui/core/styles";
 
 import { FixedSizeList } from 'react-window';
-import { ExpandMore, MarkEmailRead, StarRate } from '@mui/icons-material';
+import { ExpandMore, StarRate } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
 import "./elem.css";
-import { style } from '@mui/system';
 
 
 

@@ -5,6 +5,8 @@ import { Dayjs } from "dayjs";
 import { MessagePayload } from "@firebase/messaging";
 
 export function isDev(): boolean {
+    if (window.location.hostname.includes("preview")) return true;
+
     return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";
 }
 export const Collections =
@@ -24,7 +26,7 @@ export const Collections =
             MEDIA_COLLECTION: "media",
             GUIDES_COLLECTION: "guides",
             USERS_COLLECTION: "users",
-            PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+            PERSONAL_EVENT_COLLECTION: "personal_event",
             USER_PERSONAL_SUBCOLLECTION: "personal",
         }
 
@@ -80,7 +82,7 @@ export interface NotificationToken {
 }
 
 export interface UserPersonalInfo {
-    _ref: DocumentReference,
+    email: string,
     phone?: string,
     notificationOn?: boolean,
     tokens?: NotificationToken[]
@@ -161,6 +163,8 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
+    notifications?:MessageInfo[],
+    onSetNotificationRead:(notif:MessageInfo)=>void,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
@@ -173,9 +177,9 @@ export interface LoginProps {
 }
 
 export interface UserSettingsProps extends WithUser, Notifying {
-    onDone: (newNick: string, isTV:boolean) => void,
+    onSaveNickName: (newNick: string) => void,
+    onClose:Callback,
     nickName: string,
-    isTV: boolean,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
@@ -188,6 +192,7 @@ export interface EventsHeaderProps extends WithUser {
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
+    notificationOn: boolean,
     onNotificationClick: Callback,
     showingNotifications: boolean,
     newNotificationCount:number,
