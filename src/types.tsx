@@ -163,8 +163,6 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
-    notifications?:MessageInfo[],
-    onSetNotificationRead:(notif:MessageInfo)=>void,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface GuidesProps extends Notifying, WithGuides, WithReload { }
@@ -222,7 +220,8 @@ export interface DatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
-    style?: any
+    style?: any;
+    allDay?:boolean;
 }
 
 export interface RecorderProps {

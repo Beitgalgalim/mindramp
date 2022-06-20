@@ -73,6 +73,8 @@ export const day2DayName: { [id: number]: string; } = {
 
 export const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
 
+export const removeTime = (d: Dayjs|string) => dayjs(d).format(DateFormats.DATE);
+
 export function getDayDesc(date: Dayjs): string {
 
     const now = toMidNight(dayjs());
@@ -125,9 +127,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 const daysSinceStart = - start.diff(date, "days");
-                if (daysSinceStart > daysBefore) {
-                    continue;
-                }
+                
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
                         (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||

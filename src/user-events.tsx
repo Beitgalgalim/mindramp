@@ -2,9 +2,9 @@ import { Dayjs } from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { Text, HBox, EventsMain, VBoxC } from "./elem";
-import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents } from "./utils/date";
+import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { UserEventsProps } from "./types";
+import { MessageInfo, UserEventsProps } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 
@@ -21,9 +21,26 @@ import Message from "./message";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 
+
+function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
+    setFunction((curr: any[]) => {
+        const newItems = srcList.filter(srcItem => !curr?.some(c => Event.equals(srcItem, c)));
+        const relevantExistingItems = curr?.filter(c => srcList.some(srcItem => Event.equals(srcItem, c))) || [];
+        return [
+            ...(relevantExistingItems),
+            ...(newItems.map(srcItem => ({ ...srcItem, unread: true })))
+        ];
+    })
+}
+
+function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
+    return msg1.title === msg2.title && msg1.body === msg2.body;
+}
+
+
 export default function UserEvents({ connected, notify, user,
-    notificationOn, onNotificationOnChange, onNotificationToken, 
-    onPushNotification, notifications, onSetNotificationRead}: UserEventsProps) {
+    notificationOn, onNotificationOnChange, onNotificationToken,
+    onPushNotification }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
@@ -34,6 +51,7 @@ export default function UserEvents({ connected, notify, user,
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [notificationsPane, setNotificationsPane] = useState<number>(0);
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
+    const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
     const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
@@ -66,21 +84,23 @@ export default function UserEvents({ connected, notify, user,
         setLoadingEvents(true);
         api.getEvents().then(evts => {
             const evtsWithId = evts.map((e, i) => {
-                e.tag = e._ref?.id || (""+i);
+                e.tag = e._ref?.id || ("" + i);
                 return e;
             })
             const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
-            setEvents(sortedEvents);
 
-            const keyEvts = sortedEvents.filter(ev => ev.keyEvent);
-            setKeyEvents(curr => {
-                const newKeyEvents = keyEvts.filter(ke => !curr?.some(c => Event.equals(ke, c)));
-                const relevantKeyEvents = curr?.filter(c => keyEvts.some(ke => Event.equals(ke,c ))) || [];
-                return [
-                    ...(relevantKeyEvents),
-                    ...(newKeyEvents.map(ke => ({ ...ke, unread: true } as Event)))
-                ];
-            })
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev=>ev.end > dateTimeNoOffset.format(DateFormats.DATE_TIME));
+            const tomorrow = toMidNight(dateTimeNoOffset.add(1, "days")).format(DateFormats.DATE_TIME);
+            const today = toMidNight(dateTimeNoOffset).format(DateFormats.DATE_TIME);
+            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev=>ev.start <= today && ev.end >= tomorrow);
+
+            setEvents(sortedEvents.filter(ev => !ev.allDay));
+
+            syncLocalStorage(setKeyEvents, Event.equals, keyEvts);
+            syncLocalStorage(setMessages, messageEquals, msgs.map(m => ({
+                title: m.title,
+                body: m.notes
+            })));
 
         }).finally(() => setLoadingEvents(false));
     }, [connected, startDate]);
@@ -138,25 +158,25 @@ export default function UserEvents({ connected, notify, user,
             days.push({
                 caption: "הודעות",
                 emptyMsg: "אין הודעות",
-                messages: notifications,
+                messages: messages,
             });
         }
     }
 
 
     const columnWidth = 100 / days.length;
-    const newKeyEventsCount = keyEvents?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
-    const newNotificationsCount = notifications?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
+    const newKeyEventsCount = keyEvents?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
+    const newMessagesCount = messages?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
 
-    const newNotificationCount = newKeyEventsCount+newNotificationsCount;
+    const newNotificationCount = newKeyEventsCount + newMessagesCount;
 
     if (showUserSettings) {
         return <UserSettings
             user={user}
             onSaveNickName={(newNick) => {
-                setNickName({name:newNick});
+                setNickName({ name: newNick });
             }}
-            onClose={()=>setShowUserSettings(false)}
+            onClose={() => setShowUserSettings(false)}
             notificationOn={notificationOn}
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
@@ -200,7 +220,7 @@ export default function UserEvents({ connected, notify, user,
                             height={"10vh"}
                             currentNavigation={notificationsPane}
                             onNavigate={(offset: number) => setNotificationsPane(offset)}
-                            buttons={[ { caption: "הודעות", badge:newNotificationsCount }, { caption: "אירועים", badge:newKeyEventsCount }]}
+                            buttons={[{ caption: "הודעות", badge: newMessagesCount }, { caption: "אירועים", badge: newKeyEventsCount }]}
                         />}
 
                     {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
@@ -232,7 +252,7 @@ export default function UserEvents({ connected, notify, user,
                                                 (curr ?
                                                     curr.map(ke => {
                                                         if (Event.equals(ke, ev)) {
-                                                            return {...ke, unread:false} as Event;
+                                                            return { ...ke, unread: false } as Event;
                                                         }
                                                         return ke
                                                     }) :
@@ -246,13 +266,16 @@ export default function UserEvents({ connected, notify, user,
                         {day.messages?.map((msg, i) =>
                             <Message
                                 msg={msg}
-                                onSetRead={() =>
-                                    // setAlerts((curr) => {
-                                    //     const newMsg = { title: "הודעה" + (curr ? curr.length + 1 : 1), body: "", unread: true }
-                                    //     return curr ? [...curr, newMsg] : [newMsg];
-                                    // });
-                                    //setAlerts((curr) => curr?.map(alert => alert == msg ? { ...msg, unread: false } : alert))
-                                    onSetNotificationRead(msg)
+                                onSetRead={
+                                    () => setMessages(curr =>
+                                    (curr ?
+                                        curr.map(m => {
+                                            if (messageEquals(m, msg)) {
+                                                return { ...m, unread: false } as MessageInfo;
+                                            }
+                                            return m
+                                        }) :
+                                        undefined))
                                 }
                             />)
                         }

@@ -30,8 +30,6 @@ function App(props: any) {
   const [tokens, setTokens] = useState<NotificationToken[] | null>()
   const [notificationToken, setNotificationToken] = useState<string | null>();
   const msgTimerRef = useRef<NodeJS.Timer>();
-  const [notifications, setNotifications] = useLocalStorageState<MessageInfo[]>("notifications");
-
 
   useEffect(() => {
     function handleResize() {
@@ -83,6 +81,8 @@ function App(props: any) {
     const greeting = new Notification(msgPayload.notification?.title,{
       body: msgPayload.notification.body,
       icon: logo,
+      badge:logo,
+      dir : "ltr",
     });
 
     // greeting.onclick = () => {
@@ -181,16 +181,7 @@ function App(props: any) {
             onNotificationToken={(notifToken) => setNotificationToken(notifToken)}
             onPushNotification={onPushNotification}
             onNotificationOnChange={(on) => setNotificationOn(on)}
-            notifications={notifications}
-            onSetNotificationRead={notif=>{
-              // in case of notification - delete read messages
-              setNotifications(curr=>{
-                if (curr) {
-                  return curr.filter(c=>(notif.title !== c.title || notif.body !== c.body));
-                }
-                return undefined;
-              })
-            }}
+            
             windowSize={windowSize}
             connected={connected}
             user={user}

@@ -1,7 +1,7 @@
 - Backup
 - Archive old meetings
-- notify personal meetings
-- Key Events visual
+V- notify personal meetings
+V- Key Events visual
 V - Personal meeting visual
 - tv view - scroll side-ways, key events?
 
@@ -21,7 +21,6 @@ V - sort mine first
 less space between cards?
 
 Key events:
-- can we replace "day after tomorrow" with key-events? -or alternatively, use start on the title
 V - another option: treat as notification, in an overlay. have a separation between reminders and key events
 
 TV:

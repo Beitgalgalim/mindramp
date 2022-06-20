@@ -89,7 +89,7 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
             InputProps={{
                 readOnly: props.readOnly === true,
                 startAdornment: showExpand && (
-                    <InputAdornment position="end">
+                    <InputAdornment position="end" sx={{ margin: 0 }}>
                         <ExpandMore />
                     </InputAdornment>
                 ),
@@ -137,13 +137,14 @@ export interface ComboBoxProps {
     renderItem?: (item: ComboBoxItem, hoover: boolean, selected: boolean) => ReactElement,
     itemHeight?: number,
     listHeight?: number,
+    listWidth?: number,
     placeholder?: string,
     hideExpandButton?: boolean,
 }
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton } = props;
+    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
@@ -162,8 +163,15 @@ export function ComboBox(props: ComboBoxProps) {
     }, [props.elRef])
 
     useEffect(() => {
-        setLocalValue(props.value || "");
-        console.log("setLocalValue", props.value)
+        const item = props.items.find((item: any)=> item.key === props.value);
+        if (item) {
+            setLocalValue((item as any).value);
+            console.log("setLocalValue", props.value)
+        } else {
+            setLocalValue(props.value || "");
+            console.log("setLocalValue", props.value)
+    
+        }
     }, [props.value])
 
     const items = filterItem ? props.items.filter((item: any) => filterItem(item, localValue)) : props.items;
@@ -179,7 +187,7 @@ export function ComboBox(props: ComboBoxProps) {
         }
 
 
-        return <ListItem style={{ padding: 0, ...renderProps.style, ...style }}
+        return <ListItem style={{ padding: 0, ...renderProps.style }}
             key={renderProps.index}
             selected={currentIndex === renderProps.index}
         >
@@ -259,7 +267,7 @@ export function ComboBox(props: ComboBoxProps) {
                 <FixedSizeList
                     itemCount={items.length}
                     height={listSize}
-                    width={style?.width || 100}
+                    width={listWidth || 100}
                     direction={style?.textAlign === "right" ? "rtl" : "ltr"}
                     itemSize={itemSize}
                     initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>

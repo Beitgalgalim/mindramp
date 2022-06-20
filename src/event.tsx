@@ -47,6 +47,7 @@ export class Event {
     start: string = "";
     end: string = "";
     keyEvent?: boolean;
+    allDay?:boolean;
     notes?: string;
     imageUrl?: string;
     guideUrl?: string;
@@ -69,7 +70,9 @@ export class Event {
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
         if ("toPlainObject" in eventApi) {
-            return Event.fromAny(eventApi.toPlainObject({ collapseExtendedProps: true }));
+            const res = Event.fromAny(eventApi.toPlainObject({ collapseExtendedProps: true }));
+            res.allDay = eventApi.allDay;
+            return res;
         }
         return evt as Event;
     }
@@ -96,6 +99,7 @@ export class Event {
         assignIfExists(evt, "participants", doc);
         assignIfExists(evt, "guide", doc);
         assignIfExists(evt, "keyEvent", doc);
+        assignIfExists(evt, "allDay", doc);
         assignIfExists(evt, "reminderMinutes", doc);
 
         evt.isPersonal = isPersonal;
@@ -148,6 +152,7 @@ export class Event {
         clearFieldIfEmpty("participants");
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
+        clearFieldIfEmpty("allDay");
         clearFieldIfEmpty("reminderMinutes");
 
         delete eventObj._ref;

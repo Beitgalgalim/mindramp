@@ -1,5 +1,5 @@
 
-import { useRef, useState } from 'react';
+import { useRef, useState, Fragment } from 'react';
 
 import { DatePickerProps } from "./types";
 import { HBox, Spacer, ClickableText, ComboBox } from './elem';
@@ -16,17 +16,17 @@ import dayjs from './localDayJs'
 
 const times = getTimes();
 
-function getNiceDate(d: string): string {
-    if (!d)
-        return "";
+// function getNiceDate(d: string): string {
+//     if (!d)
+//         return "";
 
-    const djs = dayjs(d);
-    let res = day2DayName[djs.day()] + ", " + MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
-    if (djs.year() !== dayjs().year()) {
-        res += ", " + djs.year();
-    }
-    return res;
-}
+//     const djs = dayjs(d);
+//     let res = day2DayName[djs.day()] + ", " + MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
+//     if (djs.year() !== dayjs().year()) {
+//         res += ", " + djs.year();
+//     }
+//     return res;
+// }
 
 function getTime(d: string): string {
     if (!d)
@@ -47,11 +47,12 @@ function calcDiff(d: string, newTime: string) {
 }
 
 
-export default function MyDatePicker({ start, end, setStart, setEnd, style }: DatePickerProps) {
+export default function MyDatePicker({ start, end, setStart, setEnd, style, allDay }: DatePickerProps) {
     const [invalidStart, setInvalidStart] = useState(false);
     const [invalidEnd, setInvalidEnd] = useState(false);
 
-    let datePicker = useRef<ReactDatePicker | null>(null);
+    let dateStartPicker = useRef<ReactDatePicker | null>(null);
+    let dateEndPicker = useRef<ReactDatePicker | null>(null);
 
     const setStartTime = (newTime: string) => {
         if (!validTime(newTime)) {
@@ -85,11 +86,21 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
         setEnd(replaceDatePreserveTime2(end, newDate));
     }
 
+    const setEndDate = (newEndDate: string) => {
+        //setStart(replaceDatePreserveTime2(start, newEndDate));
+        if (dayjs(start).isAfter(newEndDate)) {
+            newEndDate = start;
+        }
+        // since all day events don't show the next day, add one day
+
+        setEnd(dayjs(newEndDate).add(1,"days").format(DateFormats.DATE_TIME));
+    }
+
     return (
-        <HBox style={style}>
-            <div style={{ width: "35%" }}>
+        <HBox style={{ width: "100%", ...style }}>
+            <div style={{ width: "40%" }}>
                 <ReactDatePicker
-                    ref={datePicker}
+                    ref={dateStartPicker}
 
                     selected={dayjs(start).toDate()}
                     onChange={(d: Date) => setDate(dayjs(d).format(DateFormats.DATE))}
@@ -97,34 +108,56 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style }: Da
                     customInput={
                         <ClickableText
                             showExpand={true}
-                            onClick={() => datePicker?.current?.setOpen(true)}>
-                            {getNiceDate(start)}
+                            onClick={() => dateStartPicker?.current?.setOpen(true)}>
+
                         </ClickableText>
                     }
+                    dateFormat={"dd/MM/yy"}
                 />
             </div>
             <Spacer width={"5%"} />
 
+            {!allDay && <Fragment>
+                <ComboBox
+                    hideExpandButton={true}
+                    style={{ textAlign: "left", width: "35%" }}
+                    listWidth={100}
+                    value={getTime(start)} items={times}
+                    onSelect={(newValue: string) => setStartTime(newValue)}
+                    onChange={(newValue: string) => {
+                        setStartTime(newValue)
+                    }}
+                    invalid={invalidStart} />
+                <Spacer width={"2%"} />
+                -
+                <Spacer width={"2%"} />
 
-            <ComboBox
-                style={{ textAlign: "left" }}
-                value={getTime(start)} items={times}
-                onSelect={(newValue: string) => setStartTime(newValue)}
-                onChange={(newValue: string) => {
-                    setStartTime(newValue)
-                }}
-                invalid={invalidStart} />
-            <Spacer width={"2%"} />
-            -
-            <Spacer width={"2%"} />
+                <ComboBox
+                    hideExpandButton={true}
+                    style={{ textAlign: "left", width: "35%" }}
+                    listWidth={100}
+                    value={getTime(end)} items={getTimes(dayjs(start))}
+                    onSelect={(newValue: string) => setEndTime(newValue)}
+                    onChange={(newValue: string) => setEndTime(newValue)}
+                    invalid={invalidEnd} />
 
-            <ComboBox
-                style={{  textAlign: "left"}}
-                value={getTime(end)} items={getTimes(dayjs(start))}
-                onSelect={(newValue: string) => setEndTime(newValue)}
-                onChange={(newValue: string) => setEndTime(newValue)}
-                invalid={invalidEnd} />
+            </Fragment>}
+            {allDay && <div style={{ width: "40%" }}>
+                <ReactDatePicker
+                    ref={dateEndPicker}
 
+                    selected={dayjs(end).subtract(1, "days").toDate()}
+                    onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE))}
+                    shouldCloseOnSelect={true}
+                    customInput={
+                        <ClickableText
+                            showExpand={true}
+                            onClick={() => dateEndPicker?.current?.setOpen(true)}
+                        />
+                    }
+                    dateFormat={"dd/MM/yy"}
+                />
+            </div>}
         </HBox>
     );
 }

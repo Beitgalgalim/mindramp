@@ -31,6 +31,7 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
             //height: 25,
         }}
         itemHeight={35}
+        listWidth={150}
         placeholder={placeholder}
         hideExpandButton={true}
         onSelect={(key: string) => {
@@ -48,10 +49,11 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 }
 
 
-export function Person({ name, icon, hover, selected, onRemove, flat }: any) {
+export function Person({ name, icon, hover, selected, onRemove, flat, width }: any) {
     return <div
         style={{
             direction: "rtl",
+            width,
             display: "flex",
             flexDirection: "row",
             alignItems: "center",

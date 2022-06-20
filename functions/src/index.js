@@ -13,6 +13,8 @@ const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
 dayjs.extend(utc);
 dayjs.extend(timezone);
+const JERUSALEM = "Asia/Jerusalem";
+
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -107,7 +109,7 @@ function sendNotification(accessToken, title, body, link, deviceToken) {
 
     return axios.post(url, postData, {
         headers,
-    }).then((res) => ({ success: true }));
+    }).then(() => ({ success: true }));
 }
 
 
@@ -147,24 +149,25 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
     });
 });
 
-
 exports.notifications = functions.region("europe-west1").pubsub
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
     .schedule("every 1 minutes")
-    .timeZone("Asia/Jerusalem")
+    .timeZone(JERUSALEM)
     .onRun(async (context) => {
-
-
         function handleReminders(isDev) {
-            const now = dayjs().utc().tz("Asia/Jerusalem");
+            const now = dayjs().utc().tz(JERUSALEM);
+            const twoDaysAhead = now.add(2, "days");
 
             const eventsCollection = isDev ? "personal_event_dev" : "personal_event";
             const usersCollection = isDev ? "users_dev" : "users";
 
             return db.collection(eventsCollection).get().then(res => {
+
+                // filter to events between today and 2 days ahead
                 const events = res.docs.map(doc => ({ ref: doc.ref, ...doc.data() })).filter(ev =>
                     ev.reminderMinutes !== undefined &&
                     ev.date >= now.format("YYYY-MM-DD") &&
+                    ev.date <= twoDaysAhead.format("YYYY-MM-DD") &&
                     ev.notified !== true);
 
                 const allEvents = eventsUtil.explodeEvents(events, 0, 1);
@@ -222,7 +225,7 @@ exports.notifications = functions.region("europe-west1").pubsub
                                 notifyEvents.forEach(ev => {
                                     // makes sure the recurrent instance is not already notified
                                     if (ev.recurrent && ev.instanceStatus !== true) {
-                                        instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
+                                        const instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
                                         if (instanceInfo && instanceInfo.notified === true) {
                                             return;
                                         }
@@ -232,13 +235,14 @@ exports.notifications = functions.region("europe-west1").pubsub
                                         // find the userInfo and verify it has a notification token
                                         const userInfo = usersInfo.find(ui => ui.email === p.email);
                                         if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+                                            const reminderStr = getReminderString(ev);
                                             userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-                                                sendNotification(accessToken, ev.title, "in 2 min", "https://test.com", nt.token)
+                                                sendNotification(accessToken, ev.title, reminderStr, "https://mindramp-58e89.web.app/", nt.token)
                                             ));
 
                                             // Update event being notify:
                                             if (ev.recurrent && ev.instanceStatus !== true) {
-                                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date)
+                                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date);
                                                 waitForNotifications.push(
                                                     instanceDocRef.set({
                                                         notified: true,
@@ -263,6 +267,149 @@ exports.notifications = functions.region("europe-west1").pubsub
 
         return Promise.all([
             handleReminders(true),
-            //handleReminders(false),
+            handleReminders(false),
         ]);
     });
+
+
+function getReminderString(ev, now) {
+    const startTime = dayjs(ev.start);
+    return getBeforeTimeText(startTime.diff(now, "minutes"));
+}
+
+function isBetween(num, from, to) {
+    return num >= from && num <= to;
+}
+
+function getBeforeTimeText(minutes) {
+    if (minutes < 0)
+        return "התחיל לפני " + minutes + " דקות"
+
+    if (minutes === 0)
+        return "מתחיל עכשיו";
+
+    if (isBetween(minutes, 0, 10)) {
+        return "עוד " + minutes + " דקות";
+    }
+
+    if (isBetween(minutes, 10, 15)) {
+        return "עוד רבע שעה";
+    }
+
+    if (isBetween(minutes, 15, 23)) {
+        return "עוד 20 דקות";
+    }
+    if (isBetween(minutes, 23, 37)) {
+        return "עוד חצי שעה";
+    }
+    if (isBetween(minutes, 37, 51)) {
+        return "עוד שלושת רבעי שעה";
+    }
+    if (isBetween(minutes, 51, 75)) {
+        return "עוד שעה";
+    }
+    if (isBetween(minutes, 75, 100)) {
+        return "עוד שעה וחצי";
+    }
+    if (isBetween(minutes, 100, 130)) {
+        return "עוד שעתיים";
+    }
+    if (minutes > 1400) {
+        return "מחר"
+    }
+
+    return "עוד מעל שעתיים";
+}
+
+
+exports.participantAdded = functions.region("europe-west1").firestore
+    .document("personal_event/{eventID}")
+    .onWrite((change, context) => {
+        return handleParticipantAdded(false, change, context);
+    });
+
+exports.participantAddedDev = functions.region("europe-west1").firestore
+    .document("personal_event_dev/{eventID}")
+    .onWrite((change, context) => {
+        return handleParticipantAdded(true, change, context);
+    });
+
+
+function handleParticipantAdded(isDev, change, context) {
+    const added = [];
+    let removed = [];
+    const previousParticipants = [];
+    let title = "";
+    let date = "";
+
+    if (change.before.exists) {
+        change.before.data().participants.forEach(p =>
+            previousParticipants.push(p.email));
+        title = change.before.data().title;
+        // todo format the date nice
+        date = change.before.data().start;
+    }
+
+    if (change.after.exists) {
+        title = change.after.data().title;
+        // todo format the date nice
+        date = change.after.data().start;
+
+
+        change.after.data().participants.forEach(pAfter => {
+            const prevIndex = previousParticipants.find(pp => pp.email === pAfter.email);
+            if (!change.before.exists || prevIndex < 0) {
+                added.push(pAfter.email);
+            }
+        });
+
+        // remove those who are no longer in the after
+        previousParticipants.forEach(pp => {
+            if (!change.after.data().participants.find(pAfter => pAfter.email === pp.email)) {
+                removed.push(pp.email);
+            }
+        })
+    } else {
+        removed = previousParticipants;
+    }
+    /*
+      Send notification to added/removed participants
+    */
+    const usersCollectionName = isDev ? "users_dev" : "users";
+    const usersColl = db.collection(usersCollectionName);
+
+    const waitFoUsers = added.concat(removed).map(email =>
+        usersColl.doc(email).collection("personal").doc("Default").get());
+
+    return Promise.allSettled(waitFoUsers).then(allUsers => {
+        return getAccessToken().then(accessToken => {
+            const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
+
+            const waitForNotifications = [];
+
+            added.forEach(addUser => {
+                const userInfo = usersInfo.find(ui => ui.email === addUser);
+                if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+                    userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
+                        sendNotification(accessToken, "הוזמנת לפגישה", `
+    בתאריך: ${date} נושא: ${title}
+    `, "https://mindramp-58e89.web.app/", nt.token)
+                    ));
+                }
+            });
+
+            removed.forEach(removedUser => {
+                const userInfo = usersInfo.find(ui => ui.email === removedUser);
+                if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+                    userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
+                        sendNotification(accessToken, "פגישתך בוטלה", `
+    בתאריך: ${date} נושא: ${title}
+    `, "https://mindramp-58e89.web.app/", nt.token)
+                    ));
+                }
+            });
+
+            return Promise.all(waitForNotifications);
+        });
+    });
+}

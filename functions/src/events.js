@@ -41,9 +41,7 @@ module.exports.explodeEvents = (events, daysBefore, daysAfter, startDate) => {
                 const date = today.add(i, "days");
                 const dateStr = date.format(DATE_FORMAT);
                 const daysSinceStart = - start.diff(date, "days");
-                if (daysSinceStart > daysBefore) {
-                    continue;
-                }
+                
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
                         (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||

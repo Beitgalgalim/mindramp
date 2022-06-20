@@ -14,6 +14,7 @@ import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, Remind
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
 import { PeoplePicker, Person } from './people-picker';
+import { removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
 
 
 export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, users, notify }: EditEventsProps) {
@@ -33,6 +34,7 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
     const [participants, setParticipants] = useState<Participant[] | null>(null);
     const [availableUsers, setAvailableUsers] = useState<UserInfo[]>([]);
     const [keyEvent, setKeyEvent] = useState<boolean>(false);
+    const [allDay, setAllDay] = useState<boolean>(false);
     const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
@@ -51,6 +53,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
         setNotes(event.notes);
         if (event.keyEvent === true) {
             setKeyEvent(true);
+        }
+
+        if (event.allDay) {
+            setAllDay(true);
         }
         setImageUrl(event.imageUrl);
         if (event.guide !== null) {
@@ -116,11 +122,20 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         <AccessTime />
                     </Grid>
                     <Grid container item xs={10} spacing={2} >
-                        <MyDatePicker start={start} end={end}
-                            setStart={(d) => setStart(d)}
-                            setEnd={(d) => setEnd(d)}
-                        //style={{width:"100%"}}
-                        />
+                        <VBox style={{ alignItems: 'flex-start' }}>
+                            <MyDatePicker
+                                start={start} end={end}
+                                setStart={(d) => setStart(d)}
+                                setEnd={(d) => setEnd(d)}
+                                allDay={allDay}
+                            />
+                            <FormGroup>
+                                <FormControlLabel control={<Checkbox
+                                    checked={allDay === true}
+                                    onChange={(e) => setAllDay(prev => e.currentTarget.checked)}
+                                />} label="כל היום" />
+                            </FormGroup>
+                        </VBox>
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
@@ -185,7 +200,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                             <Spacer height={10} />
                             <HBox>
                                 <Spacer width={20} />
-                                {guide && <Person name={guide.displayName}
+                                {guide && <Person
+                                    width={150}
+                                    name={guide.displayName}
+                                    icon={guide.icon}
                                     onRemove={() => setGuide(null)}
                                 />}
                             </HBox>
@@ -219,7 +237,10 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                             <Spacer height={10} />
                             <HBox style={{ maxWidth: "80vw", flexWrap: "wrap" }}>
                                 <Spacer width={20} />
-                                {participants && participants.map((g, i) => <Person key={i} name={g.displayName}
+                                {participants && participants.map((g, i) => <Person key={i}
+                                    width={150}
+                                    icon={g.icon}
+                                    name={g.displayName}
                                     onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
                             </HBox>
                         </VBox>
@@ -275,10 +296,11 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                         </HBox>
 
                     </Grid>
-                    <Grid container item xs={4} spacing={2} >
+                    <Grid container item xs={6} spacing={2} >
 
                         {recurrent && <ComboBox
-                            style={{ width: "20vw", textAlign: "right" }}
+                            style={{ width: "30vw", textAlign: "right" }}
+                            listWidth={150}
                             value={recurrent}
                             items={RecurrentEventFieldKeyValue}
                             onSelect={(newValue: string) => setRecurrent(newValue as EventFrequency)}
@@ -310,14 +332,15 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                             <Text fontSize={13}>תזכורת</Text>
                         </HBox>
                     </Grid>
-                    <Grid container item xs={4} spacing={2} >
+                    <Grid container item xs={6} spacing={2} >
 
 
                         {(reminderMinutes || reminderMinutes === 0) && <ComboBox
-                            style={{ width: "20vw", textAlign: "right" }}
+                            style={{ width: "40vw", textAlign: "right" }}
 
                             value={reminderMinutes || reminderMinutes === 0 ? reminderMinutes + "" : ""}
                             items={ReminderFieldKeyValue}
+                            listWidth={150}
                             onSelect={(newValue: string) => {
                                 const minutes = parseInt(newValue);
                                 if (!isNaN(minutes) && minutes >= 0 && minutes <= 720) {
@@ -337,15 +360,25 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
 
                     const recurrentField = inEvent.event.recurrent || {};
                     recurrentField.freq = recurrent || "none";
+                    let endDateTime = end;
+                    let startDateTime = start;
+                    if (!allDay) {
+                        // only allDay event can span over multiple dates
+                        endDateTime = replaceDatePreserveTime2(end, start);
+                    } else {
+                        startDateTime = removeTime(start);
+                        endDateTime = removeTime(end);
+                    }
 
                     onSave(
                         {
                             event: Event.fromAny({
                                 title,
-                                start,
-                                end,
+                                start: startDateTime,
+                                end: endDateTime,
                                 notes,
                                 ...(keyEvent != null && { keyEvent }),
+                                ...(allDay != null && { allDay }),
                                 imageUrl,
 
                                 audioUrl,
