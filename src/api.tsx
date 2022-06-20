@@ -465,26 +465,33 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
             };
         
             // Verify guide pic with this name does not exist:
-            getMetadata(resourceRef).then(
+            return getMetadata(resourceRef).then(
                 //success
                 (md) => { throw ("תמונת מדריך בשם זה כבר קיימת") },
                 () => {
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
-                    uploadTask.then(val => {
-                        getDownloadURL(val.ref).then(url => {
+                    return uploadTask.then(val => {
+                        return getDownloadURL(val.ref).then(url => {
+                            let old_pic_path = res.avatar.path;
                             res.avatar.url = url;
                             res.avatar.path =  val.ref.fullPath;
-                           
-                            updateDoc(_ref, res).then(() => (UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))));
-                            
+
                             // also remove the old Pic 
-                            deleteFile(userInfo.avatar.path);
+                            console.log("delete old pic: " +old_pic_path);
+                            deleteFile(old_pic_path);
+                            return updateDoc(_ref, res).then(() => {
+                                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+                            });
+                            
+                           
                         });
                     });
                 });
         } else {
             // stay with the old pic
-            updateDoc(_ref, res).then(() => (UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))));
+            return updateDoc(_ref, res).then(() => {
+                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+                });
         }
     });
     
