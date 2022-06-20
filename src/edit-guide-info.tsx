@@ -13,13 +13,17 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
     const [lname, setLName] = useState<string>(guide_info.lname);
     const [email, setEmail] = useState<string>(guide_info._ref ? guide_info._ref.id : "");
     const [admin, setAdmin] = useState<boolean>(false);
-    const [type, setType] = useState<UserType>(guide_info.type);
     const [read_DB_once, setReadDBOnce] =  useState<boolean>(false);
+    const [type, setType] = useState<UserType>(guide_info.type);
+    const [adminInDB, setadminInDB] =  useState<boolean>(false);
 
     if (!read_DB_once) {
         console.log("read admin state");
         setReadDBOnce(true);
-        api.isUserAdmin(guide_info).then(res => setAdmin(res));
+        api.isUserAdmin(guide_info).then(res => {
+            setAdmin(res);
+            setadminInDB(res);
+        });
     }
 
     function handleAdminChange(e : any) {
@@ -73,12 +77,17 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         
         // exist guide
         if (guide_info._ref) {
-            api.editUserInfo(guide_info._ref, (files && files.length)? files[0] : null, updatedUserInfo, admin).then( () => { 
-                console.log(`המדריך עודכן בהצלחה`);
-                afterSaved();
-            },
-            (err)=>console.log(err)
-            );
+            if ((files && files.length) || updatedUserInfo.fname !== guide_info.fname || updatedUserInfo.lname !== guide_info.lname || 
+                updatedUserInfo.type !== guide_info.type || adminInDB !== admin) {
+                    api.editUserInfo(guide_info._ref, (files && files.length)? files[0] : null, updatedUserInfo, admin).then( () => { 
+                        console.log(`משתמש עודכן בהצלחה`);
+                        afterSaved();
+                },
+                (err)=>console.log(err)
+                );
+            } else {
+               // console.log("it seems that nothing changed...");
+            }
             return;
         }
         
@@ -86,7 +95,7 @@ export default function EditGuideInfo({guide_info, afterSaved} : EditGuideInfoPr
         if(files && files.length > 0 && email.length) {
             api.addGuideInfo(updatedUserInfo, admin, email, files[0]).then(
                     () => { 
-                        console.log(`המדריך נוצר בהצלחה`);
+                        //console.log(`המדריך נוצר בהצלחה`);
                         afterSaved();
                     },
                     (err)=>console.log(err)

@@ -444,20 +444,15 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
 
     return getDoc(_ref).then((g)=> {
         let existing_info = g.data(); 
-        console.log(existing_info);
+        //console.log(existing_info);
         if(!existing_info){
             throw ("ref is not find any obj!");
         }
-
-        if (existing_info.fname !== userInfo.fname || existing_info.lname !== userInfo.lname || existing_info.type !== userInfo.type) {
-            console.log("New name for " + existing_info.fname + " " + existing_info.lname + " : " + userInfo.fname + " " + userInfo.lname);
-            existing_info.fname = userInfo.fname;
-            existing_info.lname = userInfo.lname;
-            existing_info.type = userInfo.type;
-        } else if (!pic){
-            console.log("nothing changed!");
-            return;
-        }
+        
+        existing_info.fname = userInfo.fname;
+        existing_info.lname = userInfo.lname;
+        existing_info.type = userInfo.type;
+        
 
         let res : any = existing_info;
         res._ref = _ref;
