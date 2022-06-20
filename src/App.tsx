@@ -17,6 +17,7 @@ import { User } from '@firebase/auth';
 import Login from './login';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
+const logo = require("./logo-small.png");
 
 function App(props: any) {
 
@@ -71,14 +72,22 @@ function App(props: any) {
   }
 
   const onPushNotification = (msgPayload: any) => {
-    notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
-    const newNotif = {
-      title: msgPayload.notification?.title || "",
+    console.log("New forground notification:", msgPayload.notification);
+    // notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
+    // const newNotif = {
+    //   title: msgPayload.notification?.title || "",
+    //   body: msgPayload.notification.body,
+    //   unread:true,
+    // }
+    // setNotifications(curr=>curr?[...curr, newNotif]:[newNotif]);
+    const greeting = new Notification(msgPayload.notification?.title,{
       body: msgPayload.notification.body,
-      unread:true,
-    }
-    setNotifications(curr=>curr?[...curr, newNotif]:[newNotif]);
+      icon: logo,
+    });
 
+    // greeting.onclick = () => {
+    //   alert("test");
+    // };
   };
 
   useEffect(() => {

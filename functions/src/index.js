@@ -6,8 +6,13 @@ const {
 } = require("@google-cloud/firestore");
 
 const axios = require("axios");
+const eventsUtil = require("./events");
+const dayjs = require("dayjs");
 
-// const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -16,6 +21,7 @@ admin.initializeApp({
     //         email: functions.config().admin.email,
     //     },
     // },
+    projectId: "mindramp-58e89",
     storageBucket: "mindramp-58e89.appspot.com",
 });
 
@@ -56,7 +62,7 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
                 if (update.notificationOn === false) {
                     // remove existing tokens
                     update.notificationTokens = FieldValue.delete();
-                } 
+                }
             }
 
             if (notificationToken != undefined) {
@@ -64,17 +70,44 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
                     update.notificationTokens = FieldValue.arrayUnion(notificationToken);
                 }
             }
-            functions.logger.error("Update Notifications", "update", update);    
+            functions.logger.error("Update Notifications", "update", update);
 
             return doc.ref.update(update);
         } else {
-            functions.logger.error("Update Notifications", "user-not-found", context.auth.token.email);    
+            functions.logger.error("Update Notifications", "user-not-found", context.auth.token.email);
         }
     });
 });
 
 function getAccessToken() {
     return admin.credential.applicationDefault().getAccessToken();
+}
+
+function sendNotification(accessToken, title, body, link, deviceToken) {
+    const postData = {
+        message: {
+            "notification": {
+                "title": title,
+                "body": body,
+            },
+            "webpush": link ? {
+                "fcm_options": {
+                    "link": link,
+                },
+            } : undefined,
+        },
+    };
+
+    const headers = {
+        "Authorization": "Bearer " + accessToken.access_token,
+        "Content-Type": "application/json",
+    };
+    const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
+    postData.message.token = deviceToken;
+
+    return axios.post(url, postData, {
+        headers,
+    }).then((res) => ({ success: true }));
 }
 
 
@@ -120,7 +153,116 @@ exports.notifications = functions.region("europe-west1").pubsub
     .schedule("every 1 minutes")
     .timeZone("Asia/Jerusalem")
     .onRun(async (context) => {
-        return db.collection("event").get().then(docs => {
-            functions.logger.error("Notifications", "event-count", docs.length);    
-        });
+
+
+        function handleReminders(isDev) {
+            const now = dayjs().utc().tz("Asia/Jerusalem");
+
+            const eventsCollection = isDev ? "personal_event_dev" : "personal_event";
+            const usersCollection = isDev ? "users_dev" : "users";
+
+            return db.collection(eventsCollection).get().then(res => {
+                const events = res.docs.map(doc => ({ ref: doc.ref, ...doc.data() })).filter(ev =>
+                    ev.reminderMinutes !== undefined &&
+                    ev.date >= now.format("YYYY-MM-DD") &&
+                    ev.notified !== true);
+
+                const allEvents = eventsUtil.explodeEvents(events, 0, 1);
+                functions.logger.log("Notifications", "relevant events count:", allEvents.length);
+
+                const notifyEvents = [];
+                const userIDs = [];
+                const reccurentEventsInstances = [];
+                allEvents.forEach(ev => {
+                    const reminderStart = dayjs(ev.start).subtract(ev.reminderMinutes, "minutes");
+
+                    if (reminderStart.isBefore(now)) {
+                        notifyEvents.push(ev);
+                        ev.participants?.forEach(p => {
+                            if (!userIDs.find(u => u === p.email)) {
+                                userIDs.push(p.email);
+                            }
+                        });
+
+                        if (ev.recurrent && ev.instanceStatus !== true) {
+                            // If no materialized instance for the event instance, the "notified" flag will be
+                            // persisted in a sub collection under the event
+                            // event/<event-id>/instancesInfo/<date>
+                            //  {notified:true}
+                            reccurentEventsInstances.push(ev.ref.collection("instancesInfo").doc(ev.date));
+                        }
+                    } else {
+                        functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.ref.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
+                    }
+                })
+                functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events", notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.ref.id })));
+
+                // fetch users' notification keys
+                if (notifyEvents.length > 0) {
+                    const waitForUsers = [];
+                    const waitForInstancesInfo = [];
+                    userIDs.forEach(email => waitForUsers.push(
+                        db.collection(usersCollection).doc(email).collection("personal").doc("Default").get()
+                    ));
+
+                    reccurentEventsInstances.forEach(ei => waitForInstancesInfo.push(
+                        ei.get()
+                    ));
+
+                    return Promise.allSettled(waitForUsers).then(allUsers => {
+                        return Promise.all(waitForInstancesInfo).then(allRecurrentEventInstancesInfo => {
+                            return getAccessToken().then(accessToken => {
+                                const waitForNotifications = [];
+                                const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
+                                const instancesInfo = allRecurrentEventInstancesInfo.filter(doc => doc.exists)
+                                    .map(doc2 => ({ eventID: doc2.ref._path.segments[1], date: doc2.id, ...doc2.data() }));
+
+
+
+                                notifyEvents.forEach(ev => {
+                                    // makes sure the recurrent instance is not already notified
+                                    if (ev.recurrent && ev.instanceStatus !== true) {
+                                        instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
+                                        if (instanceInfo && instanceInfo.notified === true) {
+                                            return;
+                                        }
+                                    }
+
+                                    ev.participants?.forEach(p => {
+                                        // find the userInfo and verify it has a notification token
+                                        const userInfo = usersInfo.find(ui => ui.email === p.email);
+                                        if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+                                            userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
+                                                sendNotification(accessToken, ev.title, "in 2 min", "https://test.com", nt.token)
+                                            ));
+
+                                            // Update event being notify:
+                                            if (ev.recurrent && ev.instanceStatus !== true) {
+                                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date)
+                                                waitForNotifications.push(
+                                                    instanceDocRef.set({
+                                                        notified: true,
+                                                    })
+                                                );
+                                            } else {
+                                                waitForNotifications.push(
+                                                    ev.ref.update({ notified: true })
+                                                );
+                                            }
+                                        }
+                                    });
+                                });
+                                return Promise.all(waitForNotifications);
+                            });
+
+                        });
+                    });
+                }
+            });
+        }
+
+        return Promise.all([
+            handleReminders(true),
+            //handleReminders(false),
+        ]);
     });

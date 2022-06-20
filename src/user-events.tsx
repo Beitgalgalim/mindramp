@@ -92,7 +92,7 @@ export default function UserEvents({ connected, notify, user,
         })
     }, [])
     const days = [];
-    const showingKeyEvents = showNotifications && notificationsPane == 2;
+    const showingKeyEvents = showNotifications && notificationsPane == 1;
     const NoEventsMsg = "אין אירועים";
 
     if (!showNotifications) {
@@ -136,15 +136,9 @@ export default function UserEvents({ connected, notify, user,
             });
         } else if (notificationsPane == 0) {
             days.push({
-                caption: "התראות",
-                emptyMsg: "אין התראות",
-                messages: notifications,
-            });
-        } else if (notificationsPane == 1) {
-            days.push({
                 caption: "הודעות",
                 emptyMsg: "אין הודעות",
-                messages: [],
+                messages: notifications,
             });
         }
     }
@@ -152,9 +146,9 @@ export default function UserEvents({ connected, notify, user,
 
     const columnWidth = 100 / days.length;
     const newKeyEventsCount = keyEvents?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
-    const newAlertsCount = notifications?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
+    const newNotificationsCount = notifications?.reduce((acc, ke)=>ke.unread?acc+1: acc, 0) || 0;
 
-    const newNotificationCount = newKeyEventsCount+newAlertsCount;
+    const newNotificationCount = newKeyEventsCount+newNotificationsCount;
 
     if (showUserSettings) {
         return <UserSettings
@@ -206,7 +200,7 @@ export default function UserEvents({ connected, notify, user,
                             height={"10vh"}
                             currentNavigation={notificationsPane}
                             onNavigate={(offset: number) => setNotificationsPane(offset)}
-                            buttons={[{ caption: "התראות", badge:newAlertsCount }, { caption: "הודעות", badge:0 }, { caption: "אירועים", badge:newKeyEventsCount }]}
+                            buttons={[ { caption: "הודעות", badge:newNotificationsCount }, { caption: "אירועים", badge:newKeyEventsCount }]}
                         />}
 
                     {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}

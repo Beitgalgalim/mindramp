@@ -152,8 +152,8 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
 
             {/** pin for personal events */
                 event.isPersonal === true &&
-                <div style={{ position: "absolute", top: 0, right: 0, transform: "rotate(45deg)" }}>
-                    <PushPin style={{ color: Colors.EventIcons }} />
+                <div style={{ position: "absolute", top: 0, right: 0, transform: "rotate(45deg)", }}>
+                    <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} />
                 </div>
             }
             <div style={{

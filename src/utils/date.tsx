@@ -104,7 +104,11 @@ export function getDayDesc(date: Dayjs): string {
     logic:
     when exploding, we explode from *daysBefore* today until *daysAfter* today
  }
+
+*********** Same function in functions/src/events.js - make sure in sync **************
+
  */
+
 export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 60, startDate?: string): any[] {
     const ret: any[] = [];
     const today = startDate && startDate !== "" ?
@@ -121,6 +125,9 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 const daysSinceStart = - start.diff(date, "days");
+                if (daysSinceStart > daysBefore) {
+                    continue;
+                }
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
                         (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||
