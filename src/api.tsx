@@ -476,6 +476,9 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
                             res.avatar.path =  val.ref.fullPath;
                            
                             updateDoc(_ref, res).then(() => (UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))));
+                            
+                            // also remove the old Pic 
+                            deleteFile(userInfo.avatar.path);
                         });
                     });
                 });
