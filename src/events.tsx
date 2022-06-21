@@ -22,6 +22,7 @@ import { addParticipantsIcon, addRepeatIcon } from './elem';
 export default function Events({ connected, notify, media, users }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
+    const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
@@ -54,6 +55,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
 
     useEffect(() => {
         const expEvents = explodeEvents(events);
+        setExplodedEvents(expEvents);
         if (calendarApi) {
             calendarApi.removeAllEvents();
             expEvents.forEach(evt => {
@@ -233,6 +235,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                 notify={notify}
                 media={media}
                 users={users}
+                events={explodedEvents}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
                 onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {

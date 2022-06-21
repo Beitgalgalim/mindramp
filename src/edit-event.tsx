@@ -17,7 +17,8 @@ import { PeoplePicker, Person } from './people-picker';
 import { removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
 
 
-export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, users, notify }: EditEventsProps) {
+export default function AddEvent(
+    { inEvent, onSave, onCancel, onDelete, media, users, notify, events }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<string>(inEvent.event.start);
@@ -76,6 +77,35 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
     useEffect(() => {
         setAvailableUsers(users.filter((u: UserInfo) => !participants?.some(p => p.email === u._ref?.id)))
     }, [users, participants]);
+
+
+    useEffect(() => {
+        // calculate conflicts
+        if (participants && participants.length > 0) {
+            participants.forEach(p => {
+                p.uidata = {
+                    available: true,
+                    availabilityDescription: "",
+                };
+                // search for overlapping events:
+                events.forEach(ev => {
+                    if (ev._ref?.id !== inEvent.event._ref?.id &&  ev.participants)
+                        if (
+                            //event overlap: 
+                            ((start <= ev.start && end > ev.start) || (start >= ev.start && start < ev.end)) &&
+                            ev.participants.find(evp => evp.email === p.email)) {
+                            if (p.uidata) {
+                                p.uidata.available = false;
+                                p.uidata.availabilityDescription += (ev.title + "\n");
+                            }
+                        }
+                })
+
+            })
+        }
+
+    }, [events, participants, start, end])
+
 
     const narrow = window.innerWidth < 430;
 
@@ -238,9 +268,11 @@ export default function AddEvent({ inEvent, onSave, onCancel, onDelete, media, u
                             <HBox style={{ maxWidth: "80vw", flexWrap: "wrap" }}>
                                 <Spacer width={20} />
                                 {participants && participants.map((g, i) => <Person key={i}
-                                    width={150}
+                                    width={170}
                                     icon={g.icon}
                                     name={g.displayName}
+                                    available={g.uidata?.available}
+                                    tooltip={g.uidata?.availabilityDescription}
                                     onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
                             </HBox>
                         </VBox>

@@ -197,6 +197,7 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
     onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
+    events:Event[];
 }
 
 export interface EditGuideInfoProps extends Notifying {

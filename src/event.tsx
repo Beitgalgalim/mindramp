@@ -22,6 +22,10 @@ export interface Participant {
     displayName: string,
     icon?: string,
     optional?: boolean,
+    uidata?: {
+        available?: boolean,
+        availabilityDescription?: string;
+    }
 }
 
 export const RecurrentEventFieldKeyValue = [
@@ -47,7 +51,7 @@ export class Event {
     start: string = "";
     end: string = "";
     keyEvent?: boolean;
-    allDay?:boolean;
+    allDay?: boolean;
     notes?: string;
     imageUrl?: string;
     guideUrl?: string;
@@ -111,7 +115,7 @@ export class Event {
         return Event.fromDbObj(obj);
     }
 
-    static equals(src:any, comp: any): boolean {
+    static equals(src: any, comp: any): boolean {
         return src.date === comp.date && src.title === comp.title;
     }
 
@@ -150,6 +154,11 @@ export class Event {
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
         clearFieldIfEmpty("participants");
+
+        if (eventObj.participants) {
+            eventObj.participants.forEach(p=>delete p.uidata);
+        }
+
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
         clearFieldIfEmpty("allDay");

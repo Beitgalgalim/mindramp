@@ -1,4 +1,4 @@
-import { PersonOutlined } from "@mui/icons-material";
+import { Check, Close, PersonOutlined } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { Avatar, ComboBox, ComboBoxItem, HBox, HBoxSB, Spacer } from "./elem";
 import { UserInfo, UserType } from "./types";
@@ -49,8 +49,9 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 }
 
 
-export function Person({ name, icon, hover, selected, onRemove, flat, width }: any) {
+export function Person({ name, icon, hover, selected, onRemove, flat, width, available, tooltip }: any) {
     return <div
+        title={tooltip}
         style={{
             direction: "rtl",
             width,
@@ -64,9 +65,13 @@ export function Person({ name, icon, hover, selected, onRemove, flat, width }: a
             margin: 2,
         }}>
         <HBoxSB>
-            <HBox>
+            <HBox style={{position:"relative"}}>
                 <Spacer />
                 <Avatar size={25} imageSrc={icon} />
+                {available !== undefined && <div style={{position:"absolute", bottom:-4, right:-4, borderRadius:7, width:15, height:15,
+                backgroundColor:available?"green":"red" }}>
+                
+                    </div>}
                 <Spacer />
                 {name}
             </HBox>
