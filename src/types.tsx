@@ -63,7 +63,7 @@ export interface UserInfo {
     fname: string,
     lname: string,
     displayName: string,
-    avatar: AvatarInfo,
+    avatar?: AvatarInfo,
     type: UserType,
     _ref?: DocumentReference
 }
@@ -199,7 +199,7 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
 }
 
-export interface EditGuideInfoProps {
+export interface EditGuideInfoProps extends Notifying {
     guide_info : UserInfo;
     afterSaved: () => void;
 }

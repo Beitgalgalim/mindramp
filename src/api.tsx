@@ -6,11 +6,12 @@ import {
     where
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference} from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference } from "firebase/storage";
 
 import {
     getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
+    createUserWithEmailAndPassword
 } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -19,7 +20,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
+import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -48,17 +49,19 @@ export function initAPI(
             getDoc(docRef).then(
                 //Success
                 userPersonallDoc => {
+                    let userAdditionalInfo = {}
                     if (userPersonallDoc.exists()) {
 
                         if (userPersonallDoc.data().notificationOn === true) {
                             initializeNotification(onPushNotification, onNotificationToken);
                         }
-
-                        onAuth({
-                            email,
-                            ...userPersonallDoc.data(),
-                        });
+                        userAdditionalInfo = userPersonallDoc.data();
                     }
+                    onAuth({
+                        email,
+                        ...userAdditionalInfo,
+                    });
+
                 },
                 // No user record. for compatability - allow it
                 (err) => {
@@ -97,32 +100,32 @@ export function initializeNotification(
                     //     }
 
 
-                        getToken(messaging, {
-                            vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
-                        }).then((currentToken) => {
-                            if (currentToken) {
-                                // Send the token to your server and update the UI if necessary
-                                console.log("Web notification", currentToken);
-                                if (onNotificationToken) {
-                                    onNotificationToken(currentToken);
-                                }
-
-                                onMessage(messaging, (payload) => {
-                                    console.log('Message received. ', JSON.stringify(payload));
-                                    if (onPushNotification) {
-                                        onPushNotification(payload);
-                                    }
-                                });
-                            } else {
-                                // Show permission request UI
-                                console.log('No registration token available. Request permission to generate one.');
-                                // ...
+                    getToken(messaging, {
+                        vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
+                    }).then((currentToken) => {
+                        if (currentToken) {
+                            // Send the token to your server and update the UI if necessary
+                            console.log("Web notification", currentToken);
+                            if (onNotificationToken) {
+                                onNotificationToken(currentToken);
                             }
-                        }).catch((err) => {
-                            console.log('An error occurred while retrieving token. ', err);
+
+                            onMessage(messaging, (payload) => {
+                                console.log('Message received. ', JSON.stringify(payload));
+                                if (onPushNotification) {
+                                    onPushNotification(payload);
+                                }
+                            });
+                        } else {
+                            // Show permission request UI
+                            console.log('No registration token available. Request permission to generate one.');
                             // ...
-                        });
-                   // })
+                        }
+                    }).catch((err) => {
+                        console.log('An error occurred while retrieving token. ', err);
+                        // ...
+                    });
+                    // })
                 } else {
                     console.log("Permission denied to notifications");
                     return;
@@ -229,14 +232,14 @@ export function getEvents(): Promise<Event[]> {
 
 export function getUsers(): Promise<UserInfo[]> {
     return _getCollection(Collections.USERS_COLLECTION).then(items => items.map(d =>
-        ({
-            fname: d.fname,
-            lname: d.lname,
-            avatar: d.avatar,
-            _ref: d._ref,
-            displayName: d.fname + " " + d.lname,
-            type: d.type,
-        })));
+    ({
+        fname: d.fname,
+        lname: d.lname,
+        avatar: d.avatar,
+        _ref: d._ref,
+        displayName: d.fname + " " + d.lname,
+        type: d.type,
+    })));
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -442,7 +445,7 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-function GetResourceRefOfGuidePic(pic: File) : StorageReference {
+function GetResourceRefOfGuidePic(pic: File): StorageReference {
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
@@ -452,44 +455,44 @@ function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     return resourceRef;
 }
 
-export function isUserAdmin(user: UserInfo) : Promise<boolean> {
-    if (!user._ref) 
+export function isUserAdmin(user: UserInfo): Promise<boolean> {
+    if (!user._ref)
         return new Promise(() => false);
 
     const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
-    return getDoc(docRef).then(systemDoc => {return (systemDoc.exists() && systemDoc.data().admin)});
+    return getDoc(docRef).then(systemDoc => { return (systemDoc.exists() && systemDoc.data().admin) });
 }
 
-function UpdateUserAdminState(_ref: DocumentReference, isAdmin : boolean) {
+function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
     const docRef = doc(db, Collections.USERS_COLLECTION, _ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
-    return setDoc(docRef, {admin : isAdmin});
+    return getDoc(docRef).then(adminDoc => {
+        if (adminDoc.exists() && adminDoc.data().admin !== isAdmin) {
+            return updateDoc(docRef, { admin: isAdmin });
+        } else if (!adminDoc.exists && isAdmin) {
+            return setDoc(docRef, { admin: true });
+        }
+    })
 }
 
-export async function editUserInfo(_ref: DocumentReference, pic: File | null, userInfo : UserInfo, isAdmin : boolean) {
-    console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
+export async function editUserInfo(_ref: DocumentReference, pic: File | null, userInfo: UserInfo, isAdmin: boolean) {
+    console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
-    return getDoc(_ref).then((g)=> {
-        let existing_info = g.data(); 
-        //console.log(existing_info);
-        if(!existing_info){
-            throw ("ref is not find any obj!");
+    return getDoc(_ref).then((g) => {
+        if (!g.exists()) {
+            throw ("Unexpected error!");
         }
-        
-        existing_info.fname = userInfo.fname;
-        existing_info.lname = userInfo.lname;
-        existing_info.type = userInfo.type;
-        
+        let existing_info = g.data();
+        if (userInfo.fname) existing_info.fname = userInfo.fname;
+        if (userInfo.lname) existing_info.lname = userInfo.lname;
+        existing_info.type = userInfo.type || UserType.PARTICIPANT;
 
-        let res : any = existing_info;
-        res._ref = _ref;
-
-        if (pic){
+        if (pic) {
             console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);
             const resourceRef = GetResourceRefOfGuidePic(pic);
             const metadata = {
                 contentType: 'image/jpeg',
             };
-        
+
             // Verify guide pic with this name does not exist:
             return getMetadata(resourceRef).then(
                 //success
@@ -498,65 +501,82 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
                     return uploadTask.then(val => {
                         return getDownloadURL(val.ref).then(url => {
-                            let old_pic_path = res.avatar.path;
-                            res.avatar.url = url;
-                            res.avatar.path =  val.ref.fullPath;
+                            let old_pic_path = existing_info.avatar?.path;
+                            existing_info.avatar = { url, path: val.ref.fullPath };
 
                             // also remove the old Pic 
-                            console.log("delete old pic: " +old_pic_path);
-                            deleteFile(old_pic_path);
-                            return updateDoc(_ref, res).then(() => {
-                                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+                            if (old_pic_path) {
+                                console.log("delete old pic: " + old_pic_path);
+                                deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
+                            }
+
+                            return updateDoc(_ref, existing_info).then(() => {
+                                return UpdateUserAdminState(_ref, isAdmin);
                             });
-                            
-                           
                         });
                     });
                 });
         } else {
             // stay with the old pic
-            return updateDoc(_ref, res).then(() => {
-                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+            return updateDoc(_ref, existing_info).then(() => {
+                return UpdateUserAdminState(_ref, isAdmin);
+            });
+        }
+    });
+
+}
+
+export async function addGuideInfo(userInfo: UserInfo, isAdmin: boolean, email: string, pwd: string, pic?: File) {
+
+    const registerUser = httpsCallable(functions, 'registerUser');
+
+    const payload: any = {
+        isDev: isDev(),
+        info: {
+            fname: userInfo.fname,
+            lname: userInfo.lname,
+            type: userInfo.type,
+        },
+        displayName: userInfo.fname + " " + userInfo.lname,
+        email,
+        password: pwd,
+        isAdmin
+    };
+
+
+    return registerUser(payload).then(() => {
+        if (pic) {
+            const resourceRef = GetResourceRefOfGuidePic(pic);
+
+            /** @type {any} */
+            const metadata = {
+                contentType: 'image/jpeg',
+            };
+
+            // Verify picture name does not exist:
+            return getMetadata(resourceRef).then(
+                //success
+                (md) => { throw ("תמונת מדריך בשם זה כבר קיים") },
+                () => {
+                    // Fail - new guide name
+                    // Upload his/her pic and metadata
+                    const uploadTask = uploadBytes(resourceRef, pic, metadata);
+                    return uploadTask.then(val => {
+                        return getDownloadURL(val.ref).then(url => {
+                            const update = { avatar: { path: val.ref.fullPath, url: url } };
+                            const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
+                            return updateDoc(docRef, update);
+                        });
+                    });
+
                 });
         }
     });
-    
-}
 
 
-export async function addGuideInfo(userInfo:UserInfo, isAdmin:boolean, email:string, pic: File) {
-    const resourceRef = GetResourceRefOfGuidePic(pic);
 
-    /** @type {any} */
-    const metadata = {
-        contentType: 'image/jpeg',
-    };
 
-    // Verify picture name does not exist:
-    return getMetadata(resourceRef).then(
-        //success
-        (md) => { throw ("תמונת מדריך בשם זה כבר קיים") },
-        () => {
-            // Fail - new guide name
-            // Upload his/her pic and metadata
-            const uploadTask = uploadBytes(resourceRef, pic, metadata);
-            return uploadTask.then(val => {
-                return getDownloadURL(val.ref).then(url => {
-                    const res = {
-                        fname: userInfo.fname,
-                        lname: userInfo.lname,
-                        avatar: {path: val.ref.fullPath, url: url},
-                        type: userInfo.type,
-                    };
-                    console.log("log to DB:");
-                    console.log(res);
-                    const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
-  
-                    return setDoc(docRef, res).then(() => UpdateUserAdminState(docRef, isAdmin));
-                });
-            });
 
-        });
 }
 
 export async function addAudio(name: string, data: Blob): Promise<MediaResource> {

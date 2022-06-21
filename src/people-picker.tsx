@@ -66,7 +66,7 @@ export function Person({ name, icon, hover, selected, onRemove, flat, width }: a
         <HBoxSB>
             <HBox>
                 <Spacer />
-                {icon ? <Avatar size={25} imageSrc={icon} /> : <PersonOutlined />}
+                <Avatar size={25} imageSrc={icon} />
                 <Spacer />
                 {name}
             </HBox>

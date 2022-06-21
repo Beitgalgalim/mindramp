@@ -16,7 +16,7 @@ import {
 } from "@material-ui/core/styles";
 
 import { FixedSizeList } from 'react-window';
-import { ExpandMore, StarRate } from '@mui/icons-material';
+import { ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
 import { EventMountArg } from '@fullcalendar/common'
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
@@ -293,6 +293,9 @@ export function HBox(props: any) {
 }
 
 export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
+    if (!imageSrc)
+        return <PersonOutlined style={{ borderRadius: size / 2, width: size, height: size }} />
+
     return <img src={imageSrc}
         className={"cover"}
         alt="" style={{ borderRadius: size / 2, width: size, height: size }} />

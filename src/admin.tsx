@@ -18,14 +18,21 @@ export default function Admin(props: AdminProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const [reloadMedia, setReloadMedia] = useState<number>(0);
+    const [reloadUsers, setReloadUsers] = useState<number>(0);
 
     useEffect(() => {
         if (!props.connected)
             return;
         api.getMedia().then((m:MediaResource[]) => setMedia(m));
-        api.getUsers().then((g:UserInfo[]) => setUsers(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadMedia]);
+
+    useEffect(() => {
+        if (!props.connected)
+            return;
+        api.getUsers().then((g:UserInfo[]) => setUsers(g));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.connected, reloadUsers]);
 
     let adminTab = location.hash ? parseInt(location.hash.substr(1)) : 0;
     return (<div dir="rtl" style={{height: "100vh", overflowY:"hidden"}}>
@@ -47,7 +54,7 @@ export default function Admin(props: AdminProps) {
             
             <ResponsiveTab label={"מדיה"} />
 
-            <ResponsiveTab label={"ניהול משתמשים"} />
+            <ResponsiveTab label={"אנשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
             <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
@@ -58,7 +65,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Guides notify={props.notify} users={users} reload={()=>setReloadMedia(old=>old+1)}/>}
+            {adminTab === 2 && <Guides notify={props.notify} users={users} reload={()=>setReloadUsers(old=>old+1)}/>}
         </TabPanel>
     </div>);
 }

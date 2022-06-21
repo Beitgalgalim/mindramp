@@ -7,6 +7,10 @@ const {
 
 const axios = require("axios");
 const eventsUtil = require("./events");
+const archiver = require("archiver");
+const fs = require("fs");
+
+
 const dayjs = require("dayjs");
 
 const utc = require("dayjs/plugin/utc");
@@ -418,3 +422,148 @@ function handleParticipantAdded(isDev, change, context) {
         });
     });
 }
+
+const isAdmin = (isDev, context) => {
+    return new Promise((resolve, reject) => {
+        if (!context.auth) {
+            reject(new Error("NotAuthenticated"));
+            return;
+        }
+
+        db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("system").doc("Default").get().then(doc => {
+            if (doc.exists && doc.data().admin === true) {
+                resolve();
+            } else {
+                reject(new Error("NotAnAdmin"));
+            }
+        });
+    });
+};
+
+/**
+ * Expects:
+ * data= {
+ *      info: { <whatever to go into users collection>}
+ *      email: <email>,
+ *      password: {password}
+ *      displayName: <a display name for Firebase>
+ *      isAdmin: bool
+ * }
+ */
+exports.registerUser = functions.region("europe-west1").https.onCall((data, context) => {
+    functions.logger.info("register new user", data);
+    const isDev = data.isDev;
+
+    return isAdmin(isDev, context).then(
+        () => {
+            return admin.auth()
+                .createUser({
+                    uid: data.email,
+                    email: data.email,
+                    emailVerified: false,
+                    password: data.password,
+                    displayName: data.displayName,
+                    disabled: false,
+                })
+                .then(
+                    () => {
+                        return db.collection(isDev ? "users_dev" : "users").doc(data.email).set({
+                            ...data.info
+                        }).then(
+                            () => {
+                                if (data.isAdmin) {
+                                    return db.collection(isDev ? "users_dev" : "users").doc(data.email).collection("system").doc("Default").set(
+                                        { admin: true }
+                                    );
+                                }
+                            }
+                        );
+                    },
+                    (err) => {
+                        throw new functions.https.HttpsError("failed-precondition", err.message, err.details);
+                    });
+        }
+    )
+
+});
+
+
+const backupCollections = [
+    { name: "event" },
+    { name: "media" },
+    { name: "rooms" },
+    {
+        name: "users",
+        subCollections: [
+            { name: "system" },
+            { name: "personal" },
+        ],
+    },
+];
+
+exports.BackupDB = functions.region("europe-west1").pubsub
+    // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
+    .schedule("00 01 * * *") // Every day at 01:00
+    .timeZone("Asia/Jerusalem")
+    .onRun((context) => {
+        const zipName = "backup|" + dayjs().format("YYYY-MM-DD HH:mm") + ".zip";
+        const output = fs.createWriteStream("/tmp/" + zipName);
+        const archive = archiver("zip", {
+            gzip: true,
+            zlib: { level: 9 }, // Sets the compression level.
+        });
+
+        archive.on("error", (err) => {
+            functions.logger.error("BackupDB failed", err);
+            throw (err);
+        });
+
+        // pipe archive data to the output file
+        archive.pipe(output);
+
+        const waitFor = [];
+
+        for (let i = 0; i < backupCollections.length; i++) {
+            waitFor.push(db.collection(backupCollections[i].name).get().then(async (collData) => {
+                const name = backupCollections[i].name + "|" + dayjs().format("YYYY-MM-DD HH:mm") + ".json";
+                const fileName = "/tmp/backup|" + name;
+
+                fs.appendFileSync(fileName, "[\n");
+                for (let docIndex = 0; docIndex < collData.size; docIndex++) {
+                    const doc = collData.docs[docIndex];
+                    const backupDoc = doc.data();
+                    backupDoc._docID = doc.ref.id;
+
+                    if (backupCollections[i].subCollections) {
+                        for (let j = 0; j < backupCollections[i].subCollections.length; j++) {
+                            const subColl = backupCollections[i].subCollections[j];
+                            const subColDocs = await db.collection(backupCollections[i].name).doc(doc.ref.id).collection(subColl.name).get();
+                            backupDoc[subColl.name] = [];
+                            subColDocs.forEach(subColDoc => {
+                                const backupSubColDoc = subColDoc.data();
+                                backupSubColDoc._docID = subColDoc.ref.id;
+                                backupDoc[subColl.name].push(backupSubColDoc);
+                            });
+                        }
+                    }
+
+                    fs.appendFileSync(fileName, JSON.stringify(backupDoc, undefined, " "));
+                    fs.appendFileSync(fileName, ",\n");
+                }
+                fs.appendFileSync(fileName, "]");
+                console.log("add to archive", name);
+                archive.file(fileName, { name });
+            }));
+        }
+        return Promise.all(waitFor).then(() => {
+            console.log("finalize archive");
+            archive.finalize().then(
+                () => admin.storage().bucket().upload("/tmp/" + zipName, {
+                    destination: `backups/${zipName}`,
+                }).then(
+                    ()=>console.log("Backup complete successfuly!"),
+                    (err)=>console.log("Backup failed", err)),
+            );
+        });
+    });
+
