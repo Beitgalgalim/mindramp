@@ -8,7 +8,7 @@ import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
 import Guides from './guides';
-import { AdminProps, GuideInfo, MediaResource, UserInfo } from './types';
+import { AdminProps, MediaResource, UserInfo } from './types';
 import { Colors } from './theme';
 
 
@@ -47,7 +47,7 @@ export default function Admin(props: AdminProps) {
             
             <ResponsiveTab label={"מדיה"} />
 
-            <ResponsiveTab label={"מנחים"} />
+            <ResponsiveTab label={"ניהול משתמשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
             <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
@@ -58,7 +58,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {/* {adminTab === 2 && <Guides notify={props.notify} guides={users} reload={()=>setReloadMedia(old=>old+2)}/>} */}
+            {adminTab === 2 && <Guides notify={props.notify} users={users} reload={()=>setReloadMedia(old=>old+1)}/>}
         </TabPanel>
     </div>);
 }

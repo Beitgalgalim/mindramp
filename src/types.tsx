@@ -15,19 +15,19 @@ export const Collections =
         {
             EVENT_COLLECTION: "event_dev",
             MEDIA_COLLECTION: "media_dev",
-            GUIDES_COLLECTION: "guides_dev",
             USERS_COLLECTION: "users_dev",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
         }
         :
         {
             EVENT_COLLECTION: "event",
             MEDIA_COLLECTION: "media",
-            GUIDES_COLLECTION: "guides",
             USERS_COLLECTION: "users",
             PERSONAL_EVENT_COLLECTION: "personal_event",
             USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
         }
 
 
@@ -48,13 +48,6 @@ export interface NotificationMessage {
 }
 
 export type setDateFunc = (d: string) => void;
-
-export interface GuideInfo {
-    name: string,
-    url: string,
-    path: string,
-    _ref?: DocumentReference
-}
 
 export interface AvatarInfo {
     path: string,
@@ -126,10 +119,6 @@ export interface WithReload {
     reload?: CallableFunction;
 };
 
-export interface WithGuides {
-    guides: GuideInfo[];
-}
-
 export interface WithUsers {
     users: UserInfo[];
 }
@@ -165,7 +154,7 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onPushNotification: onPushNotificationHandler,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface GuidesProps extends Notifying, WithGuides, WithReload { }
+export interface GuidesProps extends Notifying, WithUsers, WithReload { }
 
 export interface LoginProps {
     onForgotPwd: () => void,
@@ -211,8 +200,8 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
 }
 
 export interface EditGuideInfoProps {
-    guide_info: GuideInfo;
-    afterSaved: (guide_info: GuideInfo) => void;
+    guide_info : UserInfo;
+    afterSaved: () => void;
 }
 
 export interface DatePickerProps {

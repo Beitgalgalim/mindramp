@@ -6,7 +6,7 @@ import {
     where
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference} from "firebase/storage";
 
 import {
     getAuth, onAuthStateChanged, Auth,
@@ -19,7 +19,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, GuideInfo, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
+import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -226,28 +226,17 @@ export function getEvents(): Promise<Event[]> {
     });
 }
 
-export function getGuides(): Promise<GuideInfo[]> {
-    return _getCollection(Collections.GUIDES_COLLECTION).then(items => items.map(d =>
-    ({
-        name: d.name,
-        url: d.url,
-        path: d.path || "",
-
-        _ref: d._ref
-    })));
-
-}
 
 export function getUsers(): Promise<UserInfo[]> {
     return _getCollection(Collections.USERS_COLLECTION).then(items => items.map(d =>
-    ({
-        fname: d.fname,
-        lname: d.lname,
-        avatar: d.avatar,
-        _ref: d._ref,
-        displayName: d.fname + " " + d.lname,
-        type: d.type,
-    })));
+        ({
+            fname: d.fname,
+            lname: d.lname,
+            avatar: d.avatar,
+            _ref: d._ref,
+            displayName: d.fname + " " + d.lname,
+            type: d.type,
+        })));
 }
 
 export function getMedia(): Promise<MediaResource[]> {
@@ -453,23 +442,100 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-
-export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> {
+function GetResourceRefOfGuidePic(pic: File) : StorageReference {
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
     const folderRef = ref(mediaRef, 'guides_pics');
     const resourceRef = ref(folderRef, pic.name);
 
+    return resourceRef;
+}
+
+export function isUserAdmin(user: UserInfo) : Promise<boolean> {
+    if (!user._ref) 
+        return new Promise(() => false);
+
+    const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
+    return getDoc(docRef).then(systemDoc => {return (systemDoc.exists() && systemDoc.data().admin)});
+}
+
+function UpdateUserAdminState(_ref: DocumentReference, isAdmin : boolean) {
+    const docRef = doc(db, Collections.USERS_COLLECTION, _ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
+    return setDoc(docRef, {admin : isAdmin});
+}
+
+export async function editUserInfo(_ref: DocumentReference, pic: File | null, userInfo : UserInfo, isAdmin : boolean) {
+    console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname +" , " + (pic ? pic.name: "NULL") + " , " + _ref.id);
+
+    return getDoc(_ref).then((g)=> {
+        let existing_info = g.data(); 
+        //console.log(existing_info);
+        if(!existing_info){
+            throw ("ref is not find any obj!");
+        }
+        
+        existing_info.fname = userInfo.fname;
+        existing_info.lname = userInfo.lname;
+        existing_info.type = userInfo.type;
+        
+
+        let res : any = existing_info;
+        res._ref = _ref;
+
+        if (pic){
+            console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);
+            const resourceRef = GetResourceRefOfGuidePic(pic);
+            const metadata = {
+                contentType: 'image/jpeg',
+            };
+        
+            // Verify guide pic with this name does not exist:
+            return getMetadata(resourceRef).then(
+                //success
+                (md) => { throw ("תמונת מדריך בשם זה כבר קיימת") },
+                () => {
+                    const uploadTask = uploadBytes(resourceRef, pic, metadata);
+                    return uploadTask.then(val => {
+                        return getDownloadURL(val.ref).then(url => {
+                            let old_pic_path = res.avatar.path;
+                            res.avatar.url = url;
+                            res.avatar.path =  val.ref.fullPath;
+
+                            // also remove the old Pic 
+                            console.log("delete old pic: " +old_pic_path);
+                            deleteFile(old_pic_path);
+                            return updateDoc(_ref, res).then(() => {
+                                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+                            });
+                            
+                           
+                        });
+                    });
+                });
+        } else {
+            // stay with the old pic
+            return updateDoc(_ref, res).then(() => {
+                return UpdateUserAdminState(_ref, isAdmin).then(()=>console.log("השינוי הוחל בהצלחה"))
+                });
+        }
+    });
+    
+}
+
+
+export async function addGuideInfo(userInfo:UserInfo, isAdmin:boolean, email:string, pic: File) {
+    const resourceRef = GetResourceRefOfGuidePic(pic);
+
     /** @type {any} */
     const metadata = {
         contentType: 'image/jpeg',
     };
 
-    // Verify guide does not exist:
+    // Verify picture name does not exist:
     return getMetadata(resourceRef).then(
         //success
-        (md) => { throw ("מדריך בשם זה כבר קיים") },
+        (md) => { throw ("תמונת מדריך בשם זה כבר קיים") },
         () => {
             // Fail - new guide name
             // Upload his/her pic and metadata
@@ -477,12 +543,16 @@ export async function addGuideInfo(name: string, pic: File): Promise<GuideInfo> 
             return uploadTask.then(val => {
                 return getDownloadURL(val.ref).then(url => {
                     const res = {
-                        name,
-                        path: val.ref.fullPath,
-                        url,
+                        fname: userInfo.fname,
+                        lname: userInfo.lname,
+                        avatar: {path: val.ref.fullPath, url: url},
+                        type: userInfo.type,
                     };
-                    const docRef = doc(collection(db, Collections.GUIDES_COLLECTION));
-                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                    console.log("log to DB:");
+                    console.log(res);
+                    const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
+  
+                    return setDoc(docRef, res).then(() => UpdateUserAdminState(docRef, isAdmin));
                 });
             });
 

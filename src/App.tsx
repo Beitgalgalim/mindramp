@@ -166,7 +166,7 @@ function App(props: any) {
               :
               // ---- Login -----
               !user ? <Login
-                onLogin={(u: User) => { }}
+                onLogin={(u: User) => { console.log("logged?")}}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {
                   //todo
