@@ -372,6 +372,11 @@ function handleParticipantAdded(isDev, change, context) {
     } else {
         removed = previousParticipants;
     }
+
+    // if the event is in the past - return
+    // TODO
+
+
     /*
       Send notification to added/removed participants
     */

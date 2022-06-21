@@ -14,7 +14,7 @@ import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
 import { EditEvent, EventsProps } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { addRepeatIcon } from './elem';
+import { addParticipantsIcon, addRepeatIcon } from './elem';
 
 
 
@@ -222,6 +222,9 @@ export default function Events({ connected, notify, media, users }: EventsProps)
             eventDidMount={(info: EventMountArg) => {
                 if (info && info.event.extendedProps?.recurrent) {
                     addRepeatIcon(info);
+                }
+                if(info && info.event.extendedProps?.participants) {
+                    addParticipantsIcon(info);
                 }
             }}
         />

@@ -163,14 +163,14 @@ export function ComboBox(props: ComboBoxProps) {
     }, [props.elRef])
 
     useEffect(() => {
-        const item = props.items.find((item: any)=> item.key === props.value);
+        const item = props.items.find((item: any) => item.key === props.value);
         if (item) {
             setLocalValue((item as any).value);
             console.log("setLocalValue", props.value)
         } else {
             setLocalValue(props.value || "");
             console.log("setLocalValue", props.value)
-    
+
         }
     }, [props.value])
 
@@ -419,8 +419,8 @@ export function UnRead(props: any) {
         display: "flex", flexDirection: "row",
         position: "absolute", right: 5,
         top: 5, width: 100,
-        color:"gold",
-        zIndex:1000,
+        color: "gold",
+        zIndex: 1000,
     }}>
         <StarRate />
     </div>
@@ -494,6 +494,26 @@ export function addRepeatIcon(info: EventMountArg) {
 
         timeDiv[0].prepend(svg);
         timeDiv[0].setAttribute("style", "display: flex; flex-direction: row;")
+    }
+}
+
+export function addParticipantsIcon(info: EventMountArg) {
+    let mainDiv = info.el.getElementsByClassName("fc-event-main");
+    if (mainDiv.length > 0) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', "svg");
+        svg.setAttributeNS(null, "viewBox", "0 0 24 24");
+        svg.setAttributeNS(null, "width", "15");
+        svg.setAttributeNS(null, "height", "15");
+        svg.setAttributeNS(null, "fill", "white");
+        svg.style.display = "block";
+        svg.style.position = "absolute";
+        svg.style.left = "0";
+        const path = document.createElementNS('http://www.w3.org/2000/svg', "path");
+        path.setAttribute("d", "M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z");
+        svg.appendChild(path)
+
+        mainDiv[0].append(svg);
+        mainDiv[0].setAttribute("style", "display: flex; flex-direction: row;")
     }
 }
 

@@ -25,3 +25,7 @@ V - another option: treat as notification, in an overlay. have a separation betw
 
 TV:
 - only one column moves. lateral movement only when the top one
+
+
+bugs:
+- new event, the allDay - endDate is one day back

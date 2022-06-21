@@ -146,7 +146,10 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
                 <ReactDatePicker
                     ref={dateEndPicker}
 
-                    selected={dayjs(end).subtract(1, "days").toDate()}
+                    selected={dayjs(end).subtract(1, "days").isAfter(start)?
+                        dayjs(end).subtract(1, "days").toDate():
+                        dayjs(start).toDate()
+                    }
                     onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE))}
                     shouldCloseOnSelect={true}
                     customInput={
