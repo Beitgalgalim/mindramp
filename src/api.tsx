@@ -455,9 +455,9 @@ function GetResourceRefOfGuidePic(pic: File): StorageReference {
     return resourceRef;
 }
 
-export function isUserAdmin(user: UserInfo): Promise<boolean> {
-    if (!user._ref)
-        return new Promise(() => false);
+export async function isUserAdmin(user: UserInfo) : Promise<boolean> {
+    if (!user._ref) 
+        return false;
 
     const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
     return getDoc(docRef).then(systemDoc => { return (systemDoc.exists() && systemDoc.data().admin) });
