@@ -457,11 +457,11 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-function GetResourceRefOfGuidePic(pic: File): StorageReference {
+function GetResourceRefOfUsersPhoto(pic: File): StorageReference {
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
-    const folderRef = ref(mediaRef, 'guides_pics');
+    const folderRef = ref(mediaRef, 'users_photo');
     const resourceRef = ref(folderRef, pic.name);
 
     return resourceRef;
@@ -486,7 +486,7 @@ function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
     })
 }
 
-export async function editUserInfo(_ref: DocumentReference, pic: File | null, userInfo: UserInfo, isAdmin: boolean) {
+export async function editUser(_ref: DocumentReference, pic: File | null, userInfo: UserInfo, isAdmin: boolean) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g) => {
@@ -500,7 +500,7 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
 
         if (pic) {
             console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);
-            const resourceRef = GetResourceRefOfGuidePic(pic);
+            const resourceRef = GetResourceRefOfUsersPhoto(pic);
             const metadata = {
                 contentType: 'image/jpeg',
             };
@@ -538,7 +538,7 @@ export async function editUserInfo(_ref: DocumentReference, pic: File | null, us
 
 }
 
-export async function addGuideInfo(userInfo: UserInfo, isAdmin: boolean, email: string, pwd: string, pic?: File) {
+export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: string, pwd: string, pic?: File) {
 
     const registerUser = httpsCallable(functions, 'registerUser');
 
@@ -558,7 +558,7 @@ export async function addGuideInfo(userInfo: UserInfo, isAdmin: boolean, email: 
 
     return registerUser(payload).then(() => {
         if (pic) {
-            const resourceRef = GetResourceRefOfGuidePic(pic);
+            const resourceRef = GetResourceRefOfUsersPhoto(pic);
 
             /** @type {any} */
             const metadata = {
@@ -584,11 +584,6 @@ export async function addGuideInfo(userInfo: UserInfo, isAdmin: boolean, email: 
                 });
         }
     });
-
-
-
-
-
 }
 
 export async function addAudio(name: string, data: Blob): Promise<MediaResource> {

@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { GuidesProps, UserInfo, UserType } from './types';
-import EditGuideInfo from './edit-guide-info';
+import { UsersProps, UserInfo, UserType } from './types';
 import { Text, HBox, Spacer, Avatar } from './elem';
 import { Fab } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import EditUser from './edit-users';
 
-export default function Guides({ users, notify, reload }: GuidesProps) {
-    const [editedGuide, seteditGuide] = useState<UserInfo | undefined>(undefined);
+export default function Users({ users, notify, reload }: UsersProps) {
+    const [editedUser, setEditedUser] = useState<UserInfo | undefined>(undefined);
 
-    function getNewGuideInfo(): UserInfo {
+    function getNewUserInfo(): UserInfo {
         return {
             fname: "",
             lname: "",
@@ -19,7 +19,7 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
     }
 
     function afterEdit() {
-        seteditGuide(undefined);
+        setEditedUser(undefined);
         if (reload) {
             reload();
         }
@@ -28,7 +28,7 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
     return (
 
         <div dir="rtl">
-            {!editedGuide &&
+            {!editedUser &&
                 <Fab
                     color="primary" aria-label="הוסף"
                     variant="circular"
@@ -40,12 +40,12 @@ export default function Guides({ users, notify, reload }: GuidesProps) {
                         borderRadius: '50%'
                     }}
                 >
-                    <Add onClick={() => { seteditGuide(getNewGuideInfo()) }} />
+                    <Add onClick={() => { setEditedUser(getNewUserInfo()) }} />
                 </Fab>
             }
-            {editedGuide && <EditGuideInfo guide_info={editedGuide} afterSaved={afterEdit} notify={notify} />}
+            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} />}
             {users && users.map((m, i) => (
-                <HBox key={i} onClick={() => seteditGuide(m)} style={{alignItems:"center"}}>
+                <HBox key={i} onClick={() => setEditedUser(m)} style={{alignItems:"center"}}>
                     <Avatar imageSrc={m.avatar?.url} size={40} />
                     <Spacer width={30} />
                     <Text width={"50vw"} textAlign="right">{

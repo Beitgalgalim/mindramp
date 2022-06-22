@@ -17,7 +17,7 @@ import { PeoplePicker, Person } from './people-picker';
 import { removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
 
 
-export default function AddEvent(
+export default function EditEvent(
     { inEvent, onSave, onCancel, onDelete, media, users, notify, events }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();

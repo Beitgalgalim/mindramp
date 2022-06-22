@@ -9,10 +9,10 @@ import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 import { Event } from './event';
 
-import AddEvent from './edit-event';
+import EditEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEvent, EventsProps } from './types';
+import { EditEventArgs, EventsProps } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { addParticipantsIcon, addRepeatIcon } from './elem';
 
@@ -20,7 +20,7 @@ import { addParticipantsIcon, addRepeatIcon } from './elem';
 
 
 export default function Events({ connected, notify, media, users }: EventsProps) {
-    const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
+    const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
     const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
 
@@ -231,14 +231,14 @@ export default function Events({ connected, notify, media, users }: EventsProps)
             }}
         />
         {
-            newEvent && <AddEvent
+            newEvent && <EditEvent
                 notify={notify}
                 media={media}
                 users={users}
                 events={explodedEvents}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
-                onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {
+                onSave={async (editEvent: EditEventArgs, ref: DocumentReference | undefined) => {
 
                     //Saves new Audio if needed:
                     let audioPathToDelete: string | undefined = undefined;
@@ -316,7 +316,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                     }
                 }}
 
-                onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
+                onDelete={(editEvent: EditEventArgs, ref: DocumentReference) => {
                     notify.ask("האם למחוק אירוע?", "מחיקה",
                         [
                             {

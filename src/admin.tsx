@@ -7,9 +7,9 @@ import Events from './events';
 import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
-import Guides from './guides';
 import { AdminProps, MediaResource, UserInfo } from './types';
 import { Colors } from './theme';
+import Users from './users';
 
 
 export default function Admin(props: AdminProps) {
@@ -65,7 +65,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Guides notify={props.notify} users={users} reload={()=>setReloadUsers(old=>old+1)}/>}
+            {adminTab === 2 && <Users notify={props.notify} users={users} reload={()=>setReloadUsers(old=>old+1)}/>}
         </TabPanel>
     </div>);
 }

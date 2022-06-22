@@ -90,7 +90,7 @@ export interface MediaResource {
     _ref?: DocumentReference
 }
 
-export interface EditEvent {
+export interface EditEventArgs {
     event: Event,
     editAllSeries?: boolean
 }
@@ -154,7 +154,7 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onPushNotification: onPushNotificationHandler,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface GuidesProps extends Notifying, WithUsers, WithReload { }
+export interface UsersProps extends Notifying, WithUsers, WithReload { }
 
 export interface LoginProps {
     onForgotPwd: () => void,
@@ -193,15 +193,15 @@ export interface MessageProps {
 
 
 export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
-    inEvent: EditEvent;
-    onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
+    inEvent: EditEventArgs;
+    onSave: (editEvent: EditEventArgs, ref: DocumentReference | undefined) => void;
     onCancel: Callback;
-    onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
+    onDelete?: (editEvent: EditEventArgs, ref: DocumentReference) => void;
     events:Event[];
 }
 
-export interface EditGuideInfoProps extends Notifying {
-    guide_info : UserInfo;
+export interface EditUserProps extends Notifying {
+    userInfo : UserInfo;
     afterSaved: () => void;
 }
 

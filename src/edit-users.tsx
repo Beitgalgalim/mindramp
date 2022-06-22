@@ -1,31 +1,31 @@
 import { Colors, Design } from './theme';
 import { Text, Spacer, Avatar, VBox } from './elem';
 import { Button, TextField, Checkbox, FormControlLabel } from '@mui/material';
-import { EditGuideInfoProps } from './types';
+import { EditUserProps } from './types';
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
 import * as api from "./api";
 
-export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGuideInfoProps) {
+export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
-    const [preview, setPreview] = useState<string | undefined>(guide_info.avatar?.url);
-    const [fname, setFName] = useState<string>(guide_info.fname);
-    const [lname, setLName] = useState<string>(guide_info.lname);
-    const [email, setEmail] = useState<string>(guide_info._ref?.id || "");
+    const [preview, setPreview] = useState<string | undefined>(userInfo.avatar?.url);
+    const [fname, setFName] = useState<string>(userInfo.fname);
+    const [lname, setLName] = useState<string>(userInfo.lname);
+    const [email, setEmail] = useState<string>(userInfo._ref?.id || "");
     const [pwd1, setPwd1] = useState<string>("");
     const [pwd2, setPwd2] = useState<string>("");
     const [admin, setAdmin] = useState<boolean>(false);
-    const [type, setType] = useState<UserType>(guide_info.type);
+    const [type, setType] = useState<UserType>(userInfo.type);
     const [adminInDB, setadminInDB] = useState<boolean>(false);
 
     useEffect(() => {
-        api.isUserAdmin(guide_info).then(res => {
+        api.isUserAdmin(userInfo).then(res => {
             setAdmin(res);
             setadminInDB(res);
         });
 
-        setEmail(guide_info._ref?.id || "");
-    }, [guide_info._ref]);
+        setEmail(userInfo._ref?.id || "");
+    }, [userInfo._ref]);
 
     function handleAdminChange(e: any) {
         let res: boolean = (e.target.checked);
@@ -62,8 +62,8 @@ export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGu
     }
 
     function onDelete() {
-        if (guide_info._ref && guide_info.avatar)
-            api.deleteMedia(guide_info.avatar.path, guide_info._ref).finally(() => afterSaved());
+        if (userInfo._ref && userInfo.avatar)
+            api.deleteMedia(userInfo.avatar.path, userInfo._ref).finally(() => afterSaved());
     }
 
     function onSave() {
@@ -71,16 +71,16 @@ export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGu
         let updatedUserInfo: UserInfo = {
             fname: fname,
             lname: lname,
-            displayName: guide_info.displayName,
-            avatar: guide_info.avatar,
+            displayName: userInfo.displayName,
+            avatar: userInfo.avatar,
             type: type,
         };
 
         // exist guide
-        if (guide_info._ref) {
-            if ((files && files.length) || updatedUserInfo.fname !== guide_info.fname || updatedUserInfo.lname !== guide_info.lname ||
-                updatedUserInfo.type !== guide_info.type || adminInDB !== admin) {
-                api.editUserInfo(guide_info._ref, (files && files.length) ? files[0] : null, updatedUserInfo, admin).then(() => {
+        if (userInfo._ref) {
+            if ((files && files.length) || updatedUserInfo.fname !== userInfo.fname || updatedUserInfo.lname !== userInfo.lname ||
+                updatedUserInfo.type !== userInfo.type || adminInDB !== admin) {
+                api.editUser(userInfo._ref, (files && files.length) ? files[0] : null, updatedUserInfo, admin).then(() => {
                     notify.success("נשמר בהצלחה")
                     afterSaved();
                 },
@@ -105,7 +105,7 @@ export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGu
                 return;
             }
 
-            api.addGuideInfo(updatedUserInfo, admin, email, pwd1, pic).then(
+            api.addUser(updatedUserInfo, admin, email, pwd1, pic).then(
                 () => {
                     notify.success("נשמר בהצלחה")
                     //console.log(`המדריך נוצר בהצלחה`);
@@ -130,14 +130,14 @@ export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGu
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <h2>{guide_info._ref ? "עריכת פרטי משתמש" : "משתמש חדש"} </h2>
+            <h2>{userInfo._ref ? "עריכת פרטי משתמש" : "משתמש חדש"} </h2>
             <Spacer/>
             <TextField variant="standard" helperText="אימייל" type="email" value={email}
                 autoComplete="new-email" 
-                disabled={guide_info._ref !== undefined}
+                disabled={userInfo._ref !== undefined}
                 onChange={onEmailChange} />
 
-            {!guide_info._ref &&
+            {!userInfo._ref &&
                 <Fragment>
                     <TextField 
                         variant="standard" type="password" 
@@ -167,7 +167,7 @@ export default function EditGuideInfo({ guide_info, afterSaved, notify }: EditGu
             <Spacer width={30} />
 
             <Button variant="contained" onClick={onSave}>שמור</Button>
-            {guide_info._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button>}
+            {userInfo._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button>}
 
             <Button variant="contained" onClick={afterSaved}>ביטול</Button>
         </VBox>);
