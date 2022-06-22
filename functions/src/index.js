@@ -59,28 +59,31 @@ const db = admin.firestore();
 //     });
 
 exports.updateNotification = functions.region("europe-west1").https.onCall((data, context) => {
+    if (!context.auth) {
+        return;
+    }
     const { notificationOn, notificationToken, isDev } = data;
-    return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
+    const docRef = db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default");
+    return docRef.get().then(doc => {
+        const update = {};
+        if (notificationOn !== undefined) {
+            update.notificationOn = notificationOn;
+            if (update.notificationOn === false) {
+                // remove existing tokens
+                update.notificationTokens = [];
+            }
+        }
+
+        if (notificationToken != undefined) {
+            if (doc.data().notificationTokens === undefined || !doc.data().notificationTokens.find(nt => nt.token === notificationToken.token)) {
+                update.notificationTokens = FieldValue.arrayUnion(notificationToken);
+            }
+        }
+        functions.logger.error("Update Notifications", "update", update);
         if (doc.exists) {
-            const update = {};
-            if (notificationOn !== undefined) {
-                update.notificationOn = notificationOn;
-                if (update.notificationOn === false) {
-                    // remove existing tokens
-                    update.notificationTokens = FieldValue.delete();
-                }
-            }
-
-            if (notificationToken != undefined) {
-                if (doc.data().notificationTokens === undefined || !doc.data().notificationTokens.find(nt => nt.token === notificationToken.token)) {
-                    update.notificationTokens = FieldValue.arrayUnion(notificationToken);
-                }
-            }
-            functions.logger.error("Update Notifications", "update", update);
-
             return doc.ref.update(update);
         } else {
-            functions.logger.error("Update Notifications", "user-not-found", context.auth.token.email);
+            return docRef.set(update);
         }
     });
 });
@@ -561,8 +564,8 @@ exports.BackupDB = functions.region("europe-west1").pubsub
                 () => admin.storage().bucket().upload("/tmp/" + zipName, {
                     destination: `backups/${zipName}`,
                 }).then(
-                    ()=>console.log("Backup complete successfuly!"),
-                    (err)=>console.log("Backup failed", err)),
+                    () => console.log("Backup complete successfuly!"),
+                    (err) => console.log("Backup failed", err)),
             );
         });
     });

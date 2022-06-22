@@ -82,7 +82,7 @@ export default function UserEvents({ connected, notify, user,
         if (!connected || startDate === "")
             return;
         setLoadingEvents(true);
-        api.getEvents().then(evts => {
+        api.getPersonalizedEvents(user || "").then(evts => {
             const evtsWithId = evts.map((e, i) => {
                 e.tag = e._ref?.id || ("" + i);
                 return e;
@@ -103,7 +103,7 @@ export default function UserEvents({ connected, notify, user,
             })));
 
         }).finally(() => setLoadingEvents(false));
-    }, [connected, startDate]);
+    }, [user, connected, startDate]);
 
     useEffect(() => {
         let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)

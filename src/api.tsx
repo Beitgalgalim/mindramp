@@ -77,7 +77,7 @@ export function initAPI(
     return true;
 }
 
-export function initializeNotification(
+export async function initializeNotification(
     onPushNotification: onPushNotificationHandler,
     onNotificationToken: (notificationToken: string) => void
 ) {
@@ -103,7 +103,7 @@ export function initializeNotification(
                     getToken(messaging, {
                         vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
                     }).then((currentToken) => {
-                        if (currentToken) {
+                        if (currentToken && currentToken.length > 0) {
                             // Send the token to your server and update the UI if necessary
                             console.log("Web notification", currentToken);
                             if (onNotificationToken) {
@@ -119,21 +119,23 @@ export function initializeNotification(
                         } else {
                             // Show permission request UI
                             console.log('No registration token available. Request permission to generate one.');
-                            // ...
+                            throw ( "Permission granted, yet no registration token is available");
                         }
                     }).catch((err) => {
                         console.log('An error occurred while retrieving token. ', err);
+                        throw ("Permission granted, error getting token: " + err.message);
                         // ...
                     });
                     // })
                 } else {
                     console.log("Permission denied to notifications");
-                    return;
+                    throw ("Permission denied by the user");
                 }
             });
         }
     } catch (err: any) {
         console.log("Cannot initialize messaging", err.message);
+        throw ("Cannot initialize messaging");
     }
 }
 
@@ -161,7 +163,7 @@ export const checkSafariRemotePermission = (permissionData: any) => {
     // return undefined;
 };
 
-export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string, isSafari?: boolean) {
+export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string | null, isSafari?: boolean) {
     const updateNotification = httpsCallable(functions, 'updateNotification');
 
     const payload: any = {
@@ -171,7 +173,7 @@ export async function updateUserNotification(notificationOn: boolean | null, new
         payload.notificationOn = notificationOn;
     }
 
-    if (newNotificationToken !== undefined) {
+    if (newNotificationToken) {
         payload.notificationToken = {
             isSafari,
             token: newNotificationToken,
@@ -206,11 +208,17 @@ export async function logout() {
     return signOut(auth);
 }
 
-export function getEvents(): Promise<Event[]> {
-    return Promise.allSettled([
+export function getPersonalizedEvents(user:string): Promise<Event[]> {
+    return getEvents(true, user);
+}
+export function getEvents(filter:boolean = false,user:string=""): Promise<Event[]> {
+    const waitFor = [
         _getCollection(Collections.EVENT_COLLECTION, "start", "asc"),
-        _getCollection(Collections.PERSONAL_EVENT_COLLECTION, "start", "asc"),
-    ]).then((results: PromiseSettledResult<DocumentData[]>[]) => {
+    ]
+    if (!filter || user.length > 0) {
+        waitFor.push(_getCollection(Collections.PERSONAL_EVENT_COLLECTION, "start", "asc"));
+    }
+    return Promise.allSettled(waitFor).then((results: PromiseSettledResult<DocumentData[]>[]) => {
         let events = [] as Event[];
         if (results[0].status === "fulfilled") {
             events = results[0].value.map((doc: any) => Event.fromDbObj(doc));
@@ -220,7 +228,11 @@ export function getEvents(): Promise<Event[]> {
 
         if (results.length > 1) {
             if (results[1].status === "fulfilled") {
-                events = events.concat(results[1].value.map((doc: any) => Event.fromDbObj(doc, undefined, true)));
+                let rawPersonalEvents = results[1].value;
+                if (filter) {
+                    rawPersonalEvents = rawPersonalEvents.filter(doc => doc.participants?.find((p: any) => p.email === user))
+                }
+                events = events.concat(rawPersonalEvents.map((doc: any) => Event.fromDbObj(doc, undefined, true)));
             } else {
                 console.log("fail calling personal_events", results[1].reason);
             }

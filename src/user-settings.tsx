@@ -7,7 +7,7 @@ import { Checkbox, TextField } from '@mui/material';
 import { useState, Fragment, useCallback } from "react";
 import { Button, makeStyles } from "@material-ui/core";
 import * as api from './api'
-import {  Check, Close, Logout, Notifications } from "@mui/icons-material";
+import { Check, Close, Logout, Notifications } from "@mui/icons-material";
 
 const useStyles = makeStyles(() => ({
     buttonIcon: {
@@ -28,14 +28,25 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
             {
                 caption: "כן", callback: () => {
                     if (notificationOn === false) {
-                        api.initializeNotification(onPushNotification, onNotificationToken);
+                        // Switching to ON
+                        api.initializeNotification(onPushNotification, onNotificationToken).then(
+                            () => onNotificationOnChange(!notificationOn),
+                            // api.updateUserNotification(!notificationOn).then(
+                            //     () => {
+                            //         notify.success("עודכן בהצלחה")
+                            //         onNotificationOnChange(!notificationOn);
+                            //     },
+                            //     (err) => notify.error("Error updating notification on server. " + err.message))
+                            (err: any) => notify.error("Error initializing notification on the device. " + err)
+                        );
+                    } else {
+                        api.updateUserNotification(!notificationOn).then(
+                            () => {
+                                notify.success("עודכן בהצלחה")
+                                onNotificationOnChange(!notificationOn);
+                            },
+                            (err) => notify.error(err.message));
                     }
-                    api.updateUserNotification(!notificationOn).then(
-                        () => {
-                            notify.success("עודכן בהצלחה")
-                            onNotificationOnChange(!notificationOn);
-                        },
-                        (err) => notify.error(err.message));
 
                 }
             },
@@ -46,13 +57,13 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
 
 
     // const handleSafariNotifClick = () => {
-        // if ('safari' in window && 'pushNotification' in window.safari) {
-        //   let permissionData = window.safari.pushNotification.permission('<todo>');
-        //   let token = api.checkSafariRemotePermission(permissionData);
-        //   if (token) {
-        //     onNotificationToken(token);
-        //   }
-        // };
+    // if ('safari' in window && 'pushNotification' in window.safari) {
+    //   let permissionData = window.safari.pushNotification.permission('<todo>');
+    //   let token = api.checkSafariRemotePermission(permissionData);
+    //   if (token) {
+    //     onNotificationToken(token);
+    //   }
+    // };
     // };
 
     const classes = useStyles();
