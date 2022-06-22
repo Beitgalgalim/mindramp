@@ -153,11 +153,11 @@ export class Event {
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
-        clearFieldIfEmpty("participants");
 
-        if (eventObj.participants) {
+        if (eventObj.participants !== undefined) {
             eventObj.participants.forEach(p=>delete p.uidata);
         }
+        clearFieldIfEmpty("participants");
 
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
