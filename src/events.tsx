@@ -9,19 +9,21 @@ import { Fab } from '@mui/material'
 import { Add } from '@mui/icons-material';
 import { Event } from './event';
 
-import AddEvent from './edit-event';
+import EditEvent from './edit-event';
 import { DateFormats, explodeEvents } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEvent, EventsProps } from './types';
+import { EditEventArgs, EventsProps } from './types';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { addRepeatIcon } from './elem';
+import { addParticipantsIcon, addRepeatIcon } from './elem';
 
 
 
 
-export default function Events({ connected, notify, media, guides, locations }: EventsProps) {
-    const [newEvent, setNewEvent] = useState<EditEvent | undefined>(undefined);
+
+export default function Events({ connected, notify, media, users }: EventsProps) {
+    const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);
+    const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
@@ -54,6 +56,7 @@ export default function Events({ connected, notify, media, guides, locations }: 
 
     useEffect(() => {
         const expEvents = explodeEvents(events);
+        setExplodedEvents(expEvents);
         if (calendarApi) {
             calendarApi.removeAllEvents();
             expEvents.forEach(evt => {
@@ -202,6 +205,7 @@ export default function Events({ connected, notify, media, guides, locations }: 
             }}
 
             initialView='timeGridDay'
+            height={"100%"}
             editable={true}
             direction={"rtl"}
             locale={"he"}
@@ -222,17 +226,20 @@ export default function Events({ connected, notify, media, guides, locations }: 
                 if (info && info.event.extendedProps?.recurrent) {
                     addRepeatIcon(info);
                 }
+                if(info && info.event.extendedProps?.participants) {
+                    addParticipantsIcon(info);
+                }
             }}
         />
         {
-            newEvent && <AddEvent
+            newEvent && <EditEvent
                 notify={notify}
                 media={media}
-                guides={guides}
-                locations={locations}
+                users={users}
+                events={explodedEvents}
                 inEvent={newEvent}
                 onCancel={() => setNewEvent(undefined)}
-                onSave={async (editEvent: EditEvent, ref: DocumentReference | undefined) => {
+                onSave={async (editEvent: EditEventArgs, ref: DocumentReference | undefined) => {
 
                     //Saves new Audio if needed:
                     let audioPathToDelete: string | undefined = undefined;
@@ -310,27 +317,42 @@ export default function Events({ connected, notify, media, guides, locations }: 
                     }
                 }}
 
-                onDelete={(editEvent: EditEvent, ref: DocumentReference) => {
-                    if (editEvent.editAllSeries === true || editEvent.event.instanceStatus) {
-                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
-                            (removedIDs) => {
-                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
-                                setNewEvent(undefined);
-                                notify.success("נמחק בהצלחה")
+                onDelete={(editEvent: EditEventArgs, ref: DocumentReference) => {
+                    notify.ask("האם למחוק אירוע?", "מחיקה",
+                        [
+                            {
+                                caption: "כן",
+                                callback: () => {
+                                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
+                                        // deletion of an instance that has no persistance
+                                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
+                                            (updatedEventSeries) => {
+                                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id ? e : updatedEventSeries));
+                                                setNewEvent(undefined);
+                                                notify.success("מופע זה נמחק בהצלחה");
+                                            },
+                                            (err: any) => notify.error(err)
+                                        )
+                                    } else {
+                                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
+                                            (removedIDs) => {
+                                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
+                                                setNewEvent(undefined);
+                                                notify.success("נמחק בהצלחה")
+                                            },
+                                            (err: any) => notify.error(err)
+                                        );
+                                    }
+                                }
                             },
-                            (err: any) => notify.error(err)
-                        );
-                    } else {
-                        // deletion of an instance that has no persistance
-                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
-                            (updatedEventSeries)=>{
-                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id? e : updatedEventSeries));
-                                setNewEvent(undefined);
-                                notify.success("מופע זה נמחק בהצלחה");
-                            },
-                            (err: any) => notify.error(err)
-                        )
-                    }
+                            {
+                                caption: "בטל",
+                                callback: () => { }
+                            }
+                        ]
+
+                    )
+
                 }}
             />
         }

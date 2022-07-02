@@ -1,6 +1,6 @@
 import {
-     deleteField, DocumentReference
-    
+    deleteField, DocumentReference
+
 } from 'firebase/firestore/lite';
 import { EventApi } from '@fullcalendar/common'
 import { DateFormats } from "./utils/date";
@@ -17,6 +17,17 @@ export interface RecurrentEventField {
     exclude?: string[]
 }
 
+export interface Participant {
+    email: string,
+    displayName: string,
+    icon?: string,
+    optional?: boolean,
+    uidata?: {
+        available?: boolean,
+        availabilityDescription?: string;
+    }
+}
+
 export const RecurrentEventFieldKeyValue = [
     { key: "daily", value: "יומי" },
     { key: "weekly", value: "שבועי" },
@@ -26,12 +37,21 @@ export const RecurrentEventFieldKeyValue = [
     { key: "none", value: "ללא" },
 ];
 
+export const ReminderFieldKeyValue = [
+    { key: "0", value: "בתחילת הארוע" },
+    { key: "15", value: "15 דקות לפני" },
+    { key: "30", value: "30 דקות לפני" },
+    { key: "60", value: "שעה לפני" },
+];
+
 
 export class Event {
     date: string = "";
     title: string = "";
     start: string = "";
     end: string = "";
+    keyEvent?: boolean;
+    allDay?: boolean;
     notes?: string;
     imageUrl?: string;
     guideUrl?:string;
@@ -40,9 +60,14 @@ export class Event {
     audioPath?: string;
     audioBlob?: Blob;
     recurrent?: RecurrentEventField;
+    guide?: Participant;
+    participants?: Participant[];
     instanceStatus?: boolean;
+    reminderMinutes?: number;
 
     clearAudio?: boolean;
+    isPersonal?: boolean;
+    unread?: boolean;
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
@@ -50,12 +75,14 @@ export class Event {
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
         if ("toPlainObject" in eventApi) {
-            return Event.fromAny(eventApi.toPlainObject({ collapseExtendedProps: true }));
+            const res = Event.fromAny(eventApi.toPlainObject({ collapseExtendedProps: true }));
+            res.allDay = eventApi.allDay;
+            return res;
         }
         return evt as Event;
     }
 
-    static fromDbObj(doc: any, ref?:DocumentReference): Event {
+    static fromDbObj(doc: any, ref?: DocumentReference, isPersonal: boolean = false): Event {
         const evt: Event = new Event();
         evt.title = doc.title;
         evt.start = dayjs(doc.start).format(DateFormats.DATE_TIME);
@@ -76,6 +103,13 @@ export class Event {
         assignIfExists(evt, "audioPath", doc);
         assignIfExists(evt, "audioBlob", doc);
         assignIfExists(evt, "clearAudio", doc);
+        assignIfExists(evt, "participants", doc);
+        assignIfExists(evt, "guide", doc);
+        assignIfExists(evt, "keyEvent", doc);
+        assignIfExists(evt, "allDay", doc);
+        assignIfExists(evt, "reminderMinutes", doc);
+
+        evt.isPersonal = isPersonal;
 
         return evt;
     }
@@ -83,6 +117,11 @@ export class Event {
     static fromAny(obj: any) {
         return Event.fromDbObj(obj);
     }
+
+    static equals(src: any, comp: any): boolean {
+        return src.date === comp.date && src.title === comp.title;
+    }
+
 
     toDbObj(isCreate: boolean = true): any {
         let eventObj = { ...this };
@@ -101,7 +140,7 @@ export class Event {
         const clearFieldIfEmpty = (fieldName: string) => {
             const eventProps = eventObj as MapLike<any>;
 
-            if (eventProps[fieldName] === undefined) {
+            if (eventProps[fieldName] === undefined || (Array.isArray(eventProps[fieldName]) && eventProps[fieldName].length === 0)) {
                 if (isCreate) {
                     delete eventProps[fieldName];
                 } else {
@@ -118,12 +157,23 @@ export class Event {
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
-        
+
+        if (eventObj.participants !== undefined) {
+            eventObj.participants.forEach(p=>delete p.uidata);
+        }
+        clearFieldIfEmpty("participants");
+
+        clearFieldIfEmpty("guide");
+        clearFieldIfEmpty("keyEvent");
+        clearFieldIfEmpty("allDay");
+        clearFieldIfEmpty("reminderMinutes");
+
         delete eventObj._ref;
         delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
-
+        delete eventObj.isPersonal;
+        delete eventObj.unread;
         return eventObj;
     }
 

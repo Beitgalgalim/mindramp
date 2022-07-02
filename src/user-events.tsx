@@ -1,270 +1,58 @@
 import { Dayjs } from "dayjs";
-import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as api from './api'
-import { VBox, Text, Spacer, HBox, EventsMain, HBoxSB, VBoxC, EventProgress, EventsContainer, Avatar } from "./elem";
-import { DateFormats, explodeEvents, sortEvents } from "./utils/date";
-import { useLocation } from "react-router-dom";
-import { UserEventsProps } from "./types";
+import { Text, HBox, EventsMain, VBoxC } from "./elem";
+import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents, toMidNight } from "./utils/date";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { MessageInfo, UserEventsProps } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
-import { Event } from './event';
 
-import { AccessTime, Mic } from "@mui/icons-material";
 import "./user-events.css";
 
 import { Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 
 import dayjs from './localDayJs'
+import UserSettings from "./user-settings";
+import EventElement from "./event-element";
+import { EventsContainer } from "./events-container";
+import Message from "./message";
+import { Event } from './event'
+import useLocalStorageState from "use-local-storage-state";
 
 
-const multipleFactor = .7;
-const buttonSize = 50;
-
-function isBetween(num: number, from: number, to: number) {
-    return num >= from && num <= to;
+function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
+    setFunction((curr: any[]) => {
+        const newItems = srcList.filter(srcItem => !curr?.some(c => Event.equals(srcItem, c)));
+        const relevantExistingItems = curr?.filter(c => srcList.some(srcItem => Event.equals(srcItem, c))) || [];
+        return [
+            ...(relevantExistingItems),
+            ...(newItems.map(srcItem => ({ ...srcItem, unread: true })))
+        ];
+    })
 }
 
-function getBeforeTimeText(minutes: number): string {
-    if (minutes <= 0)
-        return ""
-
-    if (isBetween(minutes, 0, 10)) {
-        return "עוד כמה דקות";
-    }
-
-    if (isBetween(minutes, 10, 15)) {
-        return "עוד רבע שעה";
-    }
-
-    if (isBetween(minutes, 15, 23)) {
-        return "עוד 20 דקות";
-    }
-    if (isBetween(minutes, 23, 37)) {
-        return "עוד חצי שעה";
-    }
-    if (isBetween(minutes, 37, 51)) {
-        return "עוד שלושת רבעי שעה";
-    }
-    if (isBetween(minutes, 51, 75)) {
-        return "עוד שעה";
-    }
-    if (isBetween(minutes, 75, 100)) {
-        return "עוד שעה וחצי";
-    }
-    if (isBetween(minutes, 100, 130)) {
-        return "עוד שעתיים";
-    }
-
-    return "עוד מעל שעתיים";
+function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
+    return msg1.title === msg2.title && msg1.body === msg2.body;
 }
 
 
-function EventElement({ event, single, firstInGroup, now, audioRef }:
-    {
-        event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
-        audioRef: MutableRefObject<HTMLAudioElement>
-    }
-) {
-    const [playProgress, setPlayProgress] = useState(-1);
-    const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
-    const intervalRef = useRef<NodeJS.Timer>();
-
-    const startTimer = () => {
-        // Clear any timers already running
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-        }
-
-        intervalRef.current = setInterval(() => {
-            if (audioRef?.current?.src === event.audioUrl) {
-                const { currentTime, duration } = audioRef.current;
-                const prog = Math.floor(currentTime / duration * 100);
-                if (prog > 0) {
-                    console.log("audio loading off 1", event.title)
-                    setEventAudioLoading(false);
-                }
-
-                setPlayProgress(prog)
-            } else {
-                stopTimer();
-                setPlayProgress(-1);
-            }
-        }, 200);
-    }
-
-    const stopTimer = () => {
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
-
-        setEventAudioLoading(false);
-        intervalRef.current = undefined;
-    }
-
-
-
-    const t1 = dayjs(event.start).format(DateFormats.TIME)
-    const t2 = dayjs(event.end).format(DateFormats.TIME)
-
-    const eventProgress = Math.abs(now.diff(event.start, "minutes")) <= 1 ? 0 :
-        now.isAfter(event.start) && now.isBefore(event.end) ?
-            now.diff(event.start, "seconds") / dayjs(event.end).diff(event.start, "seconds") :
-            -1;
-
-    const minutesBefore = now.isBefore(event.start) ? -now.diff(event.start, "minutes") : 0;
-
-    const baseWidth = window.innerWidth;
-
-    useEffect(() => {
-        console.log(event.title, "mounted")
-        return () => {
-            console.log(event.title, "unmounted")
-            audioRef.current.src = ""
-        }
-    }, [])
-
-    const titleAndRoom = <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: "flex-start",
-        paddingRight: 15,
-    }} >
-        <Text role="text">{event.title}</Text>
-        <Spacer height={2} />
-        {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
-    </div>
-
-    if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
-        setPlayProgress(-1);
-    }
-
-    const isSingle = !!single;
-    return (
-        <div style={{
-            flex: "0 0 auto",
-            width: (isSingle ? baseWidth : baseWidth * multipleFactor) - 48,
-            height: isSingle ? 150 : 205,
-            background: playProgress >= 0 ?
-                `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
-                "white",
-            borderRadius: 10,
-            marginRight: firstInGroup ? 24 : 0,
-            marginLeft: 24,
-            marginBottom: 30,
-            marginTop: 1,
-            boxShadow: Design.boxShadow,
-        }}
-            onClick={() => {
-                // plays the audio if exists
-                if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
-                    // console.log(e.detail)
-                    if (audioRef.current.src === event.audioUrl) {
-                        // avoid multiple clicks
-                        if (eventAudioLoading) {
-                            console.log("audio is still loading - ignore click")
-                            return;
-                        }
-
-                        if (audioRef.current.paused) {
-                            audioRef.current.play().then(() => startTimer());
-                        } else {
-                            audioRef.current.pause();
-                            stopTimer();
-                            setEventAudioLoading(false);
-                            console.log("audio loading off 2")
-                        }
-
-                        return;
-                    }
-
-                    setEventAudioLoading(true);
-                    console.log("audio start loading")
-                    audioRef.current.src = event.audioUrl;
-                    audioRef.current.onended = () => {
-                        stopTimer();
-                        console.log("ended")
-                        setEventAudioLoading(false);
-                        setPlayProgress(-1);
-                    }
-                    audioRef.current.play().then(() => startTimer());
-                }
-            }}
-
-        >
-
-            <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: "flex-start",
-                height: 78,
-                paddingTop: 10,
-                paddingRight: 10,
-                paddingLeft: 10,
-                justifyContent: isSingle ? "flex-start" : event.imageUrl ? "space-between" : "flex-end",
-            }}>
-                {
-                    event.imageUrl && <div style={{ width: 78 }}>
-                        <img src={event.imageUrl} style={{ maxWidth: Design.eventImageSize, maxHeight: Design.eventImageSize }} alt="תמונה" />
-                    </div>
-                }
-                {!isSingle && event.guideUrl && <Avatar size={buttonSize} imageSrc={event.guideUrl} />}
-                {/* {<Spacer height={buttonSize} />} */}
-                {isSingle && titleAndRoom}
-            </div>
-            <Spacer height={5} />
-            {!isSingle && titleAndRoom}
-            {!isSingle && <Spacer height={25} />}
-            <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
-                <VBox style={{ width: "75%" }}>
-                    <HBox style={{ alignItems: "center", width: "100%" }}>
-                        <AccessTime style={{ color: "#6F9CB6" }} />
-                        <Spacer />
-                        <Text aria-hidden="true" fontSize="0.7em">{t1 + " - " + t2}</Text>
-                    </HBox>
-                    <Spacer />
-                    {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
-                </VBox>
-                <HBox>
-                    {eventAudioLoading && <CircularProgress size={buttonSize} />}
-                    {
-                        event.audioUrl && <div style={{ height: buttonSize, minWidth: buttonSize, display: "flex", justifyContent:"flex-end" }}>
-                            <Mic style={{ fontSize: buttonSize }} />
-                        </div>
-                    }
-                    {isSingle && event.guideUrl ? <Avatar size={buttonSize} imageSrc={event.guideUrl} /> : isSingle && <Spacer width={buttonSize} />}
-                    {<Spacer height={buttonSize} />}
-                </HBox>
-            </HBoxSB>
-
-            {
-                minutesBefore > 0 && minutesBefore < 120 && <div style={{
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    bottom: 5,
-                    right: 10,
-                    height: 25,
-                    width: "fit-content",
-                    backgroundColor: "#C4C4C4",
-                    fontSize: "0.7em",
-                    borderRadius: 5,
-                    paddingLeft: 10,
-                    paddingRight: 10,
-                }}>
-                    <Text>{getBeforeTimeText(minutesBefore)}</Text>
-                </div>
-            }
-        </div >
-    );
-}
-
-export default function UserEvents({ windowSize, connected }: UserEventsProps) {
+export default function UserEvents({ connected, notify, user,
+    notificationOn, onNotificationOnChange, onNotificationToken,
+    onPushNotification }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
+    const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
+    const [showNotifications, setShowNotifications] = useState<boolean>(false);
+    const [notificationsPane, setNotificationsPane] = useState<number>(0);
+    const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
+    const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
+    const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
 
@@ -287,19 +75,35 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         setStartDate(dateTimeNoOffset.format(DateFormats.DATE))
     }
 
+    const [searchParams] = useSearchParams();
+    const isTV = searchParams.get("isTv") === "true";
+
     useEffect(() => {
         if (!connected || startDate === "")
             return;
         setLoadingEvents(true);
-        api.getEvents().then(evts => {
+        api.getPersonalizedEvents(user || "").then(evts => {
             const evtsWithId = evts.map((e, i) => {
-                e.tag = "" + i
+                e.tag = e._ref?.id || ("" + i);
                 return e;
             })
-            setEvents(sortEvents(explodeEvents(evtsWithId, 0, 3, startDate)));
-        }).finally(() => setLoadingEvents(false));
-    }, [connected, startDate]);
+            const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
 
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev=>ev.end > dateTimeNoOffset.format(DateFormats.DATE_TIME));
+            const tomorrow = toMidNight(dateTimeNoOffset.add(1, "days")).format(DateFormats.DATE_TIME);
+            const today = toMidNight(dateTimeNoOffset).format(DateFormats.DATE_TIME);
+            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev=>ev.start <= today && ev.end >= tomorrow);
+
+            setEvents(sortedEvents.filter(ev => !ev.allDay));
+
+            syncLocalStorage(setKeyEvents, Event.equals, keyEvts);
+            syncLocalStorage(setMessages, messageEquals, msgs.map(m => ({
+                title: m.title,
+                body: m.notes
+            })));
+
+        }).finally(() => setLoadingEvents(false));
+    }, [user, connected, startDate]);
 
     useEffect(() => {
         let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)
@@ -307,45 +111,78 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
             clearInterval(intervalId)
         })
     }, [])
+    const days = [];
+    const showingKeyEvents = showNotifications && notificationsPane == 1;
+    const NoEventsMsg = "אין אירועים";
 
+    if (!showNotifications) {
+        const showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
+            e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
 
-    const showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
-        e.start < showDateTime.add(1, "day").format(DateFormats.DATE));
+        days.push({
+            caption: "היום",
+            emptyMsg: NoEventsMsg,
+            eventGroup: organizeEventsForDisplay(showingEvents),
+        });
 
-    const eventsArray: any[][] = [];
+        if (isTV) {
+            // Also calculate tomorrow and 2 days ahead
+            const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
+                e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
 
-    let groupCount = 0;
-    let eventGroupIndex = -1;
-    for (let i = 0; i < showingEvents.length; i++) {
-        const ev = showingEvents[i];
+            days.push({
+                caption: "מחר",
+                emptyMsg: NoEventsMsg,
+                eventGroup: organizeEventsForDisplay(tomorrow),
+            })
 
-        // check if event is in the past
-        if (showDateTime.isAfter(ev.end)) {
-            continue;
+            const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
+                e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
+
+            days.push({
+                caption: "מחרתיים",
+                emptyMsg: NoEventsMsg,
+                eventGroup: organizeEventsForDisplay(dayAfterTomorrow),
+            })
         }
+    } else {
+        if (showingKeyEvents) {
+            //const showingEvents = events.filter(e => e.keyEvent);
 
-        if (groupCount === 0) {
-            //Previous group finished
-
-            eventGroupIndex++;
-            //look ahead to group all events in same time slot
-            for (let j = i + 1; j < showingEvents.length; j++) {
-                if (showingEvents[j].start === ev.start) {
-                    groupCount++;
-                } else {
-                    break;
-                }
-            }
-        } else {
-            groupCount--;
+            days.push({
+                caption: "אירועים מיוחדים",
+                emptyMsg: NoEventsMsg,
+                eventGroup: keyEvents ? organizeEventsForDisplay(keyEvents) : [],
+            });
+        } else if (notificationsPane == 0) {
+            days.push({
+                caption: "הודעות",
+                emptyMsg: "אין הודעות",
+                messages: messages,
+            });
         }
-
-        if (eventsArray.length === eventGroupIndex) {
-            eventsArray.push([]);
-        }
-        eventsArray[eventGroupIndex].push(ev);
     }
 
+
+    const columnWidth = 100 / days.length;
+    const newKeyEventsCount = keyEvents?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
+    const newMessagesCount = messages?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
+
+    const newNotificationCount = newKeyEventsCount + newMessagesCount;
+
+    if (showUserSettings) {
+        return <UserSettings
+            user={user}
+            onSaveNickName={(newNick) => {
+                setNickName({ name: newNick });
+            }}
+            onClose={() => setShowUserSettings(false)}
+            notificationOn={notificationOn}
+            onNotificationOnChange={onNotificationOnChange}
+            onNotificationToken={onNotificationToken}
+            onPushNotification={onPushNotification}
+            notify={notify} nickName={nickName?.name} />
+    }
 
     return <div dir={"rtl"} style={{
         backgroundColor: "#0078C3",
@@ -354,35 +191,104 @@ export default function UserEvents({ windowSize, connected }: UserEventsProps) {
         fontWeight: 700,
         color: "#495D68", //default text color
         height: "100vh",
-
     }}
     >
+        <EventsHeader
+            centered={isTV}
+            height={"12vh"}
+            showDateTime={dateTimeNoOffset}
+            nickName={nickName?.name}
+            onLogoDoubleClicked={() => setShowUserSettings(true)}
+            notificationOn={notificationOn}
+            onNotificationClick={() => setShowNotifications(prev => !prev)}
+            showingNotifications={showNotifications}
+            newNotificationCount={newNotificationCount}
+            user={user}
+        />
 
-        <EventsHeader height={"12vh"} showDateTime={dateTimeNoOffset} />
-        <EventsMain height={"88vh"}>
-            <EventsNavigation height={"10vh"} currentNavigation={daysOffset} onNavigate={(offset: number) => setDaysOffset(offset)} />
-            <EventsContainer height={"78vh"}>
-                {eventsArray.map((evGroup, i) => (<HBox
-                    style={{
-                        width: "100vw",
-                        overflowX: evGroup.length > 1 ? "auto" : "hidden",
-                        flexWrap: "nowrap",
-                    }}
-                    key={evGroup.length > 0 ? evGroup[0].tag : i}>
-                    {
-                        evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
-                            single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
-                            audioRef={audioRef}
-                        />))
-                    }
-                </HBox>))}
-                {eventsArray.length === 0 && <VBoxC style={{ height: "50vh" }}>
-                    <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : "אין אירועים"}</Text>
-                    {loadingEvents && <CircularProgress size={buttonSize} />}
+        <HBox style={{ backgroundColor: "#0078C3", justifyContent: "space-evenly" }}>
+            {days.map((day, dayIndex) =>
+                <EventsMain key={dayIndex} height={"88vh"} width={(columnWidth - 1) + "vw"}
+                >
+                    {!isTV && !showNotifications ? <EventsNavigation
+                        height={"10vh"}
+                        currentNavigation={daysOffset}
+                        onNavigate={(offset: number) => setDaysOffset(offset)}
+                        buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
+                    /> :
+                        showNotifications && <EventsNavigation
+                            height={"10vh"}
+                            currentNavigation={notificationsPane}
+                            onNavigate={(offset: number) => setNotificationsPane(offset)}
+                            buttons={[{ caption: "הודעות", badge: newMessagesCount }, { caption: "אירועים", badge: newKeyEventsCount }]}
+                        />}
 
-                </VBoxC>}
-            </EventsContainer>
-        </EventsMain>
+                    {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
+
+                    <EventsContainer
+                        vhHeight={78}
+                        scrollTop={100}
+                        autoScroll={isTV}
+                    >
+                        {day.eventGroup?.map((evGroup, i) =>
+                            <HBox
+                                style={{
+                                    width: "100%",
+                                    overflowX: evGroup.length > 1 ? "auto" : "hidden",
+                                    flexWrap: "nowrap",
+                                }}
+                                key={evGroup.length > 0 ? evGroup[0].tag : i}
+                                itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
+                            >
+                                {
+                                    evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                        showingKeyEvent={showingKeyEvents}
+                                        width={columnWidth - 1}
+                                        single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
+                                        audioRef={audioRef}
+                                        onSetRead={showingKeyEvents ?
+                                            () => {
+                                                setKeyEvents(curr =>
+                                                (curr ?
+                                                    curr.map(ke => {
+                                                        if (Event.equals(ke, ev)) {
+                                                            return { ...ke, unread: false } as Event;
+                                                        }
+                                                        return ke
+                                                    }) :
+                                                    undefined));
+                                            }
+                                            : undefined}
+                                    />))
+                                }
+                            </HBox>)
+                        }
+                        {day.messages?.map((msg, i) =>
+                            <Message
+                                msg={msg}
+                                onSetRead={
+                                    () => setMessages(curr =>
+                                    (curr ?
+                                        curr.map(m => {
+                                            if (messageEquals(m, msg)) {
+                                                return { ...m, unread: false } as MessageInfo;
+                                            }
+                                            return m
+                                        }) :
+                                        undefined))
+                                }
+                            />)
+                        }
+                        {(!day.messages || day.messages.length === 0) && (!day.eventGroup || day.eventGroup.length == 0) &&
+                            <VBoxC style={{ height: "50vh" }}>
+                                <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : day.emptyMsg}</Text>
+                                {loadingEvents && <CircularProgress size={Design.buttonSize} />}
+
+                            </VBoxC>}
+                    </EventsContainer>
+                </EventsMain>
+            )}
+        </HBox>
 
     </div>
 }

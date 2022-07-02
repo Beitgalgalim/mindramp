@@ -1,30 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './App.css';
 import { Alert, AlertTitle } from '@mui/material'
-import { Text, HBox, Spacer, HBoxC } from './elem';
+import { Text, Spacer, HBoxC } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
-import { MsgButton, NotificationMessage } from './types';
+import { MessageInfo, MsgButton, NotificationMessage, NotificationToken } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
 import { User } from '@firebase/auth';
 import Login from './login';
 import { Close } from '@mui/icons-material';
+import useLocalStorageState from 'use-local-storage-state';
+const logo = require("./logo-small.png");
+let gNotificationTimeout:any = undefined;
 
 function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
+
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [synced, setSynced] = useState(false);
+  const msgTimerRef = useRef<NodeJS.Timer>();
 
+  // Notification
+  const [localNotificationToken, setLocalNotificationToken] = useLocalStorageState<string>("NotificationToken");
+  const [actualtNotificationOn, setActualNotificationOn] = useState<boolean>(false);
+  const [desiredNotificationOn, setDesiredNotificationOn] = useState<boolean | null>(null);
+  const [serverPersistedNotificationTokens, setServerPersistedNotificationTokens] = useState<NotificationToken[] | null>()
+  const [deviceProvidedNotificationToken, setDeviceProvidedNotificationToken] = useState<string | null>();
+  const [notificationReady, setNotificationReady] = useState<boolean>(false);
 
   useEffect(() => {
     function handleResize() {
@@ -36,42 +47,120 @@ function App(props: any) {
 
   }, [])
 
+
+  const clearMsg = () => {
+    setMsg(undefined);
+    if (msgTimerRef.current) {
+      clearTimeout(msgTimerRef.current);
+      msgTimerRef.current = undefined;
+    }
+  }
   const notify = {
     success: (body: string, title?: string) => {
       setMsg({ open: true, severity: "success", title, body, progress: false });
-      setTimeout(() => setMsg(undefined), 5000);
+      msgTimerRef.current = setTimeout(clearMsg, 5000);
     },
     error: (body: string, title?: string) => {
-      setMsg({ open: true, severity: "error", title, body, progress: false });
-      setTimeout(() => setMsg(undefined), 5000);
+
+      setMsg({ open: true, severity: "error", title: "" + title, body: "" + body, progress: false });
+      msgTimerRef.current = setTimeout(clearMsg, 5000);
 
     },
     ask: (body: string, title: string, buttons: MsgButton[], details?: string) => {
+      clearMsg();
       setMsg({ open: true, severity: "info", title, body, buttons, details, progress: false });
     },
-    clear: () => {
-      setMsg(undefined);
-    },
+    clear: clearMsg,
     inProgress: () => {
       setMsg({ progress: true, open: true })
     },
   }
 
+  const onPushNotification = (msgPayload: any) => {
+    console.log("New forground notification:", msgPayload.notification);
+    // notify.success(msgPayload.notification.body, msgPayload.notification?.title || "")
+    // const newNotif = {
+    //   title: msgPayload.notification?.title || "",
+    //   body: msgPayload.notification.body,
+    //   unread:true,
+    // }
+    // setNotifications(curr=>curr?[...curr, newNotif]:[newNotif]);
+    const greeting = new Notification(msgPayload.notification?.title, {
+      body: msgPayload.notification.body,
+      icon: logo,
+      badge: logo,
+      dir: "ltr",
+    });
+
+    // greeting.onclick = () => {
+    //   alert("test");
+    // };
+  };
+
   useEffect(() => {
-    const success = api.initAPI(
+    api.initAPI(
       // Callback for AuthStateChanged
-      (user) => {
-        console.log("user:", JSON.stringify(user));
-        setUser(user?.email);
-        setSynced(true);
-      });
-    if (success) {
-      setConnected(true);
-    }
+      (userPersonalInfo) => {
+        if (userPersonalInfo) {
+          setUser(userPersonalInfo.email);
+          setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
+          setActualNotificationOn(userPersonalInfo.notificationOn === true)
+          setServerPersistedNotificationTokens(userPersonalInfo.tokens);
+        } else {
+          setUser(null);
+          setDesiredNotificationOn(false);
+          setActualNotificationOn(false);
+          setServerPersistedNotificationTokens([]);
+        }
+        setNotificationReady(true)
+      },
+      onPushNotification,
+      (notifToken) => setDeviceProvidedNotificationToken(notifToken)
+    );
+
+    setConnected(true);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!notificationReady) return;
+
+    const isSafari = 'safari' in window;
+    let needsServerUpdate = false;
+    if (deviceProvidedNotificationToken && localNotificationToken !== deviceProvidedNotificationToken) {
+      if (serverPersistedNotificationTokens?.find(t => t.token === deviceProvidedNotificationToken)) {
+        //only local update
+        setLocalNotificationToken(deviceProvidedNotificationToken);
+      } else {
+        needsServerUpdate = true;
+      }
+    }
+
+    if (desiredNotificationOn !== null && desiredNotificationOn !== actualtNotificationOn) {
+      needsServerUpdate = true;
+    }
+    if (needsServerUpdate) {
+      if(gNotificationTimeout) {
+        clearTimeout(gNotificationTimeout);
+      }
+      gNotificationTimeout = setTimeout(()=>{
+        gNotificationTimeout = undefined;
+        api.updateUserNotification(desiredNotificationOn === true, deviceProvidedNotificationToken, isSafari).then(
+        () => {
+          setActualNotificationOn(desiredNotificationOn === true);
+          setLocalNotificationToken(deviceProvidedNotificationToken || "");
+          notify.success(desiredNotificationOn === true ?
+          "הודעות מופעלות" :
+          "הודעות כבויות")
+        },
+        (err) => notify.error("שמירת מצב הודעות נכשל: " + err.message)
+      )}, 1000);  
+    }
+
+  }, [serverPersistedNotificationTokens, desiredNotificationOn,
+    actualtNotificationOn, deviceProvidedNotificationToken,
+    localNotificationToken, notificationReady]);
 
 
   return (
@@ -90,7 +179,7 @@ function App(props: any) {
           borderColor: "gray",
           justifyContent: "center",
         }} severity={msg.severity}>
-          {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => setMsg(undefined)} /></div>}
+          {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => notify.clear()} /></div>}
           {msg.title ? <AlertTitle>{msg.title}</AlertTitle> : null}
           <Text>{msg.body}</Text>
           {msg.details ? msg.details.split("\n").map(d => <Text fontSize={15}>{d}</Text>) : null}
@@ -113,11 +202,11 @@ function App(props: any) {
         <Routes>
           <Route path="/admin" element={
             // ---- Loading bar ----
-            !synced ? <LinearProgress />
+            !connected ? <LinearProgress />
               :
               // ---- Login -----
               !user ? <Login
-                onLogin={(u: User) => { }}
+                onLogin={(u: User) => { console.log("logged?") }}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {
                   //todo
@@ -127,7 +216,21 @@ function App(props: any) {
                 <Admin connected={connected} notify={notify} user={user} />
 
           } />
-          <Route path="/" element={<UserEvents windowSize={windowSize} connected={connected} user={user} />} />
+          <Route path="/" element={<UserEvents
+            notificationOn={actualtNotificationOn === true}
+            onNotificationToken={(notifToken) => {
+              setDeviceProvidedNotificationToken(notifToken);
+            }}
+            onPushNotification={onPushNotification}
+            onNotificationOnChange={(on) => {
+              setDesiredNotificationOn(on);
+            }}
+
+            windowSize={windowSize}
+            connected={connected}
+            user={user}
+            notify={notify} />}
+          />
         </Routes>
       </BrowserRouter>
     </div>

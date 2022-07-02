@@ -1,7 +1,7 @@
-import { Cancel, Check } from '@mui/icons-material';
-import { TextField } from '@mui/material';
+import { Home, NotificationsActive, NotificationsNone } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
-import { HBoxC, Spacer, Text, VBox } from './elem';
+import { Text } from './elem';
+import { EventsHeaderProps } from './types';
 const logo = require("./logo-small.png");
 
 function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: CallableFunction, delay = 250) {
@@ -25,38 +25,19 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
     return () => setClick(prev => prev + 1);
 }
 
-export default function EventsHeader(props: any) {
-    const [personalize, setPersonalize] = useState<boolean>(false);
-    const [name, setName] = useState<string | null>(null);
-    const [editName, setEditName] = useState<string | null>(null);
-
-    useEffect(() => {
-        // Init personalized name on mount
-        const savedState = localStorage.getItem("state");
-        if (savedState && savedState.length > 0) {
-            const obj = JSON.parse(savedState)
-            setName(obj.name);
-            setEditName(obj.name);
-        }
-    }, [])
-
-    const savePersonalization = (value: string | null) => {
-        if (value) {
-            const state = { name: value }
-            localStorage.setItem("state", JSON.stringify(state));
-            setName(value);
-        }
-    }
+export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
+    notificationOn,
+    onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
 
     const handleClick = useSingleAndDoubleClick(() => {
         // Double click
-        setPersonalize(true);
+        onLogoDoubleClicked()
     }, undefined, 350);
 
-    let headerMsg = name ? "הי " + name : "";
+    let headerMsg = nickName?.length > 0 ? "הי " + nickName : "";
 
-    if (props.showDateTime) {
-        const h = props.showDateTime.hour();
+    if (showDateTime) {
+        const h = showDateTime.hour();
         if (headerMsg.length > 0) headerMsg += ", ";
 
         if (h > 6 && h < 12) {
@@ -70,9 +51,14 @@ export default function EventsHeader(props: any) {
         }
     }
 
+    const NotificationIcon = showingNotifications ?
+        Home : (
+            notificationOn ?
+                NotificationsActive : NotificationsNone);
+
     return <div style={{
-        height: props.height,
-        fontSize: '1.9rem',
+        height: height,
+        fontSize: '1.7rem',
         fontWeight: 900,
         color: "white",
         display: "flex",
@@ -80,64 +66,56 @@ export default function EventsHeader(props: any) {
         alignItems: "center",
         marginRight: 15, marginLeft: 15,
     }}>
-
-        {!personalize && <Text>{headerMsg}</Text>}
         {
-            personalize &&
-            <HBoxC style={{ zIndex: 100}}>
-                <TextField
-                    label="שם"
-                    variant="outlined"
-                    dir="rtl"
-                    sx={{
-                        ".MuiInputBase-input": {
-                            padding: '1px 3px',
-                            fontFamily: "Assistant",
-                            fontWeight: 900,
-                            fontSize: '1.8rem',
-                            color: "white",
-                            borderStyle:"solid",
-                            borderColor:"white",
-                            borderRadius:3,
-                            borderWidth:2,
-                            //lineHeight: '1.25rem',
-                            margin:2,
-                        },
-                        ".MuiInputLabel-root": {
-                            fontSize: '1.7rem',
-                            color: "white",
-                            top: 1,
-                            left:10,
-                        },
-                        ".MuiFormControl-root": {
-                            width: "40vw",
-                            borderStyle:"none",
-                        }
-
-                    }}
-
-
-                    //style={{ fontSize: 50, textAlign: "right", direction: "rtl", borderColor: 'black' }}
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    autoFocus
-                />
-                <VBox>
-                    <Spacer />
-                    <Check style={{ fontSize: 40 }} onClick={() => {
-                        savePersonalization(editName);
-                        setPersonalize(false);
-                    }} />
-                    <Cancel style={{ fontSize: 40 }} onClick={() => setPersonalize(false)} />
-                </VBox>
-            </HBoxC>
+            // Connected sign
+            user && <div style={{
+                position: "absolute", left: 3, top: 3, width: 12, height: 12, borderRadius: 7,
+                backgroundColor: "#00FF04",
+            }} />
         }
-        {!personalize && <img
+
+        {
+            /** Notifications */
+            <div style={{
+                position: "absolute", right: 0, top: 0, width: 50, height: 50,
+
+            }} onClick={onNotificationClick}>
+                {newNotificationCount > 0 && !showingNotifications &&
+                    <div style={{
+                        position: "absolute",
+                        top: 0,
+                        right: 10,
+                        backgroundColor: "red",
+                        fontSize: "0.9rem",
+                        lineHeight: "0.8rem",
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        zIndex: 1000,
+                    }}
+                    >{newNotificationCount}</div>
+                }
+                <NotificationIcon style={{
+                    width: 30, height: 30,
+                    borderRadius: 15,
+                    padding: 2,
+                    //backgroundColor: showingNotifications ? "gray" : "transparent"
+                }} />
+
+            </div>
+        }
+        <Text textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
+
+        <img
             src={logo}
-            style={{ height: 60, borderRadius: 7 }}
+            style={{
+                position: 'absolute',
+                left: 15,
+                height: 60, borderRadius: 7
+            }}
             onClick={handleClick}
             alt={"לוגו של בית הגלגלים"}
             aria-hidden="true" />
-        }
+
     </div>
 }

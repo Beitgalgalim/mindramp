@@ -73,6 +73,8 @@ export const day2DayName: { [id: number]: string; } = {
 
 export const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
 
+export const removeTime = (d: Dayjs|string) => dayjs(d).format(DateFormats.DATE);
+
 export function getDayDesc(date: Dayjs): string {
 
     const now = toMidNight(dayjs());
@@ -104,7 +106,11 @@ export function getDayDesc(date: Dayjs): string {
     logic:
     when exploding, we explode from *daysBefore* today until *daysAfter* today
  }
+
+*********** Same function in functions/src/events.js - make sure in sync **************
+
  */
+
 export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: number = 60, startDate?: string): any[] {
     const ret: any[] = [];
     const today = startDate && startDate !== "" ?
@@ -121,6 +127,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 const daysSinceStart = - start.diff(date, "days");
+                
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
                         (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||
@@ -163,6 +170,8 @@ export function sortEvents(events: any[]): any[] {
     return events.sort((e1, e2) => {
         if (e1.start < e2.start) return -1;
         if (e1.start > e2.start) return 1;
+        if (e1.start === e2.start && e1.isPersonal && !e2.isPersonal) return -1;
+        if (e1.start === e2.start && !e1.isPersonal && e2.isPersonal) return 1;
         if (e1.end < e2.end) return -1;
 
         return 1;
@@ -331,4 +340,86 @@ function number2Text(num: number, isHour: boolean): string {
             return "חמישים";
     }
     return "";
+}
+
+function isBetween(num: number, from: number, to: number) {
+    return num >= from && num <= to;
+}
+
+export function getBeforeTimeText(minutes: number): string {
+    if (minutes <= 0)
+        return ""
+
+    if (isBetween(minutes, 0, 10)) {
+        return "עוד כמה דקות";
+    }
+
+    if (isBetween(minutes, 10, 15)) {
+        return "עוד רבע שעה";
+    }
+
+    if (isBetween(minutes, 15, 23)) {
+        return "עוד 20 דקות";
+    }
+    if (isBetween(minutes, 23, 37)) {
+        return "עוד חצי שעה";
+    }
+    if (isBetween(minutes, 37, 51)) {
+        return "עוד שלושת רבעי שעה";
+    }
+    if (isBetween(minutes, 51, 75)) {
+        return "עוד שעה";
+    }
+    if (isBetween(minutes, 75, 100)) {
+        return "עוד שעה וחצי";
+    }
+    if (isBetween(minutes, 100, 130)) {
+        return "עוד שעתיים";
+    }
+
+    return "עוד מעל שעתיים";
+}
+
+export function organizeEventsForDisplay(events: any[]): any[][] {
+    const eventsArray: any[][] = [];
+
+
+    let groupCount = 0;
+    let eventGroupIndex = -1;
+    for (let i = 0; i < events.length; i++) {
+        const ev = events[i];
+
+        if (groupCount === 0) {
+            //Previous group finished
+
+            eventGroupIndex++;
+            //look ahead to group all events in same time slot
+            for (let j = i + 1; j < events.length; j++) {
+                if (events[j].start === ev.start) {
+                    groupCount++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            groupCount--;
+        }
+
+        if (eventsArray.length === eventGroupIndex) {
+            eventsArray.push([]);
+        }
+        eventsArray[eventGroupIndex].push(ev);
+    }
+    return eventsArray;
+}
+
+
+export function getNiceDate(d: string, withDay: boolean = false) {
+    const djs = dayjs(d);
+    let res = withDay ? "יום א׳ " : "";
+    res += MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
+    if (djs.year() !== dayjs().year()) {
+        res += ", " + djs.year();
+    }
+    return res;
 }

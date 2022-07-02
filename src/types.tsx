@@ -1,23 +1,37 @@
 import { DocumentReference } from "@firebase/firestore/dist/lite";
 import { Event } from './event';
+import { User } from '@firebase/auth';
+import { Dayjs } from "dayjs";
+import { MessagePayload } from "@firebase/messaging";
 
-console.log(process.env)
-export const Collections = 
-//(window as any).devMode === true ?
-process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true" ?
-    {
-        EVENT_COLLECTION: "event_dev",
-        MEDIA_COLLECTION: "media_dev",
-        GUIDES_COLLECTION: "guides_dev",
-        LOCATIONS_COLLECTION: "location_dev",
-    }
-    :
-    {
-        EVENT_COLLECTION: "event",
-        MEDIA_COLLECTION: "media",
-        GUIDES_COLLECTION: "guides",
-        LOCATIONS_COLLECTION : "location",
-    }
+
+export function isDev(): boolean {
+    if (window.location.hostname.includes("preview")) return true;
+
+    return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";
+}
+export const Collections =
+    //(window as any).devMode === true ?
+    isDev() ?
+        {
+            EVENT_COLLECTION: "event_dev",
+            MEDIA_COLLECTION: "media_dev",
+            USERS_COLLECTION: "users_dev",
+            PERSONAL_EVENT_COLLECTION: "personal_event_dev",
+            USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
+            LOCATIONS_COLLECTION: "location_dev",
+        }
+        :
+        {
+            EVENT_COLLECTION: "event",
+            MEDIA_COLLECTION: "media",
+            USERS_COLLECTION: "users",
+            PERSONAL_EVENT_COLLECTION: "personal_event",
+            USER_PERSONAL_SUBCOLLECTION: "personal",
+            USER_SYSTEM_SUBCOLLECTION: "system",
+            LOCATIONS_COLLECTION: "location_dev",
+        }
 
 
 export interface MsgButton {
@@ -38,18 +52,43 @@ export interface NotificationMessage {
 
 export type setDateFunc = (d: string) => void;
 
-export interface GuideInfo {
-    name: string,
-    url: string,
+export interface AvatarInfo {
     path: string,
+    url: string,
+}
+
+export enum UserType {
+    PARTICIPANT = 1,
+    GUIDE = 2,
+}
+
+export interface UserInfo {
+    fname: string,
+    lname: string,
+    displayName: string,
+    avatar?: AvatarInfo,
+    type: UserType,
     _ref?: DocumentReference
 }
+
 
 export interface LocationInfo {
     name: string,
     url: string,
     path: string,
     _ref?: DocumentReference
+}
+export interface NotificationToken {
+    token: string,
+    isSafari: boolean,
+    ts: string,
+}
+
+export interface UserPersonalInfo {
+    email: string,
+    phone?: string,
+    notificationOn?: boolean,
+    tokens?: NotificationToken[]
 }
 
 export interface MediaResource {
@@ -60,10 +99,15 @@ export interface MediaResource {
     _ref?: DocumentReference
 }
 
-
-export interface EditEvent {
+export interface EditEventArgs {
     event: Event,
     editAllSeries?: boolean
+}
+
+export interface MessageInfo {
+    title: string,
+    body: string,
+    unread: boolean,
 }
 
 export type Callback = () => void;
@@ -84,8 +128,8 @@ export interface WithReload {
     reload?: CallableFunction;
 };
 
-export interface WithGuides {
-    guides: GuideInfo[];
+export interface WithUsers {
+    users: UserInfo[];
 }
 
 export interface WithLocations {
@@ -112,23 +156,67 @@ export interface Notifying {
     notify: Notify;
 }
 
-export interface AdminProps extends Connected, Notifying, WithUser { }
-export interface EventsProps extends Connected, Notifying, WithMedia, WithGuides, WithLocations { }
-export interface UserEventsProps extends Connected, WithUser, WithWindowSize { }
-export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface GuidesProps extends Notifying, WithGuides, WithReload { }
-export interface LocationsProps extends Notifying, WithLocations, WithReload { }
+export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
-export interface EditEventsProps extends WithMedia, Notifying, WithGuides, WithLocations {
-    inEvent: EditEvent;
-    onSave: (editEvent: EditEvent, ref: DocumentReference | undefined) => void;
-    onCancel: Callback;
-    onDelete?: (editEvent: EditEvent, ref: DocumentReference) => void;
+export interface AdminProps extends Connected, Notifying, WithUser { }
+
+export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
+export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
+    notificationOn: boolean,
+    onNotificationOnChange: (on: boolean) => void,
+    onNotificationToken: (token: string) => void,
+    onPushNotification: onPushNotificationHandler,
+}
+export interface MediaProps extends Notifying, WithMedia, WithReload { }
+export interface UsersProps extends Notifying, WithUsers, WithReload { }
+
+export interface LoginProps {
+    onForgotPwd: () => void,
+    onLogin: (u: User) => void,
+    onError: (e: Error) => void,
+    onCancel?: Callback;
 }
 
-export interface EditGuideInfoProps {
-   guide_info : GuideInfo;
-   afterSaved: (guide_info : GuideInfo) => void;
+export interface UserSettingsProps extends WithUser, Notifying {
+    onSaveNickName: (newNick: string) => void,
+    onClose:Callback,
+    nickName: string,
+    notificationOn: boolean,
+    onNotificationOnChange: (on: boolean) => void,
+    onNotificationToken: (token: string) => void,
+    onPushNotification: onPushNotificationHandler,
+}
+
+export interface EventsHeaderProps extends WithUser {
+    onLogoDoubleClicked: Callback,
+    nickName: string,
+    height: number | string,
+    showDateTime: Dayjs,
+    centered: boolean,
+    notificationOn: boolean,
+    onNotificationClick: Callback,
+    showingNotifications: boolean,
+    newNotificationCount:number,
+}
+
+
+export interface MessageProps {
+    msg: MessageInfo;
+    onSetRead: Callback,
+}
+
+
+export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
+    inEvent: EditEventArgs;
+    onSave: (editEvent: EditEventArgs, ref: DocumentReference | undefined) => void;
+    onCancel: Callback;
+    onDelete?: (editEvent: EditEventArgs, ref: DocumentReference) => void;
+    events:Event[];
+}
+
+export interface EditUserProps extends Notifying {
+    userInfo : UserInfo;
+    afterSaved: () => void;
 }
 
 export interface EditLocationInfoProps {
@@ -141,7 +229,8 @@ export interface DatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
-    style?: any
+    style?: any;
+    allDay?:boolean;
 }
 
 export interface RecorderProps {

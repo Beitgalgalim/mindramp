@@ -14,8 +14,31 @@
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <style>
+      @keyframes collapse {
+        0%, 50% { opacity: 1; max-height: 800px; }
+        100% { opacity: 0; max-height: 0px;}
+      }
+
+      section {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        overflow: hidden;
+      }
+
+      section.collapse {
+        animation-duration: 10s;
+        animation-name: collapse;
+        animation-fill-mode: forwards;
+      }
+    </style>
+
+
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

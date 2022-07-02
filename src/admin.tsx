@@ -7,25 +7,32 @@ import Events from './events';
 import { Tabs } from '@material-ui/core';
 import { useLocation, useNavigate } from "react-router-dom";
 import Media from './media';
-import Guides from './guides';
-import { AdminProps, GuideInfo, MediaResource } from './types';
+import { AdminProps, MediaResource, UserInfo } from './types';
 import { Colors } from './theme';
+import Users from './users';
 
 
 export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
-    const [guides, setGuides] = useState<GuideInfo[]> ([]);
+    const [users, setUsers] = useState<UserInfo[]> ([]);
     const location = useLocation();
     const navigate = useNavigate();
     const [reloadMedia, setReloadMedia] = useState<number>(0);
+    const [reloadUsers, setReloadUsers] = useState<number>(0);
 
     useEffect(() => {
         if (!props.connected)
             return;
         api.getMedia().then((m:MediaResource[]) => setMedia(m));
-        api.getGuides().then((g:GuideInfo[]) => setGuides(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadMedia]);
+
+    useEffect(() => {
+        if (!props.connected)
+            return;
+        api.getUsers().then((g:UserInfo[]) => setUsers(g));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.connected, reloadUsers]);
 
     let adminTab = location.hash ? parseInt(location.hash.substr(1)) : 0;
     return (<div dir="rtl" style={{height: "100vh", overflowY:"hidden"}}>
@@ -47,10 +54,10 @@ export default function Admin(props: AdminProps) {
             
             <ResponsiveTab label={"מדיה"} />
 
-            <ResponsiveTab label={"מנחים"} />
+            <ResponsiveTab label={"אנשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
-            <Events connected={props.connected} notify={props.notify} media={media} guides={guides}/>
+            <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
         </TabPanel>
         
         <TabPanel key={"1"} value={adminTab} index={1} >
@@ -58,7 +65,7 @@ export default function Admin(props: AdminProps) {
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Guides notify={props.notify} guides={guides} reload={()=>setReloadMedia(old=>old+2)}/>}
+            {adminTab === 2 && <Users notify={props.notify} users={users} reload={()=>setReloadUsers(old=>old+1)}/>}
         </TabPanel>
     </div>);
 }
