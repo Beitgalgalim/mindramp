@@ -161,8 +161,8 @@ export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps
             <input className="custom-file-input" type="file" ref={inputEl} style={{ width: 400 }} onChange={onSelectedFile} />
             {inputEl && <Avatar imageSrc={preview} size={48} />}
 
-            <FormControlLabel control={<Checkbox checked={type === UserType.GUIDE} onChange={handleTypeChange} />} label="מדריך" />
-            <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל תוכן(אדמין)" />
+            <FormControlLabel control={<Checkbox checked={type === UserType.GUIDE} onChange={handleTypeChange} />} label="מדריך\ה" />
+            <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל\ת תוכן(אדמין)" />
 
             <Spacer width={30} />
 
