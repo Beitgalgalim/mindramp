@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UsersProps, UserInfo, UserType } from './types';
 import { Text, HBox, Spacer, Avatar } from './elem';
-import { Fab } from '@mui/material';
+import { Fab, Grid } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import EditUser from './edit-users';
@@ -44,16 +44,25 @@ export default function Users({ users, notify, reload }: UsersProps) {
                 </Fab>
             }
             {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} />}
+            <Grid container>
             {users && users.map((m, i) => (
-                <HBox key={i} onClick={() => setEditedUser(m)} style={{alignItems:"center"}}>
-                    <Avatar imageSrc={m.avatar?.url} size={40} />
-                    <Spacer width={30} />
-                    <Text width={"50vw"} textAlign="right">{
-                    m.displayName?.trim().length > 0? m.displayName: m._ref?.id
-                    }</Text>
-                    {(m.type === UserType.GUIDE) && <BusinessCenterIcon />}
-                </HBox>
+                <Grid item key={i} onClick={() => setEditedUser(m)} xs={12}>
+                    <Grid container>
+                        <Grid item xs={3}>
+                            <Avatar imageSrc={m.avatar?.url} size={40}/>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <Text width={"50vw"} textAlign="right">
+                                {m.displayName?.trim().length > 0? m.displayName: m._ref?.id}
+                            </Text>
+                        </Grid>
+                        <Grid item xs={3}>
+                            {(m.type === UserType.GUIDE) && <Text>מדריך\ה</Text>}
+                        </Grid>
+                    </Grid>
+                </Grid>
             ))}
+            </Grid>
         </div>);
 
 }
