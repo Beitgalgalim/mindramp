@@ -4,6 +4,7 @@ import { User } from '@firebase/auth';
 import { Dayjs } from "dayjs";
 import { MessagePayload } from "@firebase/messaging";
 
+
 export function isDev(): boolean {
     if (window.location.hostname.includes("preview")) return true;
 
@@ -19,6 +20,7 @@ export const Collections =
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
+            LOCATIONS_COLLECTION: "location_dev",
         }
         :
         {
@@ -28,6 +30,7 @@ export const Collections =
             PERSONAL_EVENT_COLLECTION: "personal_event",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
+            LOCATIONS_COLLECTION: "location_dev",
         }
 
 
@@ -68,6 +71,13 @@ export interface UserInfo {
     _ref?: DocumentReference
 }
 
+
+export interface LocationInfo {
+    name: string,
+    url: string,
+    path: string,
+    _ref?: DocumentReference
+}
 export interface NotificationToken {
     token: string,
     isSafari: boolean,
@@ -80,7 +90,6 @@ export interface UserPersonalInfo {
     notificationOn?: boolean,
     tokens?: NotificationToken[]
 }
-
 
 export interface MediaResource {
     name: string,
@@ -123,6 +132,10 @@ export interface WithUsers {
     users: UserInfo[];
 }
 
+export interface WithLocations {
+    locations: LocationInfo[];
+}
+
 interface WindowSize {
     w: number,
     h: number
@@ -146,6 +159,7 @@ export interface Notifying {
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
 export interface AdminProps extends Connected, Notifying, WithUser { }
+
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
     notificationOn: boolean,
@@ -203,6 +217,11 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
 export interface EditUserProps extends Notifying {
     userInfo : UserInfo;
     afterSaved: () => void;
+}
+
+export interface EditLocationInfoProps {
+    location_info : LocationInfo;
+    afterSaved: (location_info : LocationInfo) => void;
 }
 
 export interface DatePickerProps {

@@ -314,7 +314,6 @@ export default function EditEvent(
                     </Grid>
                     <Grid container item xs={4} spacing={2} >
                         <HBox style={{ alignItems: "center" }}>
-
                             <Checkbox onChange={(evt) => {
                                 if (evt.currentTarget.checked) {
                                     setRecurrent("weekly");

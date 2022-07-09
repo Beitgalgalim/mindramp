@@ -19,6 +19,7 @@ import { addParticipantsIcon, addRepeatIcon } from './elem';
 
 
 
+
 export default function Events({ connected, notify, media, users }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
     const [events, setEvents] = useState<Event[]>([]);

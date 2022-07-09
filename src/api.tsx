@@ -20,7 +20,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType } from './types';
+import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -254,6 +254,18 @@ export function getUsers(): Promise<UserInfo[]> {
     })));
 }
 
+export function getLocations(): Promise<LocationInfo[]> {
+    return _getCollection(Collections.LOCATIONS_COLLECTION).then(items => items.map(d =>
+        ({
+            name: d.name,
+            url: d.url,
+            path: d.path || "",
+
+            _ref: d._ref
+        })));
+
+}
+
 export function getMedia(): Promise<MediaResource[]> {
     return _getCollection(Collections.MEDIA_COLLECTION).then(items => items.map(d =>
     ({
@@ -457,7 +469,41 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
 
 }
 
-function GetResourceRefOfUsersPhoto(pic: File): StorageReference {
+export async function addLocationInfo(name: string, pic: File): Promise<LocationInfo> {
+    const storage = getStorage(app);
+    const storageRef = ref(storage);
+    const locationsRef = ref(storageRef, 'locations');
+
+    /** @type {any} */
+    const metadata = {
+        contentType: 'image/jpeg',
+    };
+
+    // Verify guide does not exist:
+    return getMetadata(locationsRef).then(
+        //success
+        (md) => { throw ("מקום בשם זה כבר קיים") },
+        () => {
+            // Fail - new guide name
+            // Upload his/her pic and metadata
+            const uploadTask = uploadBytes(locationsRef, pic, metadata);
+            return uploadTask.then(val => {
+                return getDownloadURL(val.ref).then(url => {
+                    const res = {
+                        name,
+                        path: val.ref.fullPath,
+                        url,
+                    };
+                    const docRef = doc(collection(db, Collections.LOCATIONS_COLLECTION));
+                    return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
+                });
+            });
+
+        });
+}
+
+
+export async function addGuideInfo(name: string, pic: File){
     const storage = getStorage(app);
     const storageRef = ref(storage);
     const mediaRef = ref(storageRef, 'media');
