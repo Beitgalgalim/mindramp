@@ -1,6 +1,6 @@
 import { Colors, Design } from './theme';
-import { Text, Spacer, Avatar, VBox } from './elem';
-import { Button, TextField, Checkbox, FormControlLabel } from '@mui/material';
+import { Avatar } from './elem';
+import { Button, TextField, Checkbox, FormControlLabel, Grid } from '@mui/material';
 import { EditUserProps } from './types';
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
@@ -25,7 +25,7 @@ export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps
         });
 
         setEmail(userInfo._ref?.id || "");
-    }, [userInfo._ref]);
+    }, [userInfo, userInfo._ref]);
 
     function handleAdminChange(e: any) {
         let res: boolean = (e.target.checked);
@@ -119,56 +119,71 @@ export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps
     }
 
     return (
-        <VBox dir="rtl" style={{
+        <Grid container spacing={1} style={{
             position: 'absolute',
             top: "10vh",
             left: "10vw",
-            height: "85vh",
-            width: '80vw',
+            height: "85%",
+            width: '70%',
             backgroundColor: Colors.PopupBackground,
             zIndex: 500,
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <h2>{userInfo._ref ? "עריכת פרטי משתמש" : "משתמש חדש"} </h2>
-            <Spacer/>
-            <TextField variant="standard" helperText="אימייל" type="email" value={email}
-                autoComplete="new-email" 
-                disabled={userInfo._ref !== undefined}
-                onChange={onEmailChange} />
-
-            {!userInfo._ref &&
-                <Fragment>
-                    <TextField 
+            <Grid item xs={12}>
+                <h2>{userInfo._ref ? "עריכת פרטי משתמש" : "משתמש חדש"} </h2>
+            </Grid>
+            <Grid item xs={12}>
+                <TextField variant="standard" helperText="אימייל" type="email" value={email}
+                    autoComplete="new-email" 
+                    disabled={userInfo._ref !== undefined}
+                    onChange={onEmailChange} />
+            </Grid>
+            <Grid item xs={12}>
+                {!userInfo._ref &&
+                    <Fragment>
+                        <TextField 
+                            variant="standard" type="password" 
+                            
+                            autoComplete="new-password" 
+                            helperText="סיסמא" value={pwd1} 
+                            onChange={(e) => setPwd1(e.currentTarget.value)} />
+                        <TextField 
                         variant="standard" type="password" 
-                        
                         autoComplete="new-password" 
-                        helperText="סיסמא" value={pwd1} 
-                        onChange={(e) => setPwd1(e.currentTarget.value)} />
-                    <TextField 
-                    variant="standard" type="password" 
-                    autoComplete="new-password" 
-                    helperText="סיסמא בשנית" value={pwd2} 
-                    onChange={(e) => setPwd2(e.currentTarget.value)} />
-                </Fragment>
-            }
-            <TextField variant="standard" helperText="שם פרטי" value={fname} onChange={onFNameChange} />
-            <TextField variant="standard" helperText="שם משפחה" value={lname} onChange={onLNameChange} />
+                        helperText="סיסמא בשנית" value={pwd2} 
+                        onChange={(e) => setPwd2(e.currentTarget.value)} />
+                    </Fragment>
+                }
+            </Grid>
+            <Grid container>
+                <Grid item xs={5}>
+                    <TextField variant="standard" helperText="שם פרטי" value={fname} onChange={onFNameChange} />
+                </Grid>
+                <Grid item xs={2}/>
+                <Grid item xs={5}>
+                    <TextField variant="standard" helperText="שם משפחה" value={lname} onChange={onLNameChange} />
+                </Grid>
+            </Grid>
+            <Grid item xs={12}>
+                <FormControlLabel control={inputEl && <Avatar imageSrc={preview} size={48} />} label="תמונה" />
+            </Grid>
+            <Grid item xs={12}>
+                    <input className="custom-file-input" type="file" ref={inputEl} style={{ width: 400 }} onChange={onSelectedFile} />
+            </Grid>
+            <Grid container>
+                <Grid item xs={6}>
+                    <FormControlLabel control={<Checkbox checked={type === UserType.GUIDE} onChange={handleTypeChange} />} label="מדריך\ה" />
+                </Grid>
+                <Grid item xs={6}>
+                    <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל\ת תוכן(אדמין)" />
+                </Grid>
+            </Grid>
+            <Grid item xs={12}>
+                <Button variant="contained" onClick={onSave}>שמור</Button>
+                {userInfo._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button>}
 
-            <Spacer width={30} />
-
-            <Text>תמונה של המנחה</Text>
-            <input className="custom-file-input" type="file" ref={inputEl} style={{ width: 400 }} onChange={onSelectedFile} />
-            {inputEl && <Avatar imageSrc={preview} size={48} />}
-
-            <FormControlLabel control={<Checkbox checked={type === UserType.GUIDE} onChange={handleTypeChange} />} label="מדריך\ה" />
-            <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל\ת תוכן(אדמין)" />
-
-            <Spacer width={30} />
-
-            <Button variant="contained" onClick={onSave}>שמור</Button>
-            {userInfo._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button>}
-
-            <Button variant="contained" onClick={afterSaved}>ביטול</Button>
-        </VBox>);
+                <Button variant="contained" onClick={afterSaved}>ביטול</Button>
+            </Grid>
+        </Grid>);
 }
