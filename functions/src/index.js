@@ -75,11 +75,16 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
         }
 
         if (notificationToken != undefined) {
-            if (doc.data().notificationTokens === undefined || !doc.data().notificationTokens.find(nt => nt.token === notificationToken.token)) {
-                update.notificationTokens = FieldValue.arrayUnion(notificationToken);
+            if (doc.exists) {
+                if (doc.data().notificationTokens === undefined || !doc.data().notificationTokens.find(nt => nt.token === notificationToken.token)) {
+                    update.notificationTokens = FieldValue.arrayUnion(notificationToken);
+                }
+            } else {
+                update.notificationTokens = [notificationToken];
             }
         }
-        functions.logger.error("Update Notifications", "update", update);
+
+        functions.logger.info("Update Notifications", "update", update);
         if (doc.exists) {
             return doc.ref.update(update);
         } else {

@@ -556,6 +556,7 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
         info: {
             fname: userInfo.fname,
             lname: userInfo.lname,
+            phone: userInfo.phone,
             type: userInfo.type,
         },
         displayName: userInfo.fname + " " + userInfo.lname,
