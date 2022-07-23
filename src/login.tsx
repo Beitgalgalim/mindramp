@@ -9,6 +9,7 @@ import Typography from '@material-ui/core/Typography';
 import * as api from './api'
 import { LoginProps } from './types';
 import { HBox, Spacer, VBoxC } from './elem';
+import { Checkbox, FormControlLabel } from '@mui/material';
 //import SelfRegistration from './self-registeration';
 
 
@@ -20,6 +21,7 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
 
     const [user, setUser] = useState<string>("");
     const [pwd, setPwd] = useState<string>("");
+    const [showPassword, setShowPassword] = useState<boolean>(false);
 
     const ok = useCallback(() => {
         console.log("in ok");
@@ -47,7 +49,7 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
 
     return (
         <VBoxC>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: 15, minWidth:250, maxWidth: 500 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: 15, minWidth: 250, maxWidth: 500 }}>
                 <Avatar >
                     <LockOutlined />
                 </Avatar>
@@ -70,10 +72,16 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
                     required
                     fullWidth
                     label="סיסמא"
-                    type="password"
+                    type={showPassword?"text":"password"}
+                    
                     autoComplete="current-password"
                     onChange={(e) => setPwd(e.currentTarget.value)}
                 />
+                <FormControlLabel control={<Checkbox
+                    checked={showPassword}
+                    onChange={(e) => setShowPassword(prev => e.currentTarget.checked)}
+                />} label="הצג סיסמא" />
+                <Spacer height={15}/>
                 <Button
 
                     fullWidth

@@ -26,7 +26,7 @@ import "./elem.css";
 
 export const ResponsiveTab = withStyles({
     root: {
-        minWidth: 150,
+        minWidth: 70,
     },
     selected: {
 

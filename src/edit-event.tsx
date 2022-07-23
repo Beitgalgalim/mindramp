@@ -163,7 +163,7 @@ export default function EditEvent(
                                 <FormControlLabel control={<Checkbox
                                     checked={allDay === true}
                                     onChange={(e) => setAllDay(prev => e.currentTarget.checked)}
-                                />} label="כל היום" />
+                                />} label="הודעה" />
                             </FormGroup>
                         </VBox>
                     </Grid>

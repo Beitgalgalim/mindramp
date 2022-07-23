@@ -63,6 +63,7 @@ export interface UserInfo {
     fname: string,
     lname: string,
     displayName: string,
+    phone?: string,
     avatar?: AvatarInfo,
     type: UserType,
     _ref?: DocumentReference

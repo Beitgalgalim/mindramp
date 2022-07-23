@@ -2,7 +2,7 @@ import Login from "./login";
 import { User } from '@firebase/auth';
 
 import { UserSettingsProps } from "./types";
-import { HBox, HBoxC, Spacer, Text, VBoxC } from "./elem";
+import { HBox, HBoxC, HBoxSB, Spacer, Text, VBoxC } from "./elem";
 import { Checkbox, TextField } from '@mui/material';
 import { useState, Fragment, useCallback } from "react";
 import { Button, makeStyles } from "@material-ui/core";
@@ -111,27 +111,35 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
             <Spacer height={20} />
             <HBoxC>
                 {
-                    user && <Fragment>
-                        <Button
-                            style={{ minWidth: 180 }}
-                            disabled={!notificationOn}
-                            variant="outlined"
-                            endIcon={<Notifications />}
-                            classes={{ endIcon: classes.buttonIcon }}
-                            onClick={() => api.testNotif().catch(e => {
-                                notify.error("בדיקה נכשלה. שגיאה:" + e.message);
-                            })} >
-                            בדיקת התראות
-                        </Button>
-                        <Spacer width={20} />
-                        <Button
-                            variant="outlined"
-                            endIcon={<Logout />}
-                            classes={{ endIcon: classes.buttonIcon }}
-                            onClick={() => {
-                                api.logout();
-                            }}>התנתקות</Button>
-                    </Fragment>
+                    user && <VBoxC>
+                        <HBox>
+                            <Text>מחובר:</Text>
+                            <Spacer />
+                            <Text>{user}</Text>
+                        </HBox>
+                        <Spacer />
+                        <HBox>
+                            <Button
+                                style={{ minWidth: 180 }}
+                                disabled={!notificationOn}
+                                variant="outlined"
+                                endIcon={<Notifications />}
+                                classes={{ endIcon: classes.buttonIcon }}
+                                onClick={() => api.testNotif().catch(e => {
+                                    notify.error("בדיקה נכשלה. שגיאה:" + e.message);
+                                })} >
+                                בדיקת התראות
+                            </Button>
+                            <Spacer width={20} />
+                            <Button
+                                variant="outlined"
+                                endIcon={<Logout />}
+                                classes={{ endIcon: classes.buttonIcon }}
+                                onClick={() => {
+                                    api.logout();
+                                }}>התנתקות</Button>
+                        </HBox>
+                    </VBoxC>
                 }
             </HBoxC>
 

@@ -3,7 +3,8 @@ import {
     getFirestore, Firestore, collection, getDocs, doc,
     DocumentData,
     query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
-    where
+    where,
+    deleteField
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference } from "firebase/storage";
@@ -119,7 +120,7 @@ export async function initializeNotification(
                         } else {
                             // Show permission request UI
                             console.log('No registration token available. Request permission to generate one.');
-                            throw ( "Permission granted, yet no registration token is available");
+                            throw ("Permission granted, yet no registration token is available");
                         }
                     }).catch((err) => {
                         console.log('An error occurred while retrieving token. ', err);
@@ -208,10 +209,10 @@ export async function logout() {
     return signOut(auth);
 }
 
-export function getPersonalizedEvents(user:string): Promise<Event[]> {
+export function getPersonalizedEvents(user: string): Promise<Event[]> {
     return getEvents(true, user);
 }
-export function getEvents(filter:boolean = false,user:string=""): Promise<Event[]> {
+export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
     const waitFor = [
         _getCollection(Collections.EVENT_COLLECTION, "start", "asc"),
     ]
@@ -250,6 +251,7 @@ export function getUsers(): Promise<UserInfo[]> {
         avatar: d.avatar,
         _ref: d._ref,
         displayName: d.fname + " " + d.lname,
+        phone: d.phone,
         type: d.type,
     })));
 }
@@ -467,8 +469,8 @@ function GetResourceRefOfUsersPhoto(pic: File): StorageReference {
     return resourceRef;
 }
 
-export async function isUserAdmin(user: UserInfo) : Promise<boolean> {
-    if (!user._ref) 
+export async function isUserAdmin(user: UserInfo): Promise<boolean> {
+    if (!user._ref)
         return false;
 
     const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
@@ -486,10 +488,10 @@ function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
     })
 }
 
-export async function editUser(_ref: DocumentReference, pic: File | null, userInfo: UserInfo, isAdmin: boolean) {
+export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string  | undefined,  userInfo: UserInfo, isAdmin: boolean) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
-    return getDoc(_ref).then((g) => {
+    return getDoc(_ref).then( (g) => {
         if (!g.exists()) {
             throw ("Unexpected error!");
         }
@@ -497,6 +499,8 @@ export async function editUser(_ref: DocumentReference, pic: File | null, userIn
         if (userInfo.fname) existing_info.fname = userInfo.fname;
         if (userInfo.lname) existing_info.lname = userInfo.lname;
         existing_info.type = userInfo.type || UserType.PARTICIPANT;
+        if (userInfo.phone) existing_info.phone = userInfo.phone;
+        let old_pic_path = existing_info.avatar?.path;
 
         if (pic) {
             console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);
@@ -513,7 +517,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, userIn
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
                     return uploadTask.then(val => {
                         return getDownloadURL(val.ref).then(url => {
-                            let old_pic_path = existing_info.avatar?.path;
+                            
                             existing_info.avatar = { url, path: val.ref.fullPath };
 
                             // also remove the old Pic 
@@ -529,7 +533,12 @@ export async function editUser(_ref: DocumentReference, pic: File | null, userIn
                     });
                 });
         } else {
-            // stay with the old pic
+            if (existingPic == undefined && old_pic_path) {
+                //remove pic (without waiting for result)
+                existing_info.avatar = deleteField();
+                deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
+            }
+        
             return updateDoc(_ref, existing_info).then(() => {
                 return UpdateUserAdminState(_ref, isAdmin);
             });
@@ -551,6 +560,7 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
         },
         displayName: userInfo.fname + " " + userInfo.lname,
         email,
+        phone: userInfo.phone,
         password: pwd,
         isAdmin
     };
@@ -613,8 +623,13 @@ export async function addAudio(name: string, data: Blob): Promise<MediaResource>
     });
 }
 
-export async function deleteMedia(path: string, docRef: DocumentReference) {
-    return deleteDoc(docRef).then(() => deleteFile(path));
+export async function deleteDocWithMedia(path: string | undefined, docRef: DocumentReference) {
+    return deleteDoc(docRef).then(() => {
+        if (path) {
+            return deleteFile(path)
+        }
+    }
+    );
 }
 
 export async function deleteFile(path: string) {

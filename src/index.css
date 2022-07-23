@@ -1,3 +1,9 @@
+:root {
+  --pop-up-background: #E5E5E5;
+  --pop-up-boxshadow: 0px 18px 22px rgba(44, 85, 102, 0.26);
+}
+
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

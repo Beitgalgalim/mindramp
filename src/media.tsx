@@ -30,7 +30,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
                                 caption: "כן",
                                 callback: () => {
                                     if (m._ref) {
-                                        api.deleteMedia(m.path, m._ref).then(
+                                        api.deleteDocWithMedia(m.path, m._ref).then(
                                             () => {
                                                 notify.success("נמחק בהצלחה");
                                                 if (reload) reload();
