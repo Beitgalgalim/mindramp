@@ -1,10 +1,19 @@
 import { useState } from 'react';
 import { UsersProps, UserInfo, UserType } from './types';
-import { Text, HBox, Spacer, Avatar } from './elem';
+import { Text, HBox, Spacer } from './elem';
 import { Fab, Grid } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import EditUser from './edit-users';
 import "./css/users.css"
+
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemButton from '@mui/material/ListItemButton';
+import Avatar from '@mui/material/Avatar';
+import { padding, style } from '@mui/system';
+
 
 export default function Users({ users, notify, reload }: UsersProps) {
     const [editedUser, setEditedUser] = useState<UserInfo | undefined>(undefined);
@@ -45,25 +54,39 @@ export default function Users({ users, notify, reload }: UsersProps) {
                         <Add onClick={() => { setEditedUser(getNewUserInfo()) }} />
                     </Fab>
                 }
-                <Grid container>
-                    {users && users.map((m, i) => (
-                        <Grid item key={i} onClick={() => setEditedUser(m)} xs={12}>
-                            <Grid container>
-                                <Grid item xs={3}>
-                                    <Avatar imageSrc={m.avatar?.url} size={40} />
-                                </Grid>
-                                <Grid item xs={6}>
-                                    <Text width={"50vw"} textAlign="right">
-                                        {m.displayName?.trim().length > 0 ? m.displayName : m._ref?.id}
-                                    </Text>
-                                </Grid>
-                                <Grid item xs={3}>
-                                    {(m.type === UserType.GUIDE) && <Text>מדריך\ה</Text>}
-                                </Grid>
-                            </Grid>
-                        </Grid>
+                <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+                    {users && 
+                     users.sort(
+                         (u1, u2) => u1.displayName.localeCompare(u2.displayName)
+                     ).map((m, i) => (
+                            <ListItem key={i} onClick={() => setEditedUser(m)} alignItems="flex-start" divider={true} >
+                                <ListItemButton >
+                                    <ListItemAvatar>
+                                        <Avatar src={m.avatar?.url} />
+                                    </ListItemAvatar>
+                                    <ListItemText>
+                                    <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+                                        <Grid item xs={6}>
+                                            <Text fontWeight="bold" fontSize="x-large">
+                                                {m.displayName?.trim().length > 0 ? m.displayName : m._ref?.id}
+                                            </Text>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                                {(m.type === UserType.GUIDE) && <Text>מדריך</Text>}
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Text>{m._ref?.id}</Text>
+                                        </Grid>
+
+                                        <Grid item xs={6}>
+                                            {m.phone &&<Text>{m.phone}</Text>}
+                                        </Grid>
+                                    </Grid>
+                                    </ListItemText>
+                                </ListItemButton>                            
+                            </ListItem>
                     ))}
-                </Grid>
+                </List>
             </div>
         </div>);
 
