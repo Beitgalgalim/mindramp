@@ -28,6 +28,11 @@ export interface Participant {
     }
 }
 
+export interface LocationsFieldKeyValue {
+    key: string
+    value: string
+}
+
 export const RecurrentEventFieldKeyValue = [
     { key: "daily", value: "יומי" },
     { key: "weekly", value: "שבועי" },
@@ -35,6 +40,13 @@ export const RecurrentEventFieldKeyValue = [
     { key: "weekdays", value: "ימות השבוע (א-ה)" },
     //    { key: "custom", value: "מותאם" },
     { key: "none", value: "ללא" },
+];
+
+export const LocationsKeyValue = [
+    { key: "1", value: "מטבח" },
+    { key: "2", value: "חדר 2" },
+    { key: "3", value: "מחשבים" },
+    { key: "4", value: "חורשה" }
 ];
 
 export const ReminderFieldKeyValue = [

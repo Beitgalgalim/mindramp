@@ -69,6 +69,11 @@ export interface UserInfo {
     _ref?: DocumentReference
 }
 
+export interface LocationInfo {
+    locationName: string,
+    _ref?: DocumentReference
+}
+
 export interface NotificationToken {
     token: string,
     isSafari: boolean,
