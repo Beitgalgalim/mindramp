@@ -10,6 +10,7 @@ import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue, LocationsFieldKeyValue } from './event';
+import { getLocations } from './api'
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
@@ -66,9 +67,12 @@ export default function EditEvent(
         if (event.guide !== null) {
             setGuide(event.guide);
         }
-
+        
         setAudioUrl(event.audioUrl);
         setAudioPath(event.audioPath);
+        if(event.location) {
+            setSelectedLocation(event.location)
+        }
         if (event.participants) {
             setParticipants(event.participants);
         }
@@ -110,10 +114,9 @@ export default function EditEvent(
     }, [events, participants, start, end])
 
     useEffect(() => {
-        console.log("useEffect: update location list")
-        locations.push({key: "1", value: "חדר מולטימדיה"})
-        locations.push({key: "2", value: "חורשה"})
-        locations.push({key: "3", value: "חדר מחשבים"})
+        getLocations().then( (locationsInfo: LocationInfo[]) => locationsInfo.forEach( 
+            (l: LocationInfo, index: number) => locations.push({key: index.toString(), value: l.name })
+        )).catch( (error) => console.error("get locations failed: ", error));
         console.log("useEffect:", locations)
     },[locations])
 
@@ -304,9 +307,11 @@ export default function EditEvent(
                                     listWidth={150}
                                     items={locations}
                                     value={selectedLocation}
-                                    onSelect={(newLocation: string) => setSelectedLocation(newLocation)}
+                                    onSelect={(locationKey: string) => setSelectedLocation(
+                                        locations.filter( (obj: LocationsFieldKeyValue) => obj.key == locationKey )[0].value
+                                    )}
                                     readOnly={true}
-                                    placeholder={"בחר מיקום"}
+                                    placeholder={"בחירת מיקום"}
                                 />
                                 <Spacer width={25} />
                             </Grid>
@@ -447,7 +452,7 @@ export default function EditEvent(
                                 ...(keyEvent != null && { keyEvent }),
                                 ...(allDay != null && { allDay }),
                                 imageUrl,
-
+                                location: selectedLocation,
                                 audioUrl,
                                 audioPath,
                                 clearAudio,

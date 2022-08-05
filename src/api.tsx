@@ -21,7 +21,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType } from './types';
+import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -254,6 +254,14 @@ export function getUsers(): Promise<UserInfo[]> {
         phone: d.phone,
         type: d.type,
     })));
+}
+
+export function getLocations(): Promise<LocationInfo[]> {
+    return _getCollection(Collections.LOCATIONS_COLLECTION).then( locations => locations.map ( l => 
+        ({
+            _ref: l._ref,
+            name: l.name
+        })));
 }
 
 export function getMedia(): Promise<MediaResource[]> {

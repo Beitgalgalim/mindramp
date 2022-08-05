@@ -42,13 +42,6 @@ export const RecurrentEventFieldKeyValue = [
     { key: "none", value: "ללא" },
 ];
 
-export const LocationsKeyValue = [
-    { key: "1", value: "מטבח" },
-    { key: "2", value: "חדר 2" },
-    { key: "3", value: "מחשבים" },
-    { key: "4", value: "חורשה" }
-];
-
 export const ReminderFieldKeyValue = [
     { key: "0", value: "בתחילת הארוע" },
     { key: "15", value: "15 דקות לפני" },
@@ -70,6 +63,7 @@ export class Event {
     audioUrl?: string;
     audioPath?: string;
     audioBlob?: Blob;
+    location?: string
     recurrent?: RecurrentEventField;
     guide?: Participant;
     participants?: Participant[];
@@ -107,6 +101,7 @@ export class Event {
         }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "recurrent", doc);
+        assignIfExists(evt,"location", doc)
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
         assignIfExists(evt, "audioPath", doc);
