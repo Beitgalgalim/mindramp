@@ -7,7 +7,7 @@ import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
-import { AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
+import { LocationOn, AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
 export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
@@ -72,17 +72,19 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         }
     }, [])
 
-    const titleAndRoom = <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: "flex-start",
-        paddingRight: 15,
-    }} >
-        <Text role="text">{event.title}</Text>
-        <Spacer height={2} />
-        {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
-    </div>
 
+    const titleAndLocation =  <HBoxSB style={{ width: undefined, paddingLeft: 10 }}>
+    <VBox style={{ width: "100%" }}>
+        <HBox style={{ alignItems: "center", width: "100%" }}>
+            <Text role="text">{event.title}</Text>
+        </HBox>
+        <Spacer />
+        <HBox style={{ alignItems: "center", width: "100%" }}>
+            <LocationOn style={{ color: Colors.EventIcons }} />
+            <Text role="text" aria-hidden="true" fontSize="0.7em">{event.location}</Text>
+        </HBox>
+    </VBox>
+    </HBoxSB>
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
         setPlayProgress(-1);
     }
@@ -166,6 +168,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 paddingLeft: 10,
                 justifyContent: isSingle ? "flex-start" : event.imageUrl ? "space-between" : "flex-end",
             }}>
+                {isSingle && titleAndLocation}
                 {
                     event.imageUrl && <div style={{ width: 78 }}>
                         <img src={event.imageUrl} style={{
@@ -179,10 +182,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 }
                 {!isSingle && event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
                 {/* {<Spacer height={buttonSize} />} */}
-                {isSingle && titleAndRoom}
             </div>
             <Spacer height={5} />
-            {!isSingle && titleAndRoom}
+            {!isSingle && titleAndLocation}
             {!isSingle && <Spacer height={25} />}
             <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>

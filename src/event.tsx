@@ -157,6 +157,7 @@ export class Event {
         clearFieldIfEmpty("imageUrl");
         clearFieldIfEmpty("guideUrl");
         clearFieldIfEmpty("recurrent");
+        clearFieldIfEmpty("location");
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
