@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Button, FormControlLabel, FormGroup, TextField } from '@mui/material';
+import { Button, FormControlLabel, FormGroup, getDialogActionsUtilityClass, TextField } from '@mui/material';
 import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
 
 
-import { EditEventsProps, MediaResource, UserInfo, UserType } from './types';
-import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title } from '@mui/icons-material';
+import { EditEventsProps, MediaResource, UserInfo, UserType, LocationInfo } from './types';
+import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title, LocationOn } from '@mui/icons-material';
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
 import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue } from './event';
+import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue, LocationsFieldKeyValue } from './event';
+import { getLocations } from './api'
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
@@ -39,6 +40,9 @@ export default function EditEvent(
     const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
+    
+    const [selectedLocation, setSelectedLocation] = useState<string>();
+    const [locations, setLocations] = useState<LocationsFieldKeyValue[]>([]);
 
     useEffect(() => {
         const event = Event.fromEventAny(inEvent.event);
@@ -63,9 +67,12 @@ export default function EditEvent(
         if (event.guide !== null) {
             setGuide(event.guide);
         }
-
+        
         setAudioUrl(event.audioUrl);
         setAudioPath(event.audioPath);
+        if(event.location) {
+            setSelectedLocation(event.location)
+        }
         if (event.participants) {
             setParticipants(event.participants);
         }
@@ -105,6 +112,13 @@ export default function EditEvent(
         }
 
     }, [events, participants, start, end])
+
+    useEffect(() => {
+        getLocations().then( (locationsInfo: LocationInfo[]) => locationsInfo.forEach( 
+            (l: LocationInfo, index: number) => locations.push({key: index.toString(), value: l.name })
+        )).catch( (error) => console.error("get locations failed: ", error));
+        console.log("useEffect:", locations)
+    },[locations])
 
 
     const narrow = window.innerWidth < 430;
@@ -279,6 +293,37 @@ export default function EditEvent(
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
+                                
+                {/** Location */}
+                <Grid container spacing={2} style={{ textAlign: "right" }}>
+                    <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
+                        <LocationOn />
+                    </Grid>
+                    <Grid container item xs={5} spacing={2} >
+                        <VBox style={{ alignItems: "flex-start" }}>
+                            <ComboBox
+                                style={{
+                                    width: 150,
+                                    textAlign: "right",
+                                    //backgroundColor: "white",
+                                    //height: 25,
+                                }}
+                                itemHeight={35}
+                                listWidth={150}
+                                hideExpandButton={true}
+                                placeholder={"בחירת מיקום"}
+                                items={locations}
+                                value={selectedLocation}
+                                onSelect={(locationKey: string) => setSelectedLocation(
+                                    locations.filter( (obj: LocationsFieldKeyValue) => obj.key == locationKey )[0].value
+                                )}
+                                onChange={(locationKey: string) => setSelectedLocation(locationKey)}
+                            />
+                            <Spacer width={25} />
+                        </VBox>
+                    </Grid>
+                </Grid>
+                <Spacer height={30} />
 
                 {/* Audio recording */}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
@@ -412,7 +457,7 @@ export default function EditEvent(
                                 ...(keyEvent != null && { keyEvent }),
                                 ...(allDay != null && { allDay }),
                                 imageUrl,
-
+                                location: selectedLocation,
                                 audioUrl,
                                 audioPath,
                                 clearAudio,

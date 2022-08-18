@@ -16,6 +16,7 @@ export const Collections =
             EVENT_COLLECTION: "event_dev",
             MEDIA_COLLECTION: "media_dev",
             USERS_COLLECTION: "users_dev",
+            LOCATIONS_COLLECTION: "locations_dev",
             PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
@@ -25,6 +26,7 @@ export const Collections =
             EVENT_COLLECTION: "event",
             MEDIA_COLLECTION: "media",
             USERS_COLLECTION: "users",
+            LOCATIONS_COLLECTION: "locations",
             PERSONAL_EVENT_COLLECTION: "personal_event",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
@@ -66,6 +68,11 @@ export interface UserInfo {
     phone?: string,
     avatar?: AvatarInfo,
     type: UserType,
+    _ref?: DocumentReference
+}
+
+export interface LocationInfo {
+    name: string,
     _ref?: DocumentReference
 }
 

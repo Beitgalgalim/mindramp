@@ -76,7 +76,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         }
     }, [])
 
-    const titleAndRoom = <div style={{
+    const titleAndLocation = <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: "flex-start",
@@ -84,7 +84,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     }} >
         <Text role="text">{event.title}</Text>
         <Spacer height={2} />
-        {/* <Text role="text" fontSize="0.7em">חדר מולטימדיה</Text> */}
+        {event.location &&  <Text role="text" fontSize="0.7em">{event.location}</Text> }
     </div>
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
@@ -184,10 +184,10 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 }
                 {!isSingle && event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
                 {/* {<Spacer height={buttonSize} />} */}
-                {isSingle && titleAndRoom}
+                {isSingle && titleAndLocation}
             </div>
             <Spacer height={5} />
-            {!isSingle && titleAndRoom}
+            {!isSingle && titleAndLocation}
             {!isSingle && <Spacer height={25} />}
             <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
