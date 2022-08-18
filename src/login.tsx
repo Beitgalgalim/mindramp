@@ -21,11 +21,11 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
 
     const [user, setUser] = useState<string>("");
     const [pwd, setPwd] = useState<string>("");
-    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [showPassword, setShowPassword] = useState<boolean>(true);
 
     const ok = useCallback(() => {
         console.log("in ok");
-        api.getUserInfo(user, pwd).then(
+        api.getUserInfo(user.trim(), pwd.trim()).then(
             info => onLogin(info),
             err => onError(new Error(err.message))
         );
