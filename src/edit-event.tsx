@@ -301,20 +301,25 @@ export default function EditEvent(
                     </Grid>
                     <Grid container item xs={5} spacing={2} >
                         <VBox style={{ alignItems: "flex-start" }}>
-                            <Grid container item xs={6} spacing={2} >
-                                <ComboBox
-                                    style={{ width: "60vw", textAlign: "right" }}
-                                    listWidth={150}
-                                    items={locations}
-                                    value={selectedLocation}
-                                    onSelect={(locationKey: string) => setSelectedLocation(
-                                        locations.filter( (obj: LocationsFieldKeyValue) => obj.key == locationKey )[0].value
-                                    )}
-                                    readOnly={true}
-                                    placeholder={"בחירת מיקום"}
-                                />
-                                <Spacer width={25} />
-                            </Grid>
+                            <ComboBox
+                                style={{
+                                    width: 150,
+                                    textAlign: "right",
+                                    //backgroundColor: "white",
+                                    //height: 25,
+                                }}
+                                itemHeight={35}
+                                listWidth={150}
+                                hideExpandButton={true}
+                                placeholder={"בחירת מיקום"}
+                                items={locations}
+                                value={selectedLocation}
+                                onSelect={(locationKey: string) => setSelectedLocation(
+                                    locations.filter( (obj: LocationsFieldKeyValue) => obj.key == locationKey )[0].value
+                                )}
+                                onChange={(locationKey: string) => setSelectedLocation(locationKey)}
+                            />
+                            <Spacer width={25} />
                         </VBox>
                     </Grid>
                 </Grid>
