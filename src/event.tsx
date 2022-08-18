@@ -28,6 +28,11 @@ export interface Participant {
     }
 }
 
+export interface LocationsFieldKeyValue {
+    key: string
+    value: string
+}
+
 export const RecurrentEventFieldKeyValue = [
     { key: "daily", value: "יומי" },
     { key: "weekly", value: "שבועי" },
@@ -58,6 +63,7 @@ export class Event {
     audioUrl?: string;
     audioPath?: string;
     audioBlob?: Blob;
+    location?: string
     recurrent?: RecurrentEventField;
     guide?: Participant;
     participants?: Participant[];
@@ -95,6 +101,7 @@ export class Event {
         }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "recurrent", doc);
+        assignIfExists(evt,"location", doc)
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
         assignIfExists(evt, "audioPath", doc);
@@ -150,6 +157,7 @@ export class Event {
         clearFieldIfEmpty("imageUrl");
         clearFieldIfEmpty("guideUrl");
         clearFieldIfEmpty("recurrent");
+        clearFieldIfEmpty("location");
         clearFieldIfEmpty("instanceStatus");
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
