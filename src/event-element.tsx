@@ -8,6 +8,9 @@ import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
 import { LocationOn, AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
+//const myEvent = require('./icons/myEvent.svg');
+import myEvent from './icons/myEvent.png'
+
 export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
@@ -71,6 +74,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             audioRef.current.src = ""
         }
     }, [])
+
     const titleAndLocation =  <HBoxSB style={{ width: undefined, paddingLeft: 10 }}>
     <VBox style={{ width: "100%" }}>
         <HBox style={{ alignItems: "center", width: "100%" }}>
@@ -85,6 +89,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         }
     </VBox>
     </HBoxSB>
+
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
         setPlayProgress(-1);
     }
@@ -104,8 +109,8 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             borderRadius: 10,
             marginRight: firstInGroup ? 24 : 0,
             marginLeft: 24,
-            marginBottom: 30,
-            marginTop: 1,
+            marginBottom: 10,
+            marginTop: 20,
             boxShadow: Design.boxShadow,
         }}
             onClick={() => {
@@ -154,8 +159,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
 
             {/** pin for personal events */
                 event.isPersonal === true &&
-                <div style={{ position: "absolute", top: 0, right: 0, transform: "rotate(45deg)", }}>
-                    <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} />
+                 <div style={{ position: "absolute", top: -20, right: -10,  }}>
+                    {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
+                    <img src={myEvent} style={{ width:35, height:35}}/>
                 </div>
             }
             <div style={{
