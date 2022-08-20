@@ -71,8 +71,6 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             audioRef.current.src = ""
         }
     }, [])
-
-
     const titleAndLocation =  <HBoxSB style={{ width: undefined, paddingLeft: 10 }}>
     <VBox style={{ width: "100%" }}>
         <HBox style={{ alignItems: "center", width: "100%" }}>
@@ -170,7 +168,6 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 paddingLeft: 10,
                 justifyContent: isSingle ? "flex-start" : event.imageUrl ? "space-between" : "flex-end",
             }}>
-                {isSingle && titleAndLocation}
                 {
                     event.imageUrl && <div style={{ width: 78 }}>
                         <img src={event.imageUrl} style={{
@@ -184,6 +181,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 }
                 {!isSingle && event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
                 {/* {<Spacer height={buttonSize} />} */}
+                {isSingle && titleAndLocation}
             </div>
             <Spacer height={5} />
             {!isSingle && titleAndLocation}
