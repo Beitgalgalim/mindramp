@@ -79,10 +79,12 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             <Text role="text">{event.title}</Text>
         </HBox>
         <Spacer />
+        { event.location &&
         <HBox style={{ alignItems: "center", width: "100%" }}>
             <LocationOn style={{ color: Colors.EventIcons }} />
             <Text role="text" aria-hidden="true" fontSize="0.7em">{event.location}</Text>
         </HBox>
+        }
     </VBox>
     </HBoxSB>
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
