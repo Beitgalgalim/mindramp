@@ -115,13 +115,18 @@ export default function EditEvent(
 
     useEffect(() => {
         getLocations().then( (locationsInfo: LocationInfo[]) => {
-            let locationKeyVal: LocationsFieldKeyValue[] = []
-            locationsInfo.forEach( 
-                (l: LocationInfo, index: number) => locationKeyVal.push({key: index.toString(), value: l.name })
+            setLocations(
+                locationsInfo.map( (l: LocationInfo, index: number): LocationsFieldKeyValue => 
+                {
+                    return {
+                        key: index.toString(), 
+                        value: l.name
+                    }
+                })
             )
-            setLocations(locationKeyVal)
-        }).catch( (error) => console.error("get locations failed: ", error));
-        console.log("useEffect - locations:", locations)
+        }).catch( (error) => 
+            console.error("get locations failed: ", error)
+        );
     },[])
 
 
