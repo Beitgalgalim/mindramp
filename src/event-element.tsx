@@ -7,10 +7,10 @@ import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
-import { LocationOn, AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
+
+import { AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
-
 export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
@@ -75,20 +75,16 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         }
     }, [])
 
-    const titleAndLocation =  <HBoxSB style={{ width: undefined, paddingLeft: 10 }}>
-    <VBox style={{ width: "100%" }}>
-        <HBox style={{ alignItems: "center", width: "100%" }}>
-            <Text role="text">{event.title}</Text>
-        </HBox>
-        <Spacer />
-        { event.location &&
-        <HBox style={{ alignItems: "center", width: "100%" }}>
-            <LocationOn style={{ color: Colors.EventIcons }} />
-            <Text role="text" aria-hidden="true" fontSize="0.7em">{event.location}</Text>
-        </HBox>
-        }
-    </VBox>
-    </HBoxSB>
+    const titleAndLocation = <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: "flex-start",
+        paddingRight: 15,
+    }} >
+        <Text role="text">{event.title}</Text>
+        <Spacer height={2} />
+        {event.location &&  <Text role="text" fontSize="0.7em">{event.location}</Text> }
+    </div>
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
         setPlayProgress(-1);
