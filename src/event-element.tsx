@@ -7,11 +7,10 @@ import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
+
 import { AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
-
-
 export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
     {
         event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,

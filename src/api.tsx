@@ -258,10 +258,8 @@ export function getUsers(): Promise<UserInfo[]> {
 
 export function getLocations(): Promise<LocationInfo[]> {
     return _getCollection(Collections.LOCATIONS_COLLECTION).then( locations => locations.map ( l => 
-        ({
-            _ref: l._ref,
-            name: l.name
-        })));
+        ( { ...l } as LocationInfo ))
+    );
 }
 
 export function getMedia(): Promise<MediaResource[]> {

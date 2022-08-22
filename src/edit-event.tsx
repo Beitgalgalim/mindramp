@@ -114,11 +114,20 @@ export default function EditEvent(
     }, [events, participants, start, end])
 
     useEffect(() => {
-        getLocations().then( (locationsInfo: LocationInfo[]) => locationsInfo.forEach( 
-            (l: LocationInfo, index: number) => locations.push({key: index.toString(), value: l.name })
-        )).catch( (error) => console.error("get locations failed: ", error));
-        console.log("useEffect:", locations)
-    },[locations])
+        getLocations().then( (locationsInfo: LocationInfo[]) => {
+            setLocations(
+                locationsInfo.map( (l: LocationInfo, index: number): LocationsFieldKeyValue => 
+                {
+                    return {
+                        key: index.toString(), 
+                        value: l.name
+                    }
+                })
+            )
+        }).catch( (error) => 
+            console.error("get locations failed: ", error)
+        );
+    },[])
 
 
     const narrow = window.innerWidth < 430;
