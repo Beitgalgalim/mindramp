@@ -8,7 +8,7 @@ import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 
 
-import { AccessTime, MicOutlined, PushPin } from "@mui/icons-material";
+import { AccessTime, MicOutlined } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
 export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
@@ -17,7 +17,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         width: number,
         audioRef: MutableRefObject<HTMLAudioElement>,
         showingKeyEvent: boolean,
-        onSetRead?:()=>void
+        onSetRead?: () => void
     }
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
@@ -83,7 +83,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     }} >
         <Text role="text">{event.title}</Text>
         <Spacer height={2} />
-        {event.location &&  <Text role="text" fontSize="0.7em">{event.location}</Text> }
+        {event.location && <Text role="text" fontSize="0.7em">{event.location}</Text>}
     </div>
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
@@ -150,14 +150,14 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             }}
 
         >
-            { showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
+            {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
 
 
             {/** pin for personal events */
                 event.isPersonal === true &&
-                 <div style={{ position: "absolute", top: -20, right: -10,  }}>
+                <div style={{ position: "absolute", top: -20, left: "45%", }}>
                     {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
-                    <img src={myEvent} style={{ width:35, height:35}}/>
+                    <img src={myEvent} style={{ width: 45, height: 45 }} />
                 </div>
             }
             <div style={{
@@ -196,7 +196,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                         <Spacer />
                         {showingKeyEvent && <Text width={"70%"} aria-hidden="true" fontSize="0.7em">{getNiceDate(event.date, true)}</Text>}
 
-                        <Text aria-hidden="true" fontSize="0.7em">{t1 + " - " + t2}</Text>
+                        <Text aria-hidden="true" fontSize="0.7em">{event.allDay ? "כל היום" : t1 + " - " + t2}</Text>
                     </HBox>
                     <Spacer />
                     {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}

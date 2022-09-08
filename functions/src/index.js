@@ -448,6 +448,15 @@ const isAdmin = (isDev, context) => {
     });
 };
 
+exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) => {
+    const isDev = data.isDev;
+
+    return isAdmin(isDev, context).catch((err)=>{
+        throw new functions.https.HttpsError("permission-denied", "AdminRequired", err.message);
+    });
+});
+
+
 /**
  * Expects:
  * data= {

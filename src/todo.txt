@@ -28,4 +28,8 @@ TV:
 
 
 bugs:
-- new event, the allDay - endDate is one day back
+V- new event, the allDay - endDate is one day back
+V- update photo - not visible
+- larger: icons, bell, larger font
+V- button to move to admin and back
+V- users read if same user rule.

@@ -10,32 +10,42 @@ import Media from './media';
 import { AdminProps, MediaResource, UserInfo } from './types';
 import { Colors } from './theme';
 import Users from './users';
+import { Button } from '@mui/material';
+
 
 
 export default function Admin(props: AdminProps) {
     const [media, setMedia] = useState<MediaResource[]>([]);
-    const [users, setUsers] = useState<UserInfo[]> ([]);
+    const [users, setUsers] = useState<UserInfo[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
     const [reloadMedia, setReloadMedia] = useState<number>(0);
     const [reloadUsers, setReloadUsers] = useState<number>(0);
 
+
     useEffect(() => {
         if (!props.connected)
             return;
-        api.getMedia().then((m:MediaResource[]) => setMedia(m));
+        api.getMedia().then((m: MediaResource[]) => setMedia(m));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadMedia]);
 
     useEffect(() => {
         if (!props.connected)
             return;
-        api.getUsers().then((g:UserInfo[]) => setUsers(g));
+        api.getUsers().then((g: UserInfo[]) => setUsers(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.connected, reloadUsers]);
 
     let adminTab = location.hash ? parseInt(location.hash.substr(1)) : 0;
-    return (<div dir="rtl" style={{height: "100vh", overflowY:"hidden"}}>
+    return (<div dir="rtl" style={{ height: "100vh", overflowY: "hidden" }}>
+        <div className="manageButtonContainer">
+            <Button classes={{ containedPrimary: "btnText" }} variant={"contained"} color="primary"
+                onClick={() => {
+                    console.log("משתתפים")
+                    navigate("/")
+                }}>משתתפים</Button>
+        </div>
         <Tabs key={"100"}
             value={adminTab}
             onChange={(e, tab) => navigate("/admin#" + tab)}
@@ -43,7 +53,7 @@ export default function Admin(props: AdminProps) {
             textColor="primary"
             scrollButtons="auto"
             centered
-            style={{ marginTop: 5, backgroundColor:Colors.EventBackground, fontSize:25 }}
+            style={{ marginTop: 5, backgroundColor: Colors.EventBackground, fontSize: 25 }}
             TabIndicatorProps={{
                 style: {
                     display: "none"
@@ -51,21 +61,21 @@ export default function Admin(props: AdminProps) {
             }}
         >
             <ResponsiveTab label={"יומן"} />
-            
+
             <ResponsiveTab label={"מדיה"} />
 
             <ResponsiveTab label={"אנשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
-            <Events connected={props.connected} notify={props.notify} media={media} users={users}/>
+            <Events connected={props.connected} notify={props.notify} media={media} users={users} />
         </TabPanel>
-        
+
         <TabPanel key={"1"} value={adminTab} index={1} >
-            {adminTab === 1 && <Media notify={props.notify} media={media} reload={()=>setReloadMedia(old=>old+1)}/>}
+            {adminTab === 1 && <Media notify={props.notify} media={media} reload={() => setReloadMedia(old => old + 1)} />}
         </TabPanel>
 
         <TabPanel key={"2"} value={adminTab} index={2} >
-            {adminTab === 2 && <Users notify={props.notify} users={users} reload={()=>setReloadUsers(old=>old+1)}/>}
+            {adminTab === 2 && <Users notify={props.notify} users={users} reload={() => setReloadUsers(old => old + 1)} isAdmin={props.isCurrentUserAdmin} />}
         </TabPanel>
     </div>);
 }

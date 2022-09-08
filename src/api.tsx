@@ -21,7 +21,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserPersonalInfo, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -32,7 +32,7 @@ let functions: any = undefined;
 
 
 export function initAPI(
-    onAuth: (userPersonalInfo: UserPersonalInfo | null) => void,
+    onAuth: (userDocument: UserDocument | null) => void,
     onPushNotification: onPushNotificationHandler,
     onNotificationToken: (notificationToken: string) => void
 ): boolean {
@@ -46,31 +46,44 @@ export function initAPI(
     onAuthStateChanged(auth, (user) => {
         const email = user?.email;
         if (email) {
-            const docRef = doc(db, Collections.USERS_COLLECTION, email, Collections.USER_PERSONAL_SUBCOLLECTION, "Default")
+            // const docRef = doc(db, Collections.USERS_COLLECTION, email, Collections.USER_PERSONAL_SUBCOLLECTION, "Default")
+            // getDoc(docRef).then(
+            //     //Success
+            //     userPersonallDoc => {
+            //         let userAdditionalInfo = {}
+            //         if (userPersonallDoc.exists()) {
+
+            //             if (userPersonallDoc.data().notificationOn === true) {
+            //                 initializeNotification(onPushNotification, onNotificationToken);
+            //             }
+            //             userAdditionalInfo = userPersonallDoc.data();
+            //         }
+            //         onAuth({
+            //             email,
+            //             ...userAdditionalInfo,
+            //         });
+
+            //     },
+            //     // No user record. for compatability - allow it
+            //     (err) => {
+            //         onAuth({
+            //             email
+            //         });
+            //     }
+            // );
+            const docRef = doc(db, Collections.USERS_COLLECTION, email);
             getDoc(docRef).then(
                 //Success
-                userPersonallDoc => {
-                    let userAdditionalInfo = {}
-                    if (userPersonallDoc.exists()) {
-
-                        if (userPersonallDoc.data().notificationOn === true) {
-                            initializeNotification(onPushNotification, onNotificationToken);
-                        }
-                        userAdditionalInfo = userPersonallDoc.data();
-                    }
+                res => {
+                    let addInfo = {};
+                    if (res.exists())
+                        addInfo = res.data();
                     onAuth({
                         email,
-                        ...userAdditionalInfo,
+                        ...addInfo,
                     });
 
-                },
-                // No user record. for compatability - allow it
-                (err) => {
-                    onAuth({
-                        email
-                    });
-                }
-            );
+                });
         } else {
             onAuth(null);
         }
@@ -257,8 +270,8 @@ export function getUsers(): Promise<UserInfo[]> {
 }
 
 export function getLocations(): Promise<LocationInfo[]> {
-    return _getCollection(Collections.LOCATIONS_COLLECTION).then( locations => locations.map ( l => 
-        ( { ...l } as LocationInfo ))
+    return _getCollection(Collections.LOCATIONS_COLLECTION).then(locations => locations.map(l =>
+        ({ ...l } as LocationInfo))
     );
 }
 
@@ -475,6 +488,20 @@ function GetResourceRefOfUsersPhoto(pic: File): StorageReference {
     return resourceRef;
 }
 
+
+export async function isCurrentUserAdmin() {
+    const isAdmin = httpsCallable(functions, 'isAdmin');
+    const payload: any = {
+        isDev: isDev(),
+    };
+    return isAdmin(payload).then(
+        () => {
+            return true;
+        },
+        (err) => false
+    );
+}
+
 export async function isUserAdmin(user: UserInfo): Promise<boolean> {
     if (!user._ref)
         return false;
@@ -494,10 +521,10 @@ function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
     })
 }
 
-export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string  | undefined,  userInfo: UserInfo, isAdmin: boolean) {
+export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, isAdmin: boolean) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
-    return getDoc(_ref).then( (g) => {
+    return getDoc(_ref).then((g) => {
         if (!g.exists()) {
             throw ("Unexpected error!");
         }
@@ -523,7 +550,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                     const uploadTask = uploadBytes(resourceRef, pic, metadata);
                     return uploadTask.then(val => {
                         return getDownloadURL(val.ref).then(url => {
-                            
+
                             existing_info.avatar = { url, path: val.ref.fullPath };
 
                             // also remove the old Pic 
@@ -544,7 +571,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                 existing_info.avatar = deleteField();
                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
             }
-        
+
             return updateDoc(_ref, existing_info).then(() => {
                 return UpdateUserAdminState(_ref, isAdmin);
             });
@@ -602,6 +629,8 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
         }
     });
 }
+
+
 
 export async function addAudio(name: string, data: Blob): Promise<MediaResource> {
     // First upload to storage

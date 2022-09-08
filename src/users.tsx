@@ -12,10 +12,9 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
-import { padding, style } from '@mui/system';
 
 
-export default function Users({ users, notify, reload }: UsersProps) {
+export default function Users({ users, notify, reload, isAdmin }: UsersProps) {
     const [editedUser, setEditedUser] = useState<UserInfo | undefined>(undefined);
 
     function getNewUserInfo(): UserInfo {
@@ -36,7 +35,7 @@ export default function Users({ users, notify, reload }: UsersProps) {
 
     return (
         <div>
-            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} />}
+            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} isAdmin={isAdmin}/>}
 
             <div className="users-container">
                 {!editedUser &&

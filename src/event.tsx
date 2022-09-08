@@ -133,7 +133,7 @@ export class Event {
         eventObj.start = dayjs(this.start).format(DateFormats.DATE_TIME);
         eventObj.end = dayjs(this.end).format(DateFormats.DATE_TIME);
 
-        if (eventObj.end <= eventObj.start) {
+        if (eventObj.end < eventObj.start || !eventObj.allDay && eventObj.end < eventObj.start) {
             throw ("זמן סיום חייב להיות מאוחר מזמן התחלה");
         }
 

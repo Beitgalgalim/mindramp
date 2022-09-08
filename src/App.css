@@ -36,3 +36,14 @@
     transform: rotate(360deg);
   }
 }
+
+
+.manageButtonContainer {
+  position: absolute;
+  left:120px;
+  top: 20px;
+  z-index: 1000;
+}
+.btnText {
+  font-size: 35px;
+}

@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
-import { MessageInfo, MsgButton, NotificationMessage, NotificationToken } from './types';
+import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, UserType } from './types';
 import UserEvents from './user-events';
 import Admin from './admin';
 import { User } from '@firebase/auth';
@@ -23,6 +23,10 @@ let gNotificationTimeout:any = undefined;
 function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
+  const [admin, setAdmin] = useState<boolean>(false);
+  const [guide, setGuide] = useState<boolean>(false);
+  const [gettingAdminStatus, setGettingAdminStatus] = useState<boolean>(false);
+
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
 
   const [connected, setConnected] = useState(false);
@@ -100,12 +104,18 @@ function App(props: any) {
   useEffect(() => {
     api.initAPI(
       // Callback for AuthStateChanged
-      (userPersonalInfo) => {
-        if (userPersonalInfo) {
-          setUser(userPersonalInfo.email);
-          setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
-          setActualNotificationOn(userPersonalInfo.notificationOn === true)
-          setServerPersistedNotificationTokens(userPersonalInfo.tokens);
+      (userDocument) => {
+        if (userDocument) {
+          setUser(userDocument.email);
+          // setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
+          // setActualNotificationOn(userPersonalInfo.notificationOn === true)
+          // setServerPersistedNotificationTokens(userPersonalInfo.tokens);
+          setGettingAdminStatus(true);
+          setGuide(userDocument.type == UserType.GUIDE);
+          api.isCurrentUserAdmin().then((isAdmin)=>{
+            setAdmin(isAdmin);
+            setGettingAdminStatus(false);
+          })
         } else {
           setUser(null);
           setDesiredNotificationOn(false);
@@ -213,10 +223,16 @@ function App(props: any) {
                 }}
               />
                 :
-                <Admin connected={connected} notify={notify} user={user} />
+                (guide || admin) ? <Admin connected={connected} notify={notify} user={user} isCurrentUserAdmin={admin} /> :
+                gettingAdminStatus ? <div>
+                  <LinearProgress />
+                  <div style={{fontSize:30}}>טוען הרשאות</div>
+                </div> : <div>אינך מורשה</div>
 
           } />
           <Route path="/" element={<UserEvents
+            isAdmin={admin}
+            isGuide={true}
             notificationOn={actualtNotificationOn === true}
             onNotificationToken={(notifToken) => {
               setDeviceProvidedNotificationToken(notifToken);

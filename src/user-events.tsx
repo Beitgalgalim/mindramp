@@ -38,7 +38,7 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 }
 
 
-export default function UserEvents({ connected, notify, user,
+export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     notificationOn, onNotificationOnChange, onNotificationToken,
     onPushNotification }: UserEventsProps) {
 
@@ -89,10 +89,10 @@ export default function UserEvents({ connected, notify, user,
             })
             const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
 
-            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev=>ev.end > dateTimeNoOffset.format(DateFormats.DATE_TIME));
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev=>ev.end >= dateTimeNoOffset.format(DateFormats.DATE));
             const tomorrow = toMidNight(dateTimeNoOffset.add(1, "days")).format(DateFormats.DATE_TIME);
             const today = toMidNight(dateTimeNoOffset).format(DateFormats.DATE_TIME);
-            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev=>ev.start <= today && ev.end >= tomorrow);
+            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev=>ev.start >= today && ev.end <= tomorrow);
 
             setEvents(sortedEvents.filter(ev => !ev.allDay));
 
@@ -198,6 +198,8 @@ export default function UserEvents({ connected, notify, user,
             height={"12vh"}
             showDateTime={dateTimeNoOffset}
             nickName={nickName?.name}
+            isAdmin={isAdmin}
+            isGuide={isGuide}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
             notificationOn={notificationOn}
             onNotificationClick={() => setShowNotifications(prev => !prev)}

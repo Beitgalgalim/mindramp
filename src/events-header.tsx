@@ -1,7 +1,10 @@
 import { Home, NotificationsActive, NotificationsNone } from '@mui/icons-material';
+import { Button } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Text } from './elem';
 import { EventsHeaderProps } from './types';
+import { useNavigate } from "react-router-dom";
+
 const logo = require("./logo-small.png");
 
 function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: CallableFunction, delay = 250) {
@@ -26,8 +29,11 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
 }
 
 export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
+    isAdmin,
+    isGuide,
     notificationOn,
     onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
+    const navigate = useNavigate();
 
     const handleClick = useSingleAndDoubleClick(() => {
         // Double click
@@ -106,6 +112,14 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
         }
         <Text textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
 
+        {(isAdmin || isGuide) &&
+            <div className="manageButtonContainer">
+                <Button classes={{ containedPrimary: "btnText" }} variant={"contained"} color="primary"
+                    onClick={() => {
+                        console.log("ניהול")
+                        navigate("/admin")
+                    }}>ניהול</Button>
+            </div>}
         <img
             src={logo}
             style={{

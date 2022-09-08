@@ -7,7 +7,7 @@ import { UserType, UserInfo } from './types';
 import * as api from "./api";
 import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
 
-export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps) {
+export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: EditUserProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
     const [preview, setPreview] = useState<string | undefined>(userInfo.avatar?.url);
     const [fname, setFName] = useState<string>(userInfo.fname);
@@ -266,8 +266,8 @@ export default function EditUser({ userInfo, afterSaved, notify }: EditUserProps
 
 
             <Grid item xs={12}>
-                <Button variant="contained" onClick={onSave} disabled={!dirty}>שמור</Button>
-                {userInfo._ref && <Button variant="contained" onClick={onDelete}>מחיקה</Button>}
+                <Button variant="contained" onClick={onSave} disabled={!dirty || !isAdmin}>שמור</Button>
+                {userInfo._ref && <Button variant="contained" disabled={!isAdmin} onClick={onDelete}>מחיקה</Button>}
 
                 <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </Grid>

@@ -82,11 +82,12 @@ export interface NotificationToken {
     ts: string,
 }
 
-export interface UserPersonalInfo {
+export interface UserDocument {
     email: string,
     phone?: string,
-    notificationOn?: boolean,
-    tokens?: NotificationToken[]
+    // notificationOn?: boolean,
+    // tokens?: NotificationToken[]
+    type?:UserType;
 }
 
 
@@ -153,16 +154,22 @@ export interface Notifying {
 
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
-export interface AdminProps extends Connected, Notifying, WithUser { }
+export interface AdminProps extends Connected, Notifying, WithUser { 
+    isCurrentUserAdmin:boolean;
+}
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
+    isAdmin: boolean,
+    isGuide: boolean,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface UsersProps extends Notifying, WithUsers, WithReload { }
+export interface UsersProps extends Notifying, WithUsers, WithReload { 
+    isAdmin: boolean;
+}
 
 export interface LoginProps {
     onForgotPwd: () => void,
@@ -184,6 +191,8 @@ export interface UserSettingsProps extends WithUser, Notifying {
 export interface EventsHeaderProps extends WithUser {
     onLogoDoubleClicked: Callback,
     nickName: string,
+    isAdmin: boolean,
+    isGuide: boolean,
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
@@ -209,6 +218,7 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
 }
 
 export interface EditUserProps extends Notifying {
+    isAdmin: boolean;
     userInfo : UserInfo;
     afterSaved: () => void;
 }
