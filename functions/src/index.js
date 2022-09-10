@@ -19,6 +19,15 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 const JERUSALEM = "Asia/Jerusalem";
 
+const express = require("express");
+const webhookMiddleware = require("x-hub-signature").middleware;
+const bodyParser = require("body-parser");
+
+const app = express();
+
+const NOTIFICATIONS_COLLECTION = "notifications";
+const USERS_COLLECTION = "users";
+
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -174,7 +183,6 @@ exports.notifications = functions.region("europe-west1").pubsub
             const usersCollection = isDev ? "users_dev" : "users";
 
             return db.collection(eventsCollection).get().then(res => {
-
                 // filter to events between today and 2 days ahead
                 const events = res.docs.map(doc => ({ ref: doc.ref, ...doc.data() })).filter(ev =>
                     ev.reminderMinutes !== undefined &&
@@ -209,7 +217,7 @@ exports.notifications = functions.region("europe-west1").pubsub
                     } else {
                         functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.ref.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
                     }
-                })
+                });
                 functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events", notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.ref.id })));
 
                 // fetch users' notification keys
@@ -231,8 +239,6 @@ exports.notifications = functions.region("europe-west1").pubsub
                                 const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
                                 const instancesInfo = allRecurrentEventInstancesInfo.filter(doc => doc.exists)
                                     .map(doc2 => ({ eventID: doc2.ref._path.segments[1], date: doc2.id, ...doc2.data() }));
-
-
 
                                 notifyEvents.forEach(ev => {
                                     // makes sure the recurrent instance is not already notified
@@ -270,7 +276,6 @@ exports.notifications = functions.region("europe-west1").pubsub
                                 });
                                 return Promise.all(waitForNotifications);
                             });
-
                         });
                     });
                 }
@@ -294,11 +299,13 @@ function isBetween(num, from, to) {
 }
 
 function getBeforeTimeText(minutes) {
-    if (minutes < 0)
-        return "התחיל לפני " + minutes + " דקות"
+    if (minutes < 0) {
+        return "התחיל לפני " + minutes + " דקות";
+    }
 
-    if (minutes === 0)
+    if (minutes === 0) {
         return "מתחיל עכשיו";
+    }
 
     if (isBetween(minutes, 0, 10)) {
         return "עוד " + minutes + " דקות";
@@ -327,7 +334,7 @@ function getBeforeTimeText(minutes) {
         return "עוד שעתיים";
     }
     if (minutes > 1400) {
-        return "מחר"
+        return "מחר";
     }
 
     return "עוד מעל שעתיים";
@@ -380,7 +387,7 @@ function handleParticipantAdded(isDev, change, context) {
             if (!change.after.data().participants.find(pAfter => pAfter.email === pp.email)) {
                 removed.push(pp.email);
             }
-        })
+        });
     } else {
         removed = previousParticipants;
     }
@@ -388,47 +395,57 @@ function handleParticipantAdded(isDev, change, context) {
     // if the event is in the past - return
     // TODO
 
+    const niceDate = eventsUtil.getNiceDate(date);
 
     /*
       Send notification to added/removed participants
     */
-    const usersCollectionName = isDev ? "users_dev" : "users";
-    const usersColl = db.collection(usersCollectionName);
+    // const usersCollectionName = isDev ? "users_dev" : "users";
+    // const usersColl = db.collection(usersCollectionName);
 
-    const waitFoUsers = added.concat(removed).map(email =>
-        usersColl.doc(email).collection("personal").doc("Default").get());
+    const batch = db.batch();
+    if (added.length > 0) {
+        addNotification(batch, "person_added2", [title, niceDate.day, niceDate.date, niceDate.hour], [], added, isDev);
+    }
+    if (removed.length > 0) {
+        addNotification(batch, "person_removed2", [title, niceDate.day, niceDate.date, niceDate.hour], [], removed, isDev);
+    }
+    return batch.commit();
 
-    return Promise.allSettled(waitFoUsers).then(allUsers => {
-        return getAccessToken().then(accessToken => {
-            const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
+    // const waitFoUsers = added.concat(removed).map(email =>
+    //     usersColl.doc(email).collection("personal").doc("Default").get());
 
-            const waitForNotifications = [];
+    // return Promise.allSettled(waitFoUsers).then(allUsers => {
+    //     return getAccessToken().then(accessToken => {
+    //         const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
 
-            added.forEach(addUser => {
-                const userInfo = usersInfo.find(ui => ui.email === addUser);
-                if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
-                    userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-                        sendNotification(accessToken, "הוזמנת לפגישה", `
-    בתאריך: ${date} נושא: ${title}
-    `, "https://mindramp-58e89.web.app/", nt.token)
-                    ));
-                }
-            });
+    //         const waitForNotifications = [];
 
-            removed.forEach(removedUser => {
-                const userInfo = usersInfo.find(ui => ui.email === removedUser);
-                if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
-                    userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-                        sendNotification(accessToken, "פגישתך בוטלה", `
-    בתאריך: ${date} נושא: ${title}
-    `, "https://mindramp-58e89.web.app/", nt.token)
-                    ));
-                }
-            });
+    //         added.forEach(addUser => {
+    //             const userInfo = usersInfo.find(ui => ui.email === addUser);
+    //             if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+    //                 userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
+    //                     sendNotification(accessToken, "הוזמנת לפגישה", `
+    // בתאריך: ${date} נושא: ${title}
+    // `, "https://mindramp-58e89.web.app/", nt.token)
+    //                 ));
+    //             }
+    //         });
 
-            return Promise.all(waitForNotifications);
-        });
-    });
+    //         removed.forEach(removedUser => {
+    //             const userInfo = usersInfo.find(ui => ui.email === removedUser);
+    //             if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
+    //                 userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
+    //                     sendNotification(accessToken, "פגישתך בוטלה", `
+    // בתאריך: ${date} נושא: ${title}
+    // `, "https://mindramp-58e89.web.app/", nt.token)
+    //                 ));
+    //             }
+    //         });
+
+    //         return Promise.all(waitForNotifications);
+    //     });
+    // });
 }
 
 const isAdmin = (isDev, context) => {
@@ -451,7 +468,7 @@ const isAdmin = (isDev, context) => {
 exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) => {
     const isDev = data.isDev;
 
-    return isAdmin(isDev, context).catch((err)=>{
+    return isAdmin(isDev, context).catch((err) => {
         throw new functions.https.HttpsError("permission-denied", "AdminRequired", err.message);
     });
 });
@@ -500,8 +517,7 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
                         throw new functions.https.HttpsError("failed-precondition", err.message, err.details);
                     });
         }
-    )
-
+    );
 });
 
 
@@ -584,3 +600,264 @@ exports.BackupDB = functions.region("europe-west1").pubsub
         });
     });
 
+/**
+*  *******************
+*  WhatApp integration
+*  *******************
+- The integration is based on WhatsApp Business API.
+- Facebook offer a free tier of 1000 conversations a month. A conversation is counted as follows:
+  either user initiated or business initiated message, followed by any number of messages in the next 24hours window.
+  This means, if we have about 50 active users in Beit Galgalim and
+  all of them interact with the system on every working day (~20 days a month), then we reach the limit, and start pay
+  around .02 cent per conversation.
+- We register one phone number to be the "system"'s number, and all interactions are 1:1 between the system and a parson.
+- To send a whatsApp message, simply insert a record into "notifications" collection. It has to have a template if this is
+  business initiated message, so a template must be prepared and approved in facebook
+- free text (not template based), are to respond to users messages. One the business responds, it is allowed to send anything.
+
+- Message we plan to send/recieve:
+  - you are invited to a meeting (done)
+    - approval of meeting invite (todo)
+  - you are removed from a meeting (done)
+  - your meeting is modified (todo)
+  - password reset (done)
+  - meeting reminder (todo)
+  - backup failed - send to system operators (todo)
+
+
+**/
+
+
+const addNotification = (batch, message_template, parametersValues, quickReplyParameters, toEmailArray, isDev) => {
+    const notifDoc = db.collection(NOTIFICATIONS_COLLECTION).doc();
+    const parameters = parametersValues.map(text => ({ type: "text", text }));
+    const docData = {
+        message_template,
+        parameters,
+        quickReplyParameters,
+        createdAt: FieldValue.serverTimestamp(),
+        to: toEmailArray,
+        isDev,
+    };
+    if (batch) {
+        batch.set(notifDoc, docData);
+        return;
+    }
+
+    return notifDoc.set(docData);
+};
+
+const addNotificationFree = (message_body, toEmailArray, isDev) => {
+    const notifDoc = db.collection(NOTIFICATIONS_COLLECTION).doc();
+    const docData = {
+        message_body,
+        createdAt: FieldValue.serverTimestamp(),
+        to: toEmailArray,
+        isDev,
+    };
+
+    return notifDoc.set(docData);
+};
+
+
+app.get("/whatsapp/webhooks", (req, res) => {
+    functions.logger.info("WhatApp Webhooks GET: " + JSON.stringify(req.query), req.query);
+    if (req.query["hub.verify_token"] == functions.config().whatsapp.verifytoken && req.query["hub.mode"] == "subscribe") {
+        res.send(req.query["hub.challenge"]);
+    }
+
+    res.send("fail");
+});
+
+app.use(bodyParser.json({
+    verify: webhookMiddleware.extractRawBody,
+}));
+
+app.use(webhookMiddleware({
+    algorithm: "sha256",
+    secret: functions.config().whatsapp.appsecret,
+    require: false,
+    header: "x-hub-signature-256",
+}));
+
+app.post("/whatsapp/webhooks", (req, res) => {
+    functions.logger.info("WhatApp Webhooks POST: ", req.body);
+    const sentSignature = req.headers["x-hub-signature-256"];
+    if (!sentSignature) {
+        functions.logger.info("WhatApp webhook is missing 'x-hub-signature' header", req.headers);
+        res.send("not ok");
+        return;
+    }
+    // if it exists, the x-hub-sgnature middleware has checked it to be valid.
+
+    if (req.body.object === "whatsapp_business_account") {
+        const entry = req.body ? req.body.entry[0] : undefined;
+        if (entry) {
+            const waitFor = entry.changes.map(change => {
+                if (change?.value?.messages) {
+                    change.value.messages.forEach(message => {
+                        if (message?.text?.body?.length > 0 ||
+                            message.button && message.button.text === "todo") {
+                            const text = message.text ? message.text.body : message.button.payload;
+
+
+                            // find the user, based on his/her phone
+                            const phoneNumber = message.from.replace("972", "0");
+                            return db.collection("users").where("phone", "==", phoneNumber).get().then(res => {
+                                if (res.docs && res.docs.length > 0) {
+                                    const email = res.docs[0].id;
+                                    if (text.startsWith("סיסמא") || text.startsWith("סיסמה")) {
+                                        const newPwd = text.substr(5).trim();
+                                        // change password flow:
+                                        const auth = admin.auth();
+                                        return auth.getUserByEmail(email).then((userRecord) => {
+                                            auth.updateUser(userRecord.uid, {
+                                                email: email,
+                                                password: newPwd,
+                                            }).then(
+                                                () => {
+                                                    functions.logger.info("Successful password reset", email);
+                                                    return addNotificationFree("סיסמא הוחלפה בהצלחה. \nמשתמש: " + email + "\nסיסמא חדשה: " + newPwd + "\n", [email], false);
+                                                },
+                                                err => {
+                                                    functions.logger.info("Password reset failed", email, err);
+                                                    return addNotificationFree("החלפת סיסמא נכשלה.\nשגיאה: " + err.toString() + "\n", [email], false);
+                                                });
+                                        });
+                                    }
+                                }
+                            });
+                        } else {
+                            functions.logger.info("unknown message: ", message.from, message.text.body);
+
+                            return sendFreeMessage("בקשה/הודעה לא מוכרת - בקשת נדחית.", [message.from]);
+                        }
+                    });
+                } else {
+                    functions.logger.info("unknown incoming post whatsapp webhook: ", change);
+                }
+            });
+
+            return Promise.all(waitFor).then(() => res.status(200).send("EVENT_RECEIVED"));
+        }
+    }
+
+    res.status(200).send("EVENT_RECEIVED");
+});
+
+
+const sendFreeMessage = (msg_body, numbers) => {
+    const postData = {
+        messaging_product: "whatsapp",
+        to: "",
+        type: "text",
+        text: {
+            preview_url: false,
+            body: msg_body,
+        },
+    };
+    return sendWhatAppMessage(postData, numbers);
+};
+
+const sendTemplateMessage = (msg_template, parameters, quickReplyParameters, numbers) => {
+    const components = [];
+    if (parameters && parameters.length > 0) {
+        components.push({
+            type: "body",
+            parameters,
+        });
+    }
+
+    if (quickReplyParameters && quickReplyParameters.length > 0) {
+        components.push(quickReplyParameters.map((param, i) => ({
+            type: "button",
+            sub_type: "quick_reply",
+            index: "" + i,
+            parameters: [
+                {
+                    "type": "payload",
+                    "payload": param,
+                },
+            ],
+        })));
+    }
+
+    const postData = {
+        messaging_product: "whatsapp",
+        to: "",
+        type: "template",
+        template: {
+            name: msg_template,
+            language: { code: "he" },
+            components,
+        },
+    };
+    return sendWhatAppMessage(postData, numbers);
+};
+
+const sendWhatAppMessage = (postData, numbers) => {
+    const url = `https://graph.facebook.com/v14.0/${functions.config().whatsapp.phoneid}/messages`;
+
+    const headers = {
+        "Authorization": "Bearer " + functions.config().whatsapp.accesstoken,
+        "Content-Type": "application/json",
+    };
+
+    const waitFor = [];
+    numbers.forEach((number) => {
+        postData.to = number.startsWith("0") ?
+            "972" + number.substr(1) :
+            number.startsWith("+") ? number.substr(1) : number;
+
+        // functions.logger.info("send whatsapp", { url, postData, headers });
+
+        waitFor.push(
+            axios.post(url, postData, {
+                headers,
+            }),
+        );
+    });
+    return Promise.all(waitFor);
+};
+
+exports.httpApp = functions.region("us-central1").https.onRequest(app);
+
+exports.notificationAdded = functions.region("europe-west1").firestore
+    .document("notifications/{notifID}")
+    .onCreate((snapshot, context) => {
+        const isDev = snapshot.data().isDev;
+
+        const usersRef = db.collection(isDev ? "users_dev" : USERS_COLLECTION);
+        return usersRef.get().then(users => {
+            const to = snapshot.data().to;
+            const phoneNumbers = [];
+
+            if (to.length > 0 && to[0] === "all" || to[0] === "all-exclude") {
+                users.docs.forEach(user => {
+                    if (to[0] === "all" || !to.find(t => t === user.ref.id)) {
+                        // Send Message
+                        if (user && user.data().phone && user.data().phone.length > 0) {
+                            phoneNumbers.push(user.data().phone);
+                        }
+                    }
+                });
+            } else {
+                to.forEach(sentToUser => {
+                    const user = users.docs.find(u => u.ref.id === sentToUser);
+
+                    if (user && user.data().phone && user.data().phone.length > 0) {
+                        phoneNumbers.push(user.data().phone);
+                    }
+                });
+            }
+
+            if (phoneNumbers.length > 0) {
+                if (snapshot.data().message_template) {
+                    return sendTemplateMessage(snapshot.data().message_template, snapshot.data().parameters,
+                        snapshot.data().quickReplyParameters, phoneNumbers);
+                } else {
+                    return sendFreeMessage(snapshot.data().message_body, phoneNumbers);
+                }
+            }
+        });
+    });

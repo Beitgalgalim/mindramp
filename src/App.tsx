@@ -17,6 +17,7 @@ import { User } from '@firebase/auth';
 import Login from './login';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
+import About from './about';
 const logo = require("./logo-small.png");
 let gNotificationTimeout:any = undefined;
 
@@ -210,6 +211,7 @@ function App(props: any) {
 
       <BrowserRouter>
         <Routes>
+        <Route path="/about" element={<About/>}/>
           <Route path="/admin" element={
             // ---- Loading bar ----
             !connected ? <LinearProgress />

@@ -44,6 +44,15 @@
   top: 20px;
   z-index: 1000;
 }
+
+
+@media (max-width: 600px) {
+  .manageButtonContainer {
+    left:0px;
+  }
+}
+
+
 .btnText {
   font-size: 35px;
 }

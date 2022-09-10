@@ -15,3 +15,12 @@ REACT_APP_PRODDATA=true
 
 - Running without .env or with value other than true is against the _dev collections.
 - Note: uploaded wav/jpeg files still go to same location in the storage
+
+
+## Setup server functions
+```bash
+firebase functions:config:set whatsapp.verifytoken=<Webhook verify_token>
+firebase functions:config:set whatsapp.appsecret=<Facebook App\'s appsecret>
+firebase functions:config:set whatsapp.phoneid=<your phone ID>
+firebase functions:config:set whatsapp.accesstoken=<access token>
+```
