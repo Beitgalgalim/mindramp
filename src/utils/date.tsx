@@ -147,7 +147,6 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
     return ret;
 }
 
-
 function adjustEvent(evt: any, date: Dayjs) {
     evt.start = replaceDatePreserveTime(evt.start, date);
     evt.end = replaceDatePreserveTime(evt.end, date);

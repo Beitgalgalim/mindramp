@@ -106,33 +106,32 @@ function getAccessToken() {
     return admin.credential.applicationDefault().getAccessToken();
 }
 
-function sendNotification(accessToken, title, body, link, deviceToken) {
-    const postData = {
-        message: {
-            "notification": {
-                "title": title,
-                "body": body,
-            },
-            "webpush": link ? {
-                "fcm_options": {
-                    "link": link,
-                },
-            } : undefined,
-        },
-    };
+// function sendNotification(accessToken, title, body, link, deviceToken) {
+//     const postData = {
+//         message: {
+//             "notification": {
+//                 "title": title,
+//                 "body": body,
+//             },
+//             "webpush": link ? {
+//                 "fcm_options": {
+//                     "link": link,
+//                 },
+//             } : undefined,
+//         },
+//     };
 
-    const headers = {
-        "Authorization": "Bearer " + accessToken.access_token,
-        "Content-Type": "application/json",
-    };
-    const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
-    postData.message.token = deviceToken;
+//     const headers = {
+//         "Authorization": "Bearer " + accessToken.access_token,
+//         "Content-Type": "application/json",
+//     };
+//     const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
+//     postData.message.token = deviceToken;
 
-    return axios.post(url, postData, {
-        headers,
-    }).then(() => ({ success: true }));
-}
-
+//     return axios.post(url, postData, {
+//         headers,
+//     }).then(() => ({ success: true }));
+// }
 
 exports.sendNotificationTest = functions.region("europe-west1").https.onCall((data, context) => {
     const { title, body, link, isDev } = data;
@@ -179,8 +178,7 @@ exports.notifications = functions.region("europe-west1").pubsub
             const now = dayjs().utc().tz(JERUSALEM);
             const twoDaysAhead = now.add(2, "days");
 
-            const eventsCollection = isDev ? "personal_event_dev" : "personal_event";
-            const usersCollection = isDev ? "users_dev" : "users";
+            const eventsCollection = isDev ? "event_dev" : "event";
 
             return db.collection(eventsCollection).get().then(res => {
                 // filter to events between today and 2 days ahead
@@ -191,22 +189,14 @@ exports.notifications = functions.region("europe-west1").pubsub
                     ev.notified !== true);
 
                 const allEvents = eventsUtil.explodeEvents(events, 0, 1);
-                functions.logger.log("Notifications", "relevant events count:", allEvents.length);
 
                 const notifyEvents = [];
-                const userIDs = [];
                 const reccurentEventsInstances = [];
                 allEvents.forEach(ev => {
-                    const reminderStart = dayjs(ev.start).subtract(ev.reminderMinutes, "minutes");
+                    const reminderStart = dayjs.tz(ev.start, JERUSALEM).subtract(ev.reminderMinutes, "minutes");
 
                     if (reminderStart.isBefore(now)) {
                         notifyEvents.push(ev);
-                        ev.participants?.forEach(p => {
-                            if (!userIDs.find(u => u === p.email)) {
-                                userIDs.push(p.email);
-                            }
-                        });
-
                         if (ev.recurrent && ev.instanceStatus !== true) {
                             // If no materialized instance for the event instance, the "notified" flag will be
                             // persisted in a sub collection under the event
@@ -218,65 +208,47 @@ exports.notifications = functions.region("europe-west1").pubsub
                         functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.ref.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
                     }
                 });
-                functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events", notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.ref.id })));
+                functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events" + (isDev ? " dev" : ""), notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.ref.id })));
 
-                // fetch users' notification keys
                 if (notifyEvents.length > 0) {
-                    const waitForUsers = [];
                     const waitForInstancesInfo = [];
-                    userIDs.forEach(email => waitForUsers.push(
-                        db.collection(usersCollection).doc(email).collection("personal").doc("Default").get()
-                    ));
 
                     reccurentEventsInstances.forEach(ei => waitForInstancesInfo.push(
                         ei.get()
                     ));
 
-                    return Promise.allSettled(waitForUsers).then(allUsers => {
-                        return Promise.all(waitForInstancesInfo).then(allRecurrentEventInstancesInfo => {
-                            return getAccessToken().then(accessToken => {
-                                const waitForNotifications = [];
-                                const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
-                                const instancesInfo = allRecurrentEventInstancesInfo.filter(doc => doc.exists)
-                                    .map(doc2 => ({ eventID: doc2.ref._path.segments[1], date: doc2.id, ...doc2.data() }));
+                    return Promise.all(waitForInstancesInfo).then(allRecurrentEventInstancesInfo => {
+                        const instancesInfo = allRecurrentEventInstancesInfo.filter(doc => doc.exists)
+                            .map(doc2 => ({ eventID: doc2.ref._path.segments[1], date: doc2.id, ...doc2.data() }));
+                        const waitForNotifications = [];
+                        notifyEvents.forEach(ev => {
+                            // makes sure the recurrent instance is not already notified
+                            if (ev.recurrent && ev.instanceStatus !== true) {
+                                const instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
+                                if (instanceInfo && instanceInfo.notified === true) {
+                                    return;
+                                }
+                            }
 
-                                notifyEvents.forEach(ev => {
-                                    // makes sure the recurrent instance is not already notified
-                                    if (ev.recurrent && ev.instanceStatus !== true) {
-                                        const instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
-                                        if (instanceInfo && instanceInfo.notified === true) {
-                                            return;
-                                        }
-                                    }
+                            const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
+                            if (ev.guide && !notifyList.find(nl => nl === ev.guide.email)) {
+                                notifyList.push(ev.guide.email);
+                            }
 
-                                    ev.participants?.forEach(p => {
-                                        // find the userInfo and verify it has a notification token
-                                        const userInfo = usersInfo.find(ui => ui.email === p.email);
-                                        if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
-                                            const reminderStr = getReminderString(ev);
-                                            userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-                                                sendNotification(accessToken, ev.title, reminderStr, "https://mindramp-58e89.web.app/", nt.token)
-                                            ));
+                            const batch = db.batch();
 
-                                            // Update event being notify:
-                                            if (ev.recurrent && ev.instanceStatus !== true) {
-                                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date);
-                                                waitForNotifications.push(
-                                                    instanceDocRef.set({
-                                                        notified: true,
-                                                    })
-                                                );
-                                            } else {
-                                                waitForNotifications.push(
-                                                    ev.ref.update({ notified: true })
-                                                );
-                                            }
-                                        }
-                                    });
-                                });
-                                return Promise.all(waitForNotifications);
-                            });
+                            addNotification(batch, "event_reminder", [ev.title, getReminderString(ev)], [], notifyList, isDev);
+
+                            // Update event being notified:
+                            if (ev.recurrent && ev.instanceStatus !== true) {
+                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date);
+                                batch.set(instanceDocRef, { notified: true });
+                            } else {
+                                batch.update(ev.ref, { notified: true });
+                            }
+                            waitForNotifications.push(batch.commit());
                         });
+                        return Promise.all(waitForNotifications);
                     });
                 }
             });
@@ -290,7 +262,7 @@ exports.notifications = functions.region("europe-west1").pubsub
 
 
 function getReminderString(ev, now) {
-    const startTime = dayjs(ev.start);
+    const startTime = dayjs.tz(ev.start, JERUSALEM);
     return getBeforeTimeText(startTime.diff(now, "minutes"));
 }
 
@@ -300,11 +272,11 @@ function isBetween(num, from, to) {
 
 function getBeforeTimeText(minutes) {
     if (minutes < 0) {
-        return "התחיל לפני " + minutes + " דקות";
+        return " לפני " + minutes + " דקות";
     }
 
     if (minutes === 0) {
-        return "מתחיל עכשיו";
+        return " עכשיו";
     }
 
     if (isBetween(minutes, 0, 10)) {
@@ -340,42 +312,59 @@ function getBeforeTimeText(minutes) {
     return "עוד מעל שעתיים";
 }
 
-
 exports.participantAdded = functions.region("europe-west1").firestore
-    .document("personal_event/{eventID}")
+    .document("event/{eventID}")
     .onWrite((change, context) => {
         return handleParticipantAdded(false, change, context);
     });
 
 exports.participantAddedDev = functions.region("europe-west1").firestore
-    .document("personal_event_dev/{eventID}")
+    .document("event_dev/{eventID}")
     .onWrite((change, context) => {
         return handleParticipantAdded(true, change, context);
     });
+
+function getParticipantsAsArray(participants) {
+    const ret = [];
+    if (participants) {
+        // eslint-disable-next-line no-unused-vars
+        for (const [key, value] of Object.entries(participants)) {
+            ret.push(value);
+        }
+    }
+    return ret;
+}
 
 
 function handleParticipantAdded(isDev, change, context) {
     const added = [];
     let removed = [];
-    const previousParticipants = [];
+    let previousParticipants = [];
     let title = "";
     let date = "";
+    let guideBefore = undefined;
+    let guideAfter = undefined;
 
     if (change.before.exists) {
-        change.before.data().participants.forEach(p =>
-            previousParticipants.push(p.email));
+        previousParticipants = getParticipantsAsArray(change.before.data().participants);
+
         title = change.before.data().title;
-        // todo format the date nice
         date = change.before.data().start;
+        guideBefore = change.before.data().guide?.email;
     }
 
     if (change.after.exists) {
+        if (eventsUtil.inThePast(change.after.data().end)) {
+            // if the event ends in the past
+            return;
+        }
+
         title = change.after.data().title;
-        // todo format the date nice
         date = change.after.data().start;
 
+        const newParticipants = getParticipantsAsArray(change.after.data().participants);
 
-        change.after.data().participants.forEach(pAfter => {
+        newParticipants.forEach(pAfter => {
             const prevIndex = previousParticipants.find(pp => pp.email === pAfter.email);
             if (!change.before.exists || prevIndex < 0) {
                 added.push(pAfter.email);
@@ -384,24 +373,21 @@ function handleParticipantAdded(isDev, change, context) {
 
         // remove those who are no longer in the after
         previousParticipants.forEach(pp => {
-            if (!change.after.data().participants.find(pAfter => pAfter.email === pp.email)) {
+            if (!newParticipants.find(pAfter => pAfter.email === pp.email)) {
                 removed.push(pp.email);
             }
         });
+
+        guideAfter = change.after.data().guide?.email;
     } else {
         removed = previousParticipants;
     }
-
-    // if the event is in the past - return
-    // TODO
 
     const niceDate = eventsUtil.getNiceDate(date);
 
     /*
       Send notification to added/removed participants
     */
-    // const usersCollectionName = isDev ? "users_dev" : "users";
-    // const usersColl = db.collection(usersCollectionName);
 
     const batch = db.batch();
     if (added.length > 0) {
@@ -410,42 +396,24 @@ function handleParticipantAdded(isDev, change, context) {
     if (removed.length > 0) {
         addNotification(batch, "person_removed2", [title, niceDate.day, niceDate.date, niceDate.hour], [], removed, isDev);
     }
+
+    // if (meetigChange) {
+    // notify about the change to participants not in removed and not in added
+    // }
+
+    if (guideBefore !== guideAfter) {
+        if (guideBefore) {
+            addNotification(batch, "guide_removed", [title, niceDate.day, niceDate.date, niceDate.hour], [], [guideBefore], isDev);
+        }
+
+        if (guideAfter) {
+            addNotification(batch, "guide_added", [title, niceDate.day, niceDate.date, niceDate.hour], [], [guideAfter], isDev);
+        }
+    } else if (guideAfter) {
+        // todo meeting update - notify guideAfter
+    }
+
     return batch.commit();
-
-    // const waitFoUsers = added.concat(removed).map(email =>
-    //     usersColl.doc(email).collection("personal").doc("Default").get());
-
-    // return Promise.allSettled(waitFoUsers).then(allUsers => {
-    //     return getAccessToken().then(accessToken => {
-    //         const usersInfo = allUsers.filter(au => au.status === "fulfilled").map(au2 => ({ email: au2.value.ref._path.segments[1], ...au2.value.data() }));
-
-    //         const waitForNotifications = [];
-
-    //         added.forEach(addUser => {
-    //             const userInfo = usersInfo.find(ui => ui.email === addUser);
-    //             if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
-    //                 userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-    //                     sendNotification(accessToken, "הוזמנת לפגישה", `
-    // בתאריך: ${date} נושא: ${title}
-    // `, "https://mindramp-58e89.web.app/", nt.token)
-    //                 ));
-    //             }
-    //         });
-
-    //         removed.forEach(removedUser => {
-    //             const userInfo = usersInfo.find(ui => ui.email === removedUser);
-    //             if (userInfo && userInfo.notificationOn === true && userInfo.notificationTokens) {
-    //                 userInfo.notificationTokens.forEach(nt => waitForNotifications.push(
-    //                     sendNotification(accessToken, "פגישתך בוטלה", `
-    // בתאריך: ${date} נושא: ${title}
-    // `, "https://mindramp-58e89.web.app/", nt.token)
-    //                 ));
-    //             }
-    //         });
-
-    //         return Promise.all(waitForNotifications);
-    //     });
-    // });
 }
 
 const isAdmin = (isDev, context) => {

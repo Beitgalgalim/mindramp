@@ -33,14 +33,14 @@ export default function EditEvent(
     const [ref, setRef] = useState<DocumentReference | undefined>();
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
-    const [participants, setParticipants] = useState<Participant[] | null>(null);
+    const [participants, setParticipants] = useState<any>({});
     const [availableUsers, setAvailableUsers] = useState<UserInfo[]>([]);
     const [keyEvent, setKeyEvent] = useState<boolean>(false);
     const [allDay, setAllDay] = useState<boolean>(false);
     const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
-    
+
     const [selectedLocation, setSelectedLocation] = useState<string>();
     const [locations, setLocations] = useState<LocationsFieldKeyValue[]>([]);
 
@@ -67,10 +67,10 @@ export default function EditEvent(
         if (event.guide !== null) {
             setGuide(event.guide);
         }
-        
+
         setAudioUrl(event.audioUrl);
         setAudioPath(event.audioPath);
-        if(event.location) {
+        if (event.location) {
             setSelectedLocation(event.location)
         }
         if (event.participants) {
@@ -82,52 +82,50 @@ export default function EditEvent(
     }, [inEvent]);
 
     useEffect(() => {
-        setAvailableUsers(users.filter((u: UserInfo) => !participants?.some(p => p.email === u._ref?.id)))
+        setAvailableUsers(users.filter((u: UserInfo) => !participants || !participants[Event.getParticipantKey(u._ref?.id)]))
     }, [users, participants]);
 
 
     useEffect(() => {
         // calculate conflicts
-        if (participants && participants.length > 0) {
-            participants.forEach(p => {
-                p.uidata = {
-                    available: true,
-                    availabilityDescription: "",
-                };
-                // search for overlapping events:
-                events.forEach(ev => {
-                    if (ev._ref?.id !== inEvent.event._ref?.id &&  ev.participants)
-                        if (
-                            //event overlap: 
-                            ((start <= ev.start && end > ev.start) || (start >= ev.start && start < ev.end)) &&
-                            ev.participants.find(evp => evp.email === p.email)) {
-                            if (p.uidata) {
-                                p.uidata.available = false;
-                                p.uidata.availabilityDescription += (ev.title + "\n");
-                            }
+        Event.getParticipantsAsArray(participants).forEach((p: any, key) => {
+            p.uidata = {
+                available: true,
+                availabilityDescription: "",
+            };
+            // search for overlapping events:
+            events.forEach(ev => {
+                if (ev._ref?.id !== inEvent.event._ref?.id && ev.participants)
+                    if (
+                        //event overlap: 
+                        ((start <= ev.start && end > ev.start) || (start >= ev.start && start < ev.end)) &&
+                        ev.participants[Event.getParticipantKey(p.email)]) {
+                        if (p.uidata) {
+                            p.uidata.available = false;
+                            p.uidata.availabilityDescription += (ev.title + "\n");
                         }
-                })
-
+                    }
             })
-        }
+
+        })
+
 
     }, [events, participants, start, end])
 
     useEffect(() => {
-        getLocations().then( (locationsInfo: LocationInfo[]) => {
+        getLocations().then((locationsInfo: LocationInfo[]) => {
             setLocations(
-                locationsInfo.map( (l: LocationInfo, index: number): LocationsFieldKeyValue => 
-                {
+                locationsInfo.map((l: LocationInfo, index: number): LocationsFieldKeyValue => {
                     return {
-                        key: index.toString(), 
+                        key: index.toString(),
                         value: l.name
                     }
                 })
             )
-        }).catch( (error) => 
+        }).catch((error) =>
             console.error("get locations failed: ", error)
         );
-    },[])
+    }, [])
 
 
     const narrow = window.innerWidth < 430;
@@ -284,25 +282,36 @@ export default function EditEvent(
                                             email: selectedUser._ref?.id || "",
                                             ...(selectedUser.avatar && { icon: selectedUser.avatar.url }),
                                         }
-                                        setParticipants((curr: Participant[] | null) => curr !== null ? [newParticipant, ...curr] : [newParticipant]);
+                                        setParticipants((curr: any | null) => ({
+                                            ...curr,
+                                            [Event.getParticipantKey(newParticipant.email)]: newParticipant
+                                        }));
                                     }
                                 }} />
                             <Spacer height={10} />
                             <HBox style={{ maxWidth: "80vw", flexWrap: "wrap" }}>
                                 <Spacer width={20} />
-                                {participants && participants.map((g, i) => <Person key={i}
+                                {participants && Event.getParticipantsAsArray(participants).map((g: Participant, i) => <Person key={i}
                                     width={170}
                                     icon={g.icon}
                                     name={g.displayName}
                                     available={g.uidata?.available}
                                     tooltip={g.uidata?.availabilityDescription}
-                                    onRemove={() => setParticipants((curr: Participant[] | null) => curr !== null ? curr?.filter(p => p.email !== g.email) : null)} />)}
+                                    onRemove={() => setParticipants((curr: any | null) => {
+                                        if (!curr) {
+                                            return curr;
+                                        } else {
+                                            const newParticipants = { ...curr };
+                                            delete newParticipants[Event.getParticipantKey(g.email)];
+                                            return newParticipants;
+                                        }
+                                    })} />)}
                             </HBox>
                         </VBox>
                     </Grid>
                 </Grid>
                 <Spacer height={30} />
-                                
+
                 {/** Location */}
                 <Grid container spacing={2} style={{ textAlign: "right" }}>
                     <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }}>
@@ -324,7 +333,7 @@ export default function EditEvent(
                                 items={locations}
                                 value={selectedLocation}
                                 onSelect={(locationKey: string) => setSelectedLocation(
-                                    locations.filter( (obj: LocationsFieldKeyValue) => obj.key == locationKey )[0].value
+                                    locations.filter((obj: LocationsFieldKeyValue) => obj.key == locationKey)[0].value
                                 )}
                                 onChange={(locationKey: string) => setSelectedLocation(locationKey)}
                             />
@@ -473,7 +482,7 @@ export default function EditEvent(
                                 ...(audioBlob != null && { audioBlob: audioBlob }),
                                 ...(instanceStatus && { instanceStatus }),
                                 ...(recurrent && { recurrent: recurrentField }),
-                                ...(participants != null && participants.length > 0 && { participants }),
+                                participants,
                                 ...(guide != null && { guide }),
                                 ...(reminderMinutes != null && { reminderMinutes }),
                             }),

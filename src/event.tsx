@@ -44,6 +44,7 @@ export const RecurrentEventFieldKeyValue = [
 
 export const ReminderFieldKeyValue = [
     { key: "0", value: "בתחילת הארוע" },
+    { key: "5", value: "5 דקות לפני" },
     { key: "15", value: "15 דקות לפני" },
     { key: "30", value: "30 דקות לפני" },
     { key: "60", value: "שעה לפני" },
@@ -66,7 +67,7 @@ export class Event {
     location?: string
     recurrent?: RecurrentEventField;
     guide?: Participant;
-    participants?: Participant[];
+    participants?: any;
     instanceStatus?: boolean;
     reminderMinutes?: number;
 
@@ -101,7 +102,7 @@ export class Event {
         }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "recurrent", doc);
-        assignIfExists(evt,"location", doc)
+        assignIfExists(evt, "location", doc)
         assignIfExists(evt, "instanceStatus", doc);
         assignIfExists(evt, "audioUrl", doc);
         assignIfExists(evt, "audioPath", doc);
@@ -126,6 +127,22 @@ export class Event {
         return src.date === comp.date && src.title === comp.title;
     }
 
+    static getParticipantKey(email?: string): string {
+        if (email) {
+            return email.replaceAll(".", "").replace("@", "");
+        }
+        return ""
+    }
+
+    static getParticipantsAsArray(participants?:any): Participant[] {
+        const ret = [] as Participant[];
+        if (participants) {
+            for (const [key, value] of Object.entries(participants)) {
+                ret.push(value as Participant);
+            }
+        }
+        return ret;
+    }
 
     toDbObj(isCreate: boolean = true): any {
         let eventObj = { ...this };
@@ -153,6 +170,14 @@ export class Event {
             }
         };
 
+        const setEmptyMapIfEmpty = (fieldName: string) => {
+            const eventProps = eventObj as MapLike<any>;
+
+            if (eventProps[fieldName] === undefined) {
+                eventProps[fieldName] = {};
+            }
+        };
+
         clearFieldIfEmpty("notes");
         clearFieldIfEmpty("imageUrl");
         clearFieldIfEmpty("guideUrl");
@@ -162,10 +187,13 @@ export class Event {
         clearFieldIfEmpty("audioUrl");
         clearFieldIfEmpty("audioPath");
 
-        if (eventObj.participants !== undefined) {
-            eventObj.participants.forEach(p=>delete p.uidata);
+        if (eventObj.participants) {
+            for (const [key, value] of Object.entries(eventObj.participants)) {
+                delete eventObj.participants[key].uidata;
+            }
         }
-        clearFieldIfEmpty("participants");
+
+        setEmptyMapIfEmpty("participants");
 
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");

@@ -225,7 +225,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                 if (info && info.event.extendedProps?.recurrent) {
                     addRepeatIcon(info);
                 }
-                if(info && info.event.extendedProps?.participants) {
+                if(info?.event?.extendedProps?.participants && Object.keys(info.event.extendedProps.participants).length > 0) {
                     addParticipantsIcon(info);
                 }
             }}

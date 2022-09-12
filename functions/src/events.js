@@ -99,3 +99,5 @@ exports.getNiceDate = (d) => {
         hour: djs.format("HH:mm"),
     };
 };
+
+exports.inThePast = (d) => dayjs().isAfter(d);

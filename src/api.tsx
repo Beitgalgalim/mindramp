@@ -4,6 +4,7 @@ import {
     DocumentData,
     query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
     where,
+    WhereFilterOp,
     deleteField
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
@@ -24,6 +25,7 @@ import { firebaseConfig } from './config';
 import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
+import { sortEvents } from './utils/date';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -226,33 +228,54 @@ export function getPersonalizedEvents(user: string): Promise<Event[]> {
     return getEvents(true, user);
 }
 export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
-    const waitFor = [
-        _getCollection(Collections.EVENT_COLLECTION, "start", "asc"),
-    ]
-    if (!filter || user.length > 0) {
-        waitFor.push(_getCollection(Collections.PERSONAL_EVENT_COLLECTION, "start", "asc"));
+    if (!filter) {
+        return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
     }
-    return Promise.allSettled(waitFor).then((results: PromiseSettledResult<DocumentData[]>[]) => {
-        let events = [] as Event[];
-        if (results[0].status === "fulfilled") {
-            events = results[0].value.map((doc: any) => Event.fromDbObj(doc));
-        } else {
-            return Promise.reject(results[0].reason);
-        }
 
-        if (results.length > 1) {
-            if (results[1].status === "fulfilled") {
-                let rawPersonalEvents = results[1].value;
-                if (filter) {
-                    rawPersonalEvents = rawPersonalEvents.filter(doc => doc.participants?.find((p: any) => p.email === user))
+    const waitFor = [
+        _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants", "==", {}),
+    ];
+    // concat three lists: all public events + private events where user is participant + events where user is guide
+    let participantKey = Event.getParticipantKey(user);
+
+    if (participantKey?.length > 0) {
+        waitFor.push(
+            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey + ".email", "!=", "")
+        );
+        waitFor.push(
+            _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
+        );
+
+        return Promise.all(waitFor).then(
+            (res: DocumentData[][]) => {
+                let events = res[0].map((doc: any) => Event.fromDbObj(doc));
+
+                if (participantKey?.length > 0) {
+                    events = events.concat(
+                        res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
+                    );
+
+                    // result with user as guide may be a duplicate with previous lists, merge them:
+                    res[2].forEach(doc => {
+                        const ev = events.find(e => e._ref?.id == doc._ref?.id);
+                        if (ev) {
+                            ev.isPersonal = true;
+                        } else {
+                            events.push(Event.fromDbObj(doc, doc.ref, true));
+                        }
+                    });
                 }
-                events = events.concat(rawPersonalEvents.map((doc: any) => Event.fromDbObj(doc, undefined, true)));
-            } else {
-                console.log("fail calling personal_events", results[1].reason);
-            }
-        }
-        return events;
-    });
+
+                // Sort by start
+                return sortEvents(events);
+            }, (err) => {
+                console.log(err);
+                return [] as Event[];
+            });
+    }
+    return Promise.resolve([] as Event[]);
+
+
 }
 
 
@@ -286,11 +309,6 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-function getEventCollection(ref: DocumentReference): string {
-    return ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
-        Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION
-}
-
 export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
     const eventObj = Event.fromEventAny(event)
 
@@ -299,47 +317,15 @@ export async function upsertEvent(event: Event | EventApi, ref: DocumentReferenc
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
             eventObj.recurrent.gid = ref.id;
         }
-        let updatePromise: Promise<void>;
 
-        if (eventObj.participants && ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ||
-            !eventObj.participants && ref.path.startsWith(Collections.EVENT_COLLECTION)) {
-
-            // event remain in same collection
-            const dbDoc = eventObj.toDbObj(false);
-            updatePromise = updateDoc(ref, dbDoc);
-        } else {
-            // event (and all instances?) need to move to the other collection
-            const batch = writeBatch(db);
-            const newCollection = ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
-                Collections.EVENT_COLLECTION : Collections.PERSONAL_EVENT_COLLECTION;
-            const prevCollection = ref.path.startsWith(Collections.PERSONAL_EVENT_COLLECTION) ?
-                Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION;
-
-            batch.delete(ref);
-            ref = doc(collection(db, newCollection), ref.id);
-            const dbDoc = eventObj.toDbObj(true);
-            batch.set(ref, dbDoc);
-
-            // move instances of recurrent to the other collection
-            const q = query(collection(db, prevCollection), where("recurrent.gid", "==", ref.id));
-            const instances = await getDocs(q);
-            instances.docs.forEach(instanceDoc => {
-                batch.delete(instanceDoc.ref);
-                const newDocRef = doc(collection(db, newCollection), instanceDoc.ref.id);
-                batch.set(newDocRef, instanceDoc.data())
-            });
-
-            updatePromise = batch.commit()
-        }
-
-        return updatePromise.then(() => {
+        const dbDoc = eventObj.toDbObj(false);
+        return updateDoc(ref, dbDoc).then(() => {
             eventObj._ref = ref;
             return eventObj;
         })
     } else {
         const dbDoc = eventObj.toDbObj(true);
-        const collectionName = eventObj.participants ? Collections.PERSONAL_EVENT_COLLECTION : Collections.EVENT_COLLECTION
-        const docRef = doc(collection(db, collectionName));
+        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
         if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
             dbDoc.recurrent.gid = docRef.id;
         }
@@ -379,7 +365,7 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
             seriesDocObj.recurrent.exclude.push(eventObj.date);
         }
 
-        const instanceRef = doc(collection(db, getEventCollection(ref)));
+        const instanceRef = doc(collection(db, Collections.EVENT_COLLECTION));
         batch.update(ref, { recurrent: seriesDocObj.recurrent });
         batch.set(instanceRef, eventObj);
         return batch.commit().then(
@@ -421,7 +407,7 @@ export async function createEventInstanceAsDeleted(excludeDate: string, ref: Doc
 export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
     if (ref) {
         if (deleteModifiedInstance) {
-            const q = query(collection(db, getEventCollection(ref)), where("recurrent.gid", "==", ref.id));
+            const q = query(collection(db, Collections.EVENT_COLLECTION), where("recurrent.gid", "==", ref.id));
             return getDocs(q).then(instances => {
                 let batch = writeBatch(db);
                 const removedIDs: string[] = []
@@ -683,14 +669,23 @@ async function _getCollection(collName: string, oBy?: string, order?: "asc" | "d
         constraints.push(order ? orderBy(oBy, order) : orderBy(oBy));
     }
 
-    //let i = 1;
     return getDocs(query(colRef, ...constraints)).then((items) => {
         return items.docs.map(docObj => {
             let obj = docObj.data();
-            // if (oBy)
-            //     obj._order = i++;
+            obj._ref = docObj.ref;
 
+            return obj;
+        })
+    });
+}
 
+async function _getCollectionWithCond(collName: string, whereField: string, whereOp: WhereFilterOp, whereValue: any): Promise<DocumentData[]> {
+    let colRef = collection(db, collName);
+    const constraints = []
+    constraints.push(where(whereField, whereOp, whereValue));
+    return getDocs(query(colRef, ...constraints)).then((items) => {
+        return items.docs.map(docObj => {
+            let obj = docObj.data();
             obj._ref = docObj.ref;
 
             return obj;
