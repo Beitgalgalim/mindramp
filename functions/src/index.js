@@ -102,9 +102,9 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
     });
 });
 
-function getAccessToken() {
-    return admin.credential.applicationDefault().getAccessToken();
-}
+// function getAccessToken() {
+//     return admin.credential.applicationDefault().getAccessToken();
+// }
 
 // function sendNotification(accessToken, title, body, link, deviceToken) {
 //     const postData = {
@@ -134,39 +134,43 @@ function getAccessToken() {
 // }
 
 exports.sendNotificationTest = functions.region("europe-west1").https.onCall((data, context) => {
-    const { title, body, link, isDev } = data;
+    const { isDev } = data;
 
-    const postData = {
-        message: {
-            "notification": {
-                "title": title,
-                "body": body,
-            },
-            "webpush": link ? {
-                "fcm_options": {
-                    "link": link,
-                },
-            } : undefined,
-        },
-    };
+    if (context?.auth?.token?.email?.length > 0) {
+        return addNotification(undefined, "test_notification", [], [], [context.auth.token.email], isDev);
+    }
 
-    return getAccessToken().then((accessToken) => {
-        return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
-            if (doc.exists && doc.data().notificationTokens && doc.data().notificationTokens.length > 0) {
-                const headers = {
-                    "Authorization": "Bearer " + accessToken.access_token,
-                    "Content-Type": "application/json",
-                };
-                const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
-                const notifToken = doc.data().notificationTokens[0];
-                postData.message.token = notifToken.token;
+    // const postData = {
+    //     message: {
+    //         "notification": {
+    //             "title": title,
+    //             "body": body,
+    //         },
+    //         "webpush": link ? {
+    //             "fcm_options": {
+    //                 "link": link,
+    //             },
+    //         } : undefined,
+    //     },
+    // };
 
-                return axios.post(url, postData, {
-                    headers,
-                }).then((res) => ({ success: true }));
-            }
-        });
-    });
+    // return getAccessToken().then((accessToken) => {
+    //     return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
+    //         if (doc.exists && doc.data().notificationTokens && doc.data().notificationTokens.length > 0) {
+    //             const headers = {
+    //                 "Authorization": "Bearer " + accessToken.access_token,
+    //                 "Content-Type": "application/json",
+    //             };
+    //             const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
+    //             const notifToken = doc.data().notificationTokens[0];
+    //             postData.message.token = notifToken.token;
+
+    //             return axios.post(url, postData, {
+    //                 headers,
+    //             }).then((res) => ({ success: true }));
+    //         }
+    //     });
+    // });
 });
 
 exports.notifications = functions.region("europe-west1").pubsub

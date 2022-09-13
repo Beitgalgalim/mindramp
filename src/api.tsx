@@ -204,9 +204,9 @@ export async function updateUserNotification(notificationOn: boolean | null, new
 export function testNotif() {
     const sendNotificationTest = httpsCallable(functions, 'sendNotificationTest');
     const payload: any = {
-        title: "בדיקת הודעה",
-        body: "זוהי הודעת בדיקה",
-        link: isDev() ? "http://localhost:3000/" : "https://mindramp-58e89.web.app/",
+        // title: "בדיקת הודעה",
+        // body: "זוהי הודעת בדיקה",
+        // link: isDev() ? "http://localhost:3000/" : "https://mindramp-58e89.web.app/",
         isDev: isDev(),
     };
     return sendNotificationTest(payload);

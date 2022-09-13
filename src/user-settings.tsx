@@ -27,27 +27,27 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
         notify.ask(`האם ל${notificationOn ? "בטל" : "אפשר"} הודעות בדחיפה?`, undefined, [
             {
                 caption: "כן", callback: () => {
-                    if (notificationOn === false) {
-                        // Switching to ON
-                        api.initializeNotification(onPushNotification, onNotificationToken).then(
-                            () => onNotificationOnChange(!notificationOn),
-                            // api.updateUserNotification(!notificationOn).then(
-                            //     () => {
-                            //         notify.success("עודכן בהצלחה")
-                            //         onNotificationOnChange(!notificationOn);
-                            //     },
-                            //     (err) => notify.error("Error updating notification on server. " + err.message))
-                            (err: any) => notify.error("Error initializing notification on the device. " + err)
-                        );
-                    } else {
-                        api.updateUserNotification(!notificationOn).then(
-                            () => {
-                                notify.success("עודכן בהצלחה")
-                                onNotificationOnChange(!notificationOn);
-                            },
-                            (err) => notify.error(err.message));
-                    }
-
+                    onNotificationOnChange(!notificationOn);
+                    // if (notificationOn === false) {
+                    //     // Switching to ON
+                    //     api.initializeNotification(onPushNotification, onNotificationToken).then(
+                    //         () => onNotificationOnChange(!notificationOn),
+                    //         // api.updateUserNotification(!notificationOn).then(
+                    //         //     () => {
+                    //         //         notify.success("עודכן בהצלחה")
+                    //         //         onNotificationOnChange(!notificationOn);
+                    //         //     },
+                    //         //     (err) => notify.error("Error updating notification on server. " + err.message))
+                    //         (err: any) => notify.error("Error initializing notification on the device. " + err)
+                    //     );
+                    // } else {
+                    //     api.updateUserNotification(!notificationOn).then(
+                    //         () => {
+                    //             notify.success("עודכן בהצלחה")
+                    //             onNotificationOnChange(!notificationOn);
+                    //         },
+                    //         (err) => notify.error(err.message));
+                    // }
                 }
             },
             { caption: "לא", callback: () => { } },
@@ -97,8 +97,8 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 }
             </HBoxC>
 
-            <Spacer height={20} />
-            {!("safari" in window) && user && <HBox style={{ alignItems: "center" }}>
+            {/* <Spacer height={20} />
+            { user && <HBox style={{ alignItems: "center" }}>
                 <Checkbox onChange={(evt) => {
                     handleNotificationOnClick()
                 }} checked={notificationOn}
@@ -106,7 +106,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 <Text fontSize={13}>אפשר התראות</Text>
                 <Spacer />
 
-            </HBox>}
+            </HBox>} */}
 
             <Spacer height={20} />
             <HBoxC>
@@ -121,11 +121,13 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                         <HBox>
                             <Button
                                 style={{ minWidth: 180 }}
-                                disabled={!notificationOn}
+                                //disabled={!notificationOn}
                                 variant="outlined"
                                 endIcon={<Notifications />}
                                 classes={{ endIcon: classes.buttonIcon }}
-                                onClick={() => api.testNotif().catch(e => {
+                                onClick={() => api.testNotif().then(()=>{
+                                    notify.success("בקשה לשליחת התראת בדיקה נשלחה, ההתראה תגיע בדקה הקרובה")
+                                }).catch(e => {
                                     notify.error("בדיקה נכשלה. שגיאה:" + e.message);
                                 })} >
                                 בדיקת התראות
