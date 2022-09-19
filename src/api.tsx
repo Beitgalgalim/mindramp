@@ -245,36 +245,36 @@ export function getEvents(filter: boolean = false, user: string = ""): Promise<E
         waitFor.push(
             _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
         );
-
-        return Promise.all(waitFor).then(
-            (res: DocumentData[][]) => {
-                let events = res[0].map((doc: any) => Event.fromDbObj(doc));
-
-                if (participantKey?.length > 0) {
-                    events = events.concat(
-                        res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
-                    );
-
-                    // result with user as guide may be a duplicate with previous lists, merge them:
-                    res[2].forEach(doc => {
-                        const ev = events.find(e => e._ref?.id == doc._ref?.id);
-                        if (ev) {
-                            ev.isPersonal = true;
-                        } else {
-                            events.push(Event.fromDbObj(doc, doc.ref, true));
-                        }
-                    });
-                }
-
-                // Sort by start
-                return sortEvents(events);
-            }, (err) => {
-                console.log(err);
-                return [] as Event[];
-            });
     }
-    return Promise.resolve([] as Event[]);
 
+    return Promise.all(waitFor).then(
+        (res: DocumentData[][]) => {
+            let events = res[0].map((doc: any) => Event.fromDbObj(doc));
+
+            if (participantKey?.length > 0) {
+                events = events.concat(
+                    res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
+                );
+
+                // result with user as guide may be a duplicate with previous lists, merge them:
+                res[2].forEach(doc => {
+                    const ev = events.find(e => e._ref?.id == doc._ref?.id);
+                    if (ev) {
+                        ev.isPersonal = true;
+                    } else {
+                        events.push(Event.fromDbObj(doc, doc.ref, true));
+                    }
+                });
+            }
+
+            // Sort by start
+            return sortEvents(events);
+        },
+
+        (err) => {
+            console.log(err);
+            return [] as Event[];
+        });
 
 }
 
