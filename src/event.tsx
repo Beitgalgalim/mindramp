@@ -45,6 +45,7 @@ export const RecurrentEventFieldKeyValue = [
 export const ReminderFieldKeyValue = [
     { key: "0", value: "בתחילת הארוע" },
     { key: "5", value: "5 דקות לפני" },
+    { key: "10", value: "10 דקות לפני" },
     { key: "15", value: "15 דקות לפני" },
     { key: "30", value: "30 דקות לפני" },
     { key: "60", value: "שעה לפני" },
