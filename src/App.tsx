@@ -234,7 +234,7 @@ function App(props: any) {
           } />
           <Route path="/" element={<UserEvents
             isAdmin={admin}
-            isGuide={true}
+            isGuide={guide}
             notificationOn={actualtNotificationOn === true}
             onNotificationToken={(notifToken) => {
               setDeviceProvidedNotificationToken(notifToken);
