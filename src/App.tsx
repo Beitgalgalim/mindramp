@@ -18,14 +18,18 @@ import Login from './login';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
 import About from './about';
+import Kiosk from './kiosk';
 const logo = require("./logo-small.png");
-let gNotificationTimeout:any = undefined;
+let gNotificationTimeout: any = undefined;
 
 function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
   const [admin, setAdmin] = useState<boolean>(false);
   const [guide, setGuide] = useState<boolean>(false);
+  const [kiosk, setKiosk] = useState<boolean>(false);
+  const [delagatedUser, setDelegatedUser] = useState<string | undefined>(undefined);
+
   const [gettingAdminStatus, setGettingAdminStatus] = useState<boolean>(false);
 
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
@@ -113,7 +117,8 @@ function App(props: any) {
           // setServerPersistedNotificationTokens(userPersonalInfo.tokens);
           setGettingAdminStatus(true);
           setGuide(userDocument.type == UserType.GUIDE);
-          api.isCurrentUserAdmin().then((isAdmin)=>{
+          setKiosk(userDocument.type == UserType.KIOSK)
+          api.isCurrentUserAdmin().then((isAdmin) => {
             setAdmin(isAdmin);
             setGettingAdminStatus(false);
           })
@@ -152,21 +157,22 @@ function App(props: any) {
       needsServerUpdate = true;
     }
     if (needsServerUpdate) {
-      if(gNotificationTimeout) {
+      if (gNotificationTimeout) {
         clearTimeout(gNotificationTimeout);
       }
-      gNotificationTimeout = setTimeout(()=>{
+      gNotificationTimeout = setTimeout(() => {
         gNotificationTimeout = undefined;
         api.updateUserNotification(desiredNotificationOn === true, deviceProvidedNotificationToken, isSafari).then(
-        () => {
-          setActualNotificationOn(desiredNotificationOn === true);
-          setLocalNotificationToken(deviceProvidedNotificationToken || "");
-          notify.success(desiredNotificationOn === true ?
-          "הודעות מופעלות" :
-          "הודעות כבויות")
-        },
-        (err) => notify.error("שמירת מצב הודעות נכשל: " + err.message)
-      )}, 1000);  
+          () => {
+            setActualNotificationOn(desiredNotificationOn === true);
+            setLocalNotificationToken(deviceProvidedNotificationToken || "");
+            notify.success(desiredNotificationOn === true ?
+              "הודעות מופעלות" :
+              "הודעות כבויות")
+          },
+          (err) => notify.error("שמירת מצב הודעות נכשל: " + err.message)
+        )
+      }, 1000);
     }
 
   }, [serverPersistedNotificationTokens, desiredNotificationOn,
@@ -211,7 +217,7 @@ function App(props: any) {
 
       <BrowserRouter>
         <Routes>
-        <Route path="/about" element={<About/>}/>
+          <Route path="/about" element={<About />} />
           <Route path="/admin" element={
             // ---- Loading bar ----
             !connected ? <LinearProgress />
@@ -226,13 +232,21 @@ function App(props: any) {
               />
                 :
                 (guide || admin) ? <Admin connected={connected} notify={notify} user={user} isCurrentUserAdmin={admin} /> :
-                gettingAdminStatus ? <div>
-                  <LinearProgress />
-                  <div style={{fontSize:30}}>טוען הרשאות</div>
-                </div> : <div>אינך מורשה</div>
+                  gettingAdminStatus ? <div>
+                    <LinearProgress />
+                    <div style={{ fontSize: 30 }}>טוען הרשאות</div>
+                  </div> : <div>אינך מורשה</div>
 
           } />
-          <Route path="/" element={<UserEvents
+          <Route path="/" element={
+            kiosk && !delagatedUser ?
+              <Kiosk onSelectUser={(u:string|undefined)=>{
+                console.log("kiosk open: ", u);
+                setDelegatedUser(u);
+
+              }} />:
+
+          <UserEvents
             isAdmin={admin}
             isGuide={guide}
             notificationOn={actualtNotificationOn === true}
@@ -246,7 +260,9 @@ function App(props: any) {
 
             windowSize={windowSize}
             connected={connected}
-            user={user}
+            user={delagatedUser || user}
+            kioskMode={delagatedUser != undefined}
+            onGoHome={()=>setDelegatedUser(undefined)}
             notify={notify} />}
           />
         </Routes>

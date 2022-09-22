@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Text } from './elem';
 import { EventsHeaderProps } from './types';
 import { useNavigate } from "react-router-dom";
+import './css/event.css'
 
 const logo = require("./logo-small.png");
 
@@ -31,6 +32,8 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
 export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
     isAdmin,
     isGuide,
+    kioskMode,
+    onGoHome,
     notificationOn,
     onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
     const navigate = useNavigate();
@@ -120,6 +123,13 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
                         navigate("/admin")
                     }}>ניהול</Button>
             </div>}
+        {kioskMode && <button 
+            className="event-home-btn" 
+            aria-label="חזרה למסך בחירת משתמשים"
+            onClick={() => onGoHome()}>
+            <Home
+                style={{fontSize:"inherit"}}
+            /></button>}
         <img
             src={logo}
             style={{

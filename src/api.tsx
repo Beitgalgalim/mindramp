@@ -93,91 +93,91 @@ export function initAPI(
     return true;
 }
 
-export async function initializeNotification(
-    onPushNotification: onPushNotificationHandler,
-    onNotificationToken: (notificationToken: string) => void
-) {
+// export async function initializeNotification(
+//     onPushNotification: onPushNotificationHandler,
+//     onNotificationToken: (notificationToken: string) => void
+// ) {
 
-    try {
-        const messaging = getMessaging(app);
-        if ('safari' in window) {// && 'pushNotification' in window.safari) {
-            // requires user gesture...
-            // todo
-        } else {
-
-
-            Notification.requestPermission().then(perm => {
-                if (perm === "granted") {
-                    console.log("permission granted");
-                    // deleteToken(messaging).then(ret => {
-                    //     if (ret) {
-                    //         console.log("deleted token");
-                    //         return
-                    //     }
+//     try {
+//         const messaging = getMessaging(app);
+//         if ('safari' in window) {// && 'pushNotification' in window.safari) {
+//             // requires user gesture...
+//             // todo
+//         } else {
 
 
-                    getToken(messaging, {
-                        vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
-                    }).then((currentToken) => {
-                        if (currentToken && currentToken.length > 0) {
-                            // Send the token to your server and update the UI if necessary
-                            console.log("Web notification", currentToken);
-                            if (onNotificationToken) {
-                                onNotificationToken(currentToken);
-                            }
+//             Notification.requestPermission().then(perm => {
+//                 if (perm === "granted") {
+//                     console.log("permission granted");
+//                     // deleteToken(messaging).then(ret => {
+//                     //     if (ret) {
+//                     //         console.log("deleted token");
+//                     //         return
+//                     //     }
 
-                            onMessage(messaging, (payload) => {
-                                console.log('Message received. ', JSON.stringify(payload));
-                                if (onPushNotification) {
-                                    onPushNotification(payload);
-                                }
-                            });
-                        } else {
-                            // Show permission request UI
-                            console.log('No registration token available. Request permission to generate one.');
-                            throw ("Permission granted, yet no registration token is available");
-                        }
-                    }).catch((err) => {
-                        console.log('An error occurred while retrieving token. ', err);
-                        throw ("Permission granted, error getting token: " + err.message);
-                        // ...
-                    });
-                    // })
-                } else {
-                    console.log("Permission denied to notifications");
-                    throw ("Permission denied by the user");
-                }
-            });
-        }
-    } catch (err: any) {
-        console.log("Cannot initialize messaging", err.message);
-        throw ("Cannot initialize messaging");
-    }
-}
 
-export const checkSafariRemotePermission = (permissionData: any) => {
-    // todo
-    // if (permissionData.permission === 'default') {
-    //     // This is a new web service URL and its validity is unknown.
-    //     return window.safari.pushNotification.requestPermission(
-    //         'https://todo', // The web service URL.
-    //         'todo',     // The Website Push ID.
-    //         {}, // Data that you choose to send to your server to help you identify the user.
-    //         checkSafariRemotePermission         // The callback function.
-    //     );
-    // }
-    // else if (permissionData.permission === 'denied') {
-    //     console.log("Safari push is denied");
-    //     // The user said no.
-    // }
-    // else if (permissionData.permission === 'granted') {
-    //     // The web service URL is a valid push provider, and the user said yes.
-    //     // permissionData.deviceToken is now available to use.
-    //     console.log("Safari push is ready. deviceToken:", permissionData.deviceToken);
-    //     return permissionData.deviceToken;
-    // }
-    // return undefined;
-};
+//                     getToken(messaging, {
+//                         vapidKey: 'BKT9QCwiaOTp2UKRF1ZpjyinCbwdpCaxcGNKMZNz9tTsrlwoog_n5pplhi01Z4KA06qAfom8czMBu4jKx58sDpQ',
+//                     }).then((currentToken) => {
+//                         if (currentToken && currentToken.length > 0) {
+//                             // Send the token to your server and update the UI if necessary
+//                             console.log("Web notification", currentToken);
+//                             if (onNotificationToken) {
+//                                 onNotificationToken(currentToken);
+//                             }
+
+//                             onMessage(messaging, (payload) => {
+//                                 console.log('Message received. ', JSON.stringify(payload));
+//                                 if (onPushNotification) {
+//                                     onPushNotification(payload);
+//                                 }
+//                             });
+//                         } else {
+//                             // Show permission request UI
+//                             console.log('No registration token available. Request permission to generate one.');
+//                             throw ("Permission granted, yet no registration token is available");
+//                         }
+//                     }).catch((err) => {
+//                         console.log('An error occurred while retrieving token. ', err);
+//                         throw ("Permission granted, error getting token: " + err.message);
+//                         // ...
+//                     });
+//                     // })
+//                 } else {
+//                     console.log("Permission denied to notifications");
+//                     throw ("Permission denied by the user");
+//                 }
+//             });
+//         }
+//     } catch (err: any) {
+//         console.log("Cannot initialize messaging", err.message);
+//         throw ("Cannot initialize messaging");
+//     }
+// }
+
+// export const checkSafariRemotePermission = (permissionData: any) => {
+//     // todo
+//     // if (permissionData.permission === 'default') {
+//     //     // This is a new web service URL and its validity is unknown.
+//     //     return window.safari.pushNotification.requestPermission(
+//     //         'https://todo', // The web service URL.
+//     //         'todo',     // The Website Push ID.
+//     //         {}, // Data that you choose to send to your server to help you identify the user.
+//     //         checkSafariRemotePermission         // The callback function.
+//     //     );
+//     // }
+//     // else if (permissionData.permission === 'denied') {
+//     //     console.log("Safari push is denied");
+//     //     // The user said no.
+//     // }
+//     // else if (permissionData.permission === 'granted') {
+//     //     // The web service URL is a valid push provider, and the user said yes.
+//     //     // permissionData.deviceToken is now available to use.
+//     //     console.log("Safari push is ready. deviceToken:", permissionData.deviceToken);
+//     //     return permissionData.deviceToken;
+//     // }
+//     // return undefined;
+// };
 
 export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string | null, isSafari?: boolean) {
     const updateNotification = httpsCallable(functions, 'updateNotification');
@@ -240,7 +240,7 @@ export function getEvents(filter: boolean = false, user: string = ""): Promise<E
 
     if (participantKey?.length > 0) {
         waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey + ".email", "!=", "")
+            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey , "!=", null)
         );
         waitFor.push(
             _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
@@ -289,7 +289,22 @@ export function getUsers(): Promise<UserInfo[]> {
         displayName: d.fname + " " + d.lname,
         phone: d.phone,
         type: d.type,
+        showInKiosk: d.showInKiosk,
     })));
+}
+
+
+export function getKioskUsers(): Promise<UserInfo[]> {
+    return _getCollectionWithCond(Collections.USERS_COLLECTION, "showInKiosk", "==", true).then(items => items.map(d =>
+        ({
+            fname: d.fname,
+            lname: d.lname,
+            avatar: d.avatar,
+            _ref: d._ref,
+            displayName: d.fname + " " + d.lname,
+            phone: d.phone,
+            type: d.type,
+        })));
 }
 
 export function getLocations(): Promise<LocationInfo[]> {
@@ -520,6 +535,12 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
         existing_info.type = userInfo.type || UserType.PARTICIPANT;
         if (userInfo.phone) existing_info.phone = userInfo.phone;
         let old_pic_path = existing_info.avatar?.path;
+
+        if (existing_info.showInKiosk && !userInfo.showInKiosk) {
+            existing_info.showInKiosk = deleteField();
+        } else if (userInfo.showInKiosk) {
+            existing_info.showInKiosk = true;
+        }
 
         if (pic) {
             console.log("got new pic for " + userInfo.fname + " " + userInfo.lname);

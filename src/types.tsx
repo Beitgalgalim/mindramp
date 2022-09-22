@@ -59,6 +59,7 @@ export interface AvatarInfo {
 export enum UserType {
     PARTICIPANT = 1,
     GUIDE = 2,
+    KIOSK = 3,
 }
 
 export interface UserInfo {
@@ -68,6 +69,7 @@ export interface UserInfo {
     phone?: string,
     avatar?: AvatarInfo,
     type: UserType,
+    showInKiosk?: boolean;
     _ref?: DocumentReference
 }
 
@@ -157,6 +159,10 @@ export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 export interface AdminProps extends Connected, Notifying, WithUser { 
     isCurrentUserAdmin:boolean;
 }
+
+export interface KioskProps {
+    onSelectUser:(user:string | undefined)=>void,
+}
 export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
     isAdmin: boolean,
@@ -165,6 +171,8 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
+    onGoHome: ()=>void,
+    kioskMode: boolean
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload { 
@@ -200,6 +208,8 @@ export interface EventsHeaderProps extends WithUser {
     onNotificationClick: Callback,
     showingNotifications: boolean,
     newNotificationCount:number,
+    kioskMode:boolean,
+    onGoHome:()=>void,
 }
 
 

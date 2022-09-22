@@ -1,11 +1,12 @@
 import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar, UnRead } from "./elem";
-import { DateFormats, getBeforeTimeText, getNiceDate } from "./utils/date";
+import { DateFormats, getBeforeTimeText, getNiceDate, timeRange2Text } from "./utils/date";
 import { Event } from './event';
 import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
+import './css/event.css'
 
 
 import { AccessTime, MicOutlined } from "@mui/icons-material";
@@ -81,9 +82,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         alignItems: "flex-start",
         paddingRight: 15,
     }} >
-        <Text role="text">{event.title}</Text>
+        <Text>{event.title}</Text>
         <Spacer height={2} />
-        {event.location && <Text role="text" fontSize="0.7em">{event.location}</Text>}
+        {event.location && <Text fontSize="0.7em">{event.location}</Text>}
     </div>
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
@@ -93,22 +94,18 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     const isSingle = !!single;
     const widthPixels = window.innerWidth * (width / 100);
     return (
-        <div style={{
-            flex: "0 0 auto",
-            position: "relative",
-            //width: (isSingle ? width : width * 0.7) - 48,
-            width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
-            height: isSingle ? Design.singleEventHeight : Design.multiEventHeight,
-            background: playProgress >= 0 ?
-                `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
-                "white",
-            borderRadius: 10,
-            marginRight: firstInGroup ? 24 : 0,
-            marginLeft: 24,
-            marginBottom: 10,
-            marginTop: 20,
-            boxShadow: Design.boxShadow,
-        }}
+        <button
+            className="event-container"
+            aria-label={getAccessibleEventText(event)}
+            style={{
+
+                width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
+                height: isSingle ? Design.singleEventHeight : Design.multiEventHeight,
+                background: playProgress >= 0 ?
+                    `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
+                    "white",
+                marginRight: firstInGroup ? 24 : 0,
+            }}
             onClick={() => {
                 if (event.unread === true && onSetRead) {
                     onSetRead();
@@ -243,6 +240,16 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                     <Text>{getBeforeTimeText(minutesBefore)}</Text>
                 </div>
             }
-        </div >
+        </button >
     );
+}
+
+function getAccessibleEventText(evt:Event) : string {
+    let ret = evt.title + " בשעה " + timeRange2Text(evt.start, evt.end);
+    if(evt.audioUrl) {
+        ret += ". לשמיעה יש ללחוץ אנטר"
+    }
+    console.log(ret)
+    return ret;
+
 }

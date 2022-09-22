@@ -267,13 +267,13 @@ export function timeRange2Text(timeStr1: string, timeStr2: string): string {
 }
 
 export function time2Text(timeStr: string, omitAmPmIfSame: string | undefined = undefined): string {
-    const d = getDateFromTime(timeStr);
+    const d = dayjs(timeStr);
     let omitAmPm = false;
     let result = "";
     let pm = d.hour() > 11;
 
     if (omitAmPmIfSame) {
-        const d2 = getDateFromTime(omitAmPmIfSame);
+        const d2 = dayjs(omitAmPmIfSame);
         if (d2.hour() > 11 && pm) {
             omitAmPm = true;
         }

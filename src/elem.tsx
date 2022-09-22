@@ -330,7 +330,7 @@ export function TabPanel(props: any) {
 
 export function Text(props: any) {
     return <div
-        role={props.role}
+        aria-role={props["aria-role"]}
         aria-label={props["aria-label"]}
         aria-hidden={props["aria-hidden"]}
         style={{

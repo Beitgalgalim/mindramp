@@ -33,3 +33,9 @@ V- update photo - not visible
 - larger: icons, bell, larger font
 V- button to move to admin and back
 V- users read if same user rule.
+
+
+Kiosk:
+- finegrained security rules, so only users defined as kiosk users are allowed to be viewed by kiosk
+- if no icon - image is too small
+- handle state saved in localstorage per delagated user (V - nick-name, todo: events and notifications...)

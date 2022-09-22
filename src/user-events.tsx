@@ -38,9 +38,9 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 }
 
 
-export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
+export default function UserEvents({ connected, notify, user, isAdmin, isGuide, kioskMode,
     notificationOn, onNotificationOnChange, onNotificationToken,
-    onPushNotification }: UserEventsProps) {
+    onPushNotification, onGoHome }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
@@ -174,14 +174,24 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide,
         return <UserSettings
             user={user}
             onSaveNickName={(newNick) => {
-                setNickName({ name: newNick });
+                setNickName((prev:any)=>{
+                    let newValue = {...prev};
+                    if (kioskMode && user) {
+                        newValue[user] = {name:newNick};
+                    } else {
+                        newValue.name = newNick;
+                    }
+                    return newValue;
+                });
             }}
             onClose={() => setShowUserSettings(false)}
             notificationOn={notificationOn}
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
             onPushNotification={onPushNotification}
-            notify={notify} nickName={nickName?.name} />
+            notify={notify} 
+            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)} 
+        />
     }
 
     return <div dir={"rtl"} style={{
@@ -197,7 +207,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide,
             centered={isTV}
             height={"12vh"}
             showDateTime={dateTimeNoOffset}
-            nickName={nickName?.name}
+            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
             isAdmin={isAdmin}
             isGuide={isGuide}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
@@ -206,6 +216,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide,
             showingNotifications={showNotifications}
             newNotificationCount={newNotificationCount}
             user={user}
+            kioskMode={kioskMode}
+            onGoHome={onGoHome}
         />
 
         <HBox style={{ backgroundColor: "#0078C3", justifyContent: "space-evenly" }}>

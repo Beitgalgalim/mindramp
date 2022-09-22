@@ -1,0 +1,38 @@
+.event-container {
+    flex: 0 0 auto;
+    position: relative;
+    border-radius: 10px;
+    margin-left: 24px;
+    margin-bottom: 10px;
+    margin-top: 20px;
+    border-width: 0;
+    font: inherit;
+    color: inherit;
+    box-shadow: 0px 18px 22px rgba(44, 85, 102, 0.12);
+}
+
+
+.event-nav-button {
+    position: relative;
+    border-radius: 40px;
+    width: 25vw;
+    height: 46px;
+    border-width: 0;
+    font: inherit;
+    color: inherit;
+    color: #495D68;
+    font-size: 0.8em;
+    line-height: 2.2em;
+    text-align: center;
+}
+
+.event-home-btn {
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    border:0;
+    display: flex;
+    position: absolute;
+    left: 95px;
+    font-size: 60px; 
+}

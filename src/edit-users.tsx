@@ -1,6 +1,6 @@
 import { Colors, Design } from './theme';
 import { Button, TextField, Checkbox, FormControlLabel, Grid, Badge } from '@mui/material';
-import { Avatar, HBox, HBoxSB, Spacer, } from './elem';
+import { Avatar, ComboBox, HBox, HBoxSB, Spacer, } from './elem';
 import { EditUserProps } from './types';
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
@@ -17,6 +17,7 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
     const [pwd1, setPwd1] = useState<string>("");
     const [pwd2, setPwd2] = useState<string>("");
     const [admin, setAdmin] = useState<boolean>(false);
+    const [showInKiosk, setShowInKiosk] = useState<boolean>(userInfo.showInKiosk === true);
     const [type, setType] = useState<UserType>(userInfo.type);
     const [dirty, setDirty] = useState<boolean>(false);
     const [adminInDB, setadminInDB] = useState<boolean>(false);
@@ -36,12 +37,8 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
         setDirty(true);
     }
 
-    function handleTypeChange(e: any) {
-        if (e.target.checked) {
-            setType(UserType.GUIDE);
-        } else {
-            setType(UserType.PARTICIPANT);
-        }
+    function handleTypeChange(key: string) {
+        setType(parseInt(key));
         setDirty(true);
     }
 
@@ -77,7 +74,12 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
     function onLNameChange(n: any) {
         setLName(n.currentTarget.value);
         setDirty(true);
+    }
 
+    function handleShowInKioskChange(e: any) {
+        let res: boolean = (e.target.checked);
+        setShowInKiosk(res);
+        setDirty(true);
     }
 
     function onDelete() {
@@ -108,6 +110,9 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
             avatar: userInfo.avatar,
             type: type,
         };
+        if (showInKiosk) {
+            updatedUserInfo.showInKiosk = true;
+        }
 
         // exist guide
         if (userInfo._ref) {
@@ -248,7 +253,25 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                 </Grid>
                 <Grid item xs={6} style={{ alignItems: "right" }}>
-                    <FormControlLabel control={<Checkbox checked={type === UserType.GUIDE} onChange={handleTypeChange} />} label="מדריך\ה" />
+                    <ComboBox
+                                style={{
+                                    width: 150,
+                                    textAlign: "right",
+                                }}
+                                itemHeight={35}
+                                listWidth={150}
+                                hideExpandButton={false}
+                                placeholder={"תפקיד"}
+                                items={[
+                                    {value: "משתתף.ת", key:UserType.PARTICIPANT.toString()},
+                                    {value: "מדריך.ה", key:UserType.GUIDE.toString()},
+                                    {value: "עמדה משותפת", key:UserType.KIOSK.toString()}
+                                ]}
+                                value={type.toString()}
+                                onSelect={handleTypeChange}
+                                readOnly={true}
+                                //onChange={(locationKey: string) => setSelectedLocation(locationKey)}
+                            />
                 </Grid>
             </Grid>
             <Spacer height={10} />
@@ -260,6 +283,14 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                     <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל\ת תוכן(אדמין)" />
                 </Grid>
             </Grid>
+            <Grid container spacing={2} style={{ textAlign: "right" }}>
+                <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
+                </Grid>
+                <Grid item xs={6} style={{ alignItems: "right" }}>
+                    <FormControlLabel control={<Checkbox checked={showInKiosk} onChange={handleShowInKioskChange} />} label="הצג בעמדה משותפת" />
+                </Grid>
+            </Grid>
+
 
             <Spacer height={20} />
 

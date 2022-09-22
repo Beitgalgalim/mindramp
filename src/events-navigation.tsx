@@ -1,7 +1,8 @@
+import './css/event.css'
 
 const Button = ({ caption, selected, badge, onPress }: 
     { caption: string, selected?: boolean, badge:number, onPress: CallableFunction }) => {
-    return <div style={{
+    return <button className="event-nav-button" style={{
         position:"relative",
         backgroundColor: selected ? "#337F5B" : "#DEE6EA",
         borderRadius: 40,
@@ -13,6 +14,7 @@ const Button = ({ caption, selected, badge, onPress }:
         fontSize: "0.8em",
         lineHeight: "2.2em",
         textAlign: "center",
+
     }}
         onClick={(e) => onPress(e)}>
             {badge > 0 &&
@@ -32,7 +34,7 @@ const Button = ({ caption, selected, badge, onPress }:
                     >{badge}</div>
                 }
             {caption}
-        </div>
+        </button>
 }
 
 export default function EventsNavigation(props: any) {
