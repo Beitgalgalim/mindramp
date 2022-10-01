@@ -37,6 +37,24 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
     return msg1.title === msg2.title && msg1.body === msg2.body;
 }
 
+let actx: AudioContext | undefined = undefined;
+
+function beep(vol: number, freq: number, duration: number) {
+    try {
+        if (!actx) actx = new AudioContext();
+        let v = actx.createOscillator();
+        let u = actx.createGain();
+        v.connect(u);
+        v.frequency.value = freq;
+        u.connect(actx.destination);
+        u.gain.value = vol * 0.01;
+        v.start(actx.currentTime);
+        v.stop(actx.currentTime + duration * 0.001);
+    } catch {
+        // ignore
+    }
+}
+
 
 export default function UserEvents({ connected, notify, user, isAdmin, isGuide, kioskMode,
     notificationOn, onNotificationOnChange, onNotificationToken,
@@ -89,10 +107,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             })
             const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
 
-            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev=>ev.end >= dateTimeNoOffset.format(DateFormats.DATE));
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= dateTimeNoOffset.format(DateFormats.DATE));
             const tomorrow = toMidNight(dateTimeNoOffset.add(1, "days")).format(DateFormats.DATE_TIME);
             const today = toMidNight(dateTimeNoOffset).format(DateFormats.DATE_TIME);
-            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev=>ev.start >= today && ev.end <= tomorrow);
+            const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev => ev.start >= today && ev.end <= tomorrow);
 
             setEvents(sortedEvents.filter(ev => !ev.allDay));
 
@@ -174,10 +192,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         return <UserSettings
             user={user}
             onSaveNickName={(newNick) => {
-                setNickName((prev:any)=>{
-                    let newValue = {...prev};
+                setNickName((prev: any) => {
+                    let newValue = { ...prev };
                     if (kioskMode && user) {
-                        newValue[user] = {name:newNick};
+                        newValue[user] = { name: newNick };
                     } else {
                         newValue.name = newNick;
                     }
@@ -189,8 +207,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
             onPushNotification={onPushNotification}
-            notify={notify} 
-            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)} 
+            notify={notify}
+            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
         />
     }
 
@@ -202,6 +220,14 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         color: "#495D68", //default text color
         height: "100vh",
     }}
+        onKeyDown={(key) => {
+            if (!kioskMode) return;
+            if (key.key == "Tab") {
+                console.log("keyDown", key);
+                beep(200, 50, 40)
+            }
+        }}
+
     >
         <EventsHeader
             centered={isTV}

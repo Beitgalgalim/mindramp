@@ -13,9 +13,37 @@ import { Checkbox, FormControlLabel } from '@mui/material';
 import { Person } from './people-picker';
 import "./css/kiosk.css"
 
-function KioskPerson(props:any) {
-    return <button className="kiosk-person" onClick={props.onPress}>
-        {props.icon ? <img className="kiosk-person-img" src={props.icon} /> : <PersonOutlined className="kiosk-person-img"/>}
+// const colors = [
+//     '#6DB1B9',
+//     '#CAC7BC',
+//     '#2D332F',
+//     '#9BBFBF',
+//     '#957D68',
+//     '#60584B',
+//     '#6D8071',
+//     '#616F6F',
+//     '#C2583A',
+//     '#AABC9C',
+// ]
+
+
+function hashForColor(name: string) {
+    let hash = 5381;
+    for (var i = 0; i < name.length; i++) {
+        hash = ((hash << 5) + hash) + name.charCodeAt(i); /* hash * 33 + c */
+    }
+    //return colors[hash % colors.length];
+
+    var r = (hash & 0xFF0000) >> 16;
+    var g = (hash & 0x00FF00) >> 8;
+    var b = hash & 0x0000FF;
+    return "#" + ("0" + r.toString(16)).substr(-2) + ("0" + g.toString(16)).substr(-2) + ("0" + b.toString(16)).substr(-2);
+}
+
+
+function KioskPerson(props: any) {
+    return <button className="kiosk-person" onClick={props.onPress} style={{ backgroundColor: hashForColor(props.name) }}>
+        {props.icon ? <img className="kiosk-person-img" src={props.icon} /> : <PersonOutlined style={{ fontSize: 180 }} />}
         <span>{props.name}</span>
     </button>
 }
@@ -32,12 +60,12 @@ export default function Kiosk({ onSelectUser }:
     return <div >
         <h1>יומן בית הגלגלים - בחירת משתמשים</h1>
         <div className="kiosk-container">
-        {users.map((user, i) => (<KioskPerson
-            key={i}
-            name={user.fname + " " + user.lname}
-            icon={user.avatar?.url}
-            onPress={()=>onSelectUser(user._ref?.id)}
-        />))}
+            {users.map((user, i) => (<KioskPerson
+                key={i}
+                name={user.fname + " " + user.lname}
+                icon={user.avatar?.url}
+                onPress={() => onSelectUser(user._ref?.id)}
+            />))}
         </div>
     </div>
 }
