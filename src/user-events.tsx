@@ -4,11 +4,11 @@ import * as api from './api'
 import { Text, HBox, EventsMain, VBoxC } from "./elem";
 import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { MessageInfo, UserEventsProps } from "./types";
+import { AccessibilitySettingsData, MessageInfo, UserEventsProps } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
 
-import "./user-events.css";
+import "./css/user-events.css";
 
 import { Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
@@ -20,6 +20,7 @@ import { EventsContainer } from "./events-container";
 import Message from "./message";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
+import AccessibilitySettings from "./accessibility-settings";
 
 
 function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
@@ -63,6 +64,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const [events, setEvents] = useState<any[]>([]);
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
+    const [refresh, setRefresh] = useState<number>(0);
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
@@ -71,6 +73,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
     const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
     const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
+    const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
+    const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
 
@@ -121,10 +125,17 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             })));
 
         }).finally(() => setLoadingEvents(false));
-    }, [user, connected, startDate]);
+    }, [user, connected, startDate, reload]);
 
     useEffect(() => {
-        let intervalId = setInterval(() => setReload(old => old + 1), 2 * 1000)
+        let intervalId = setInterval(() => {
+            setRefresh(old => old + 1);
+            if (refresh % 30 === 0) {
+                //every 5 min
+                setReload(old => old + 1);
+            }
+        }, 10 * 1000)
+
         return (() => {
             clearInterval(intervalId)
         })
@@ -187,9 +198,19 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const newMessagesCount = messages?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
 
     const newNotificationCount = newKeyEventsCount + newMessagesCount;
+    if (showAccessibilitySettings) {
+        return <AccessibilitySettings
+            accSettings={accSettings}
+            onClose={() => setShowAccessibilitySettings(false)}
+            onSettingsChange={(newSettings) => setAccSettings(newSettings)}
+        />;
+    }
 
     if (showUserSettings) {
         return <UserSettings
+            onAccessibilitySettings={() => {
+                setShowAccessibilitySettings(true)
+            }}
             user={user}
             onSaveNickName={(newNick) => {
                 setNickName((prev: any) => {
@@ -212,14 +233,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         />
     }
 
-    return <div dir={"rtl"} style={{
-        backgroundColor: "#0078C3",
-        fontSize: 24, //default text size 
-        fontFamily: "Assistant",
-        fontWeight: 700,
-        color: "#495D68", //default text color
-        height: "100vh",
-    }}
+    
+    return <div dir={"rtl"} className="userEventsContainer"
         onKeyDown={(key) => {
             if (!kioskMode) return;
             if (key.key == "Tab") {
@@ -237,6 +252,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             isAdmin={isAdmin}
             isGuide={isGuide}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
+            onLogoTripleClicked={() => setShowAccessibilitySettings(true)}
             notificationOn={notificationOn}
             onNotificationClick={() => setShowNotifications(prev => !prev)}
             showingNotifications={showNotifications}
@@ -246,7 +262,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onGoHome={onGoHome}
         />
 
-        <HBox style={{ backgroundColor: "#0078C3", justifyContent: "space-evenly" }}>
+        <HBox style={{ justifyContent: "space-evenly" }}>
             {days.map((day, dayIndex) =>
                 <EventsMain key={dayIndex} height={"88vh"} width={(columnWidth - 1) + "vw"}
                 >
@@ -282,6 +298,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                             >
                                 {
                                     evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                        accessibilitySettings={accSettings}
                                         showingKeyEvent={showingKeyEvents}
                                         width={columnWidth - 1}
                                         single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}

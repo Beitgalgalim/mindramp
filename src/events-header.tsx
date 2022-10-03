@@ -8,19 +8,25 @@ import './css/event.css'
 
 const logo = require("./logo-small.png");
 
-function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: CallableFunction, delay = 250) {
+function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onTripleClick?: CallableFunction, onClick?: CallableFunction, delay = 250) {
     const [click, setClick] = useState<number>(0);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             // simple click
             if (click === 1 && onClick) onClick();
+
+            if (click === 3 && onTripleClick) {
+                onTripleClick();
+            }
+
+            // the duration between this click and the previous one
+            // is less than the value of delay = double-click
+            if (click === 2) {
+                onDoubleClick();
+            }
             setClick(0);
         }, delay);
-
-        // the duration between this click and the previous one
-        // is less than the value of delay = double-click
-        if (click === 2) onDoubleClick();
 
         return () => clearTimeout(timer);
 
@@ -29,7 +35,10 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onClick?: Call
     return () => setClick(prev => prev + 1);
 }
 
-export default function EventsHeader({ user, onLogoDoubleClicked, nickName, showDateTime, height, centered,
+export default function EventsHeader({ user, 
+    onLogoDoubleClicked, 
+    onLogoTripleClicked,
+    nickName, showDateTime, height, centered,
     isAdmin,
     isGuide,
     kioskMode,
@@ -38,10 +47,18 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
     onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
     const navigate = useNavigate();
 
-    const handleClick = useSingleAndDoubleClick(() => {
+    const handleClick = useSingleAndDoubleClick(
         // Double click
-        onLogoDoubleClicked()
-    }, undefined, 350);
+        () => {
+            onLogoDoubleClicked()
+        },
+        // Triple click
+        () => {
+            if (onLogoTripleClicked) {
+                onLogoTripleClicked();
+            }
+        },
+        undefined, 350);
 
     let headerMsg = nickName?.length > 0 ? "הי " + nickName : "";
 
@@ -123,12 +140,12 @@ export default function EventsHeader({ user, onLogoDoubleClicked, nickName, show
                         navigate("/admin")
                     }}>ניהול</Button>
             </div>}
-        {kioskMode && <button 
-            className="event-home-btn" 
+        {kioskMode && <button
+            className="event-home-btn"
             aria-label="חזרה למסך בחירת משתמשים"
             onClick={() => onGoHome()}>
             <Home
-                style={{fontSize:"inherit"}}
+                style={{ fontSize: "inherit" }}
             /></button>}
         <img
             src={logo}

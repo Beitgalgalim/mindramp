@@ -1,0 +1,29 @@
+@font-face {
+  font-family: 'Assistant';
+  src: local('Assistant'), url(../fonts/Assistant/Assistant-Regular.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Assistant';
+  font-weight: 700;
+  src: local('Assistant'), url(../fonts/Assistant/Assistant-SemiBold.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Assistant';
+  font-weight: 900;
+  src: local('Assistant'), url(../fonts/Assistant/Assistant-Bold.ttf) format('truetype');
+}
+
+.userEventsContainer {
+  background-color: #0078C3;
+  font-size: 24px;
+  font-family: Assistant;
+  font-weight: 700;
+  color: #495D68;
+  height: 100vh;
+}
+
+.mainBG {
+  background-color: #EBF0F2;
+}

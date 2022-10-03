@@ -7,7 +7,7 @@ import { Checkbox, TextField } from '@mui/material';
 import { useState, Fragment, useCallback } from "react";
 import { Button, makeStyles } from "@material-ui/core";
 import * as api from './api'
-import { Check, Close, Logout, Notifications } from "@mui/icons-material";
+import { Check, Close, Logout, Notifications, SettingsAccessibility } from "@mui/icons-material";
 
 const useStyles = makeStyles(() => ({
     buttonIcon: {
@@ -18,6 +18,7 @@ const useStyles = makeStyles(() => ({
 export default function UserSettings({ onSaveNickName, onClose, user, notify, nickName,
     notificationOn,
     onNotificationOnChange,
+    onAccessibilitySettings,
     onNotificationToken,
     onPushNotification,
 }: UserSettingsProps) {
@@ -70,11 +71,17 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
 
     return <div style={{ padding: 20 }}>
         <HBox style={{ justifyContent: "flex-end" }}>
+            <SettingsAccessibility
+                style={{ fontSize: 60 }}
+                onClick={onAccessibilitySettings}
+            />
+            <Spacer width={10} />
             <Close
                 style={{ fontSize: 40 }}
                 onClick={() => {
                     onClose();
                 }} />
+
 
         </HBox>
 
@@ -125,7 +132,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                                 variant="outlined"
                                 endIcon={<Notifications />}
                                 classes={{ endIcon: classes.buttonIcon }}
-                                onClick={() => api.testNotif().then(()=>{
+                                onClick={() => api.testNotif().then(() => {
                                     notify.success("בקשה לשליחת התראת בדיקה נשלחה, ההתראה תגיע בדקה הקרובה")
                                 }).catch(e => {
                                     notify.error("בדיקה נכשלה. שגיאה:" + e.message);

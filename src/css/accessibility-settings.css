@@ -1,0 +1,16 @@
+.settingsContainer {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    row-gap: 10px;
+}
+
+.preview-events {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slider {
+    margin-left: 10%;
+}

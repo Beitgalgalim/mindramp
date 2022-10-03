@@ -12,14 +12,12 @@ import './css/event.css'
 import { AccessTime, MicOutlined } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
-export default function EventElement({ event, single, firstInGroup, now, width, audioRef, showingKeyEvent, onSetRead }:
-    {
-        event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
-        width: number,
-        audioRef: MutableRefObject<HTMLAudioElement>,
-        showingKeyEvent: boolean,
-        onSetRead?: () => void
-    }
+import { AccessibilitySettingsData, UserElementProps } from "./types";
+export default function EventElement({
+    accessibilitySettings,
+    event, single, firstInGroup,
+    now, width, audioRef, showingKeyEvent, onSetRead }: UserElementProps
+
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
@@ -32,7 +30,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         }
 
         intervalRef.current = setInterval(() => {
-            if (audioRef?.current?.src === event.audioUrl) {
+            if (audioRef && audioRef.current && audioRef.current?.src === event.audioUrl) {
                 const { currentTime, duration } = audioRef.current;
                 const prog = Math.floor(currentTime / duration * 100);
                 if (prog > 0) {
@@ -57,6 +55,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     }
 
 
+    const titleSize = accessibilitySettings ? accessibilitySettings.titleSize : 1;
+    const hourSize = accessibilitySettings ? accessibilitySettings.hoursSize : 1;
+    const imageSize = accessibilitySettings ? accessibilitySettings.imageSize : 1;
 
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
@@ -72,20 +73,19 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
         console.log(event.title, "mounted")
         return () => {
             console.log(event.title, "unmounted")
-            audioRef.current.src = ""
+            if (audioRef)
+                audioRef.current.src = ""
         }
     }, [])
 
-    const titleAndLocation = <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: "flex-start",
-        paddingRight: 15,
-    }} >
-        <Text>{event.title}</Text>
-        <Spacer height={2} />
-        {event.location && <Text fontSize="0.7em">{event.location}</Text>}
+    const titleAndLocation = <div className="title-location" >
+        <div style={{ fontSize: titleSize + "em" }}>{event.title}</div>
+        {event.location && <Text fontSize={0.7 * titleSize + "em"}>{event.location}</Text>}
     </div>
+
+    const dateTime = event.allDay ? "כל היום" : t1 + " - " + t2 +
+        (showingKeyEvent ? " " + getNiceDate(event.date, true) : "");
+
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
         setPlayProgress(-1);
@@ -100,7 +100,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
             style={{
 
                 width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
-                height: isSingle ? Design.singleEventHeight : Design.multiEventHeight,
+                height: single ? Design.singleEventHeight : Design.multiEventHeight,
                 background: playProgress >= 0 ?
                     `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
                     "white",
@@ -112,7 +112,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                 }
 
                 // plays the audio if exists
-                if (event.audioUrl && event.audioUrl !== "" && audioRef.current) {
+                if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
                     // console.log(e.detail)
                     if (audioRef.current.src === event.audioUrl) {
                         // avoid multiple clicks
@@ -157,43 +157,52 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                     <img src={myEvent} style={{ width: 45, height: 45 }} />
                 </div>
             }
-            <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: "flex-start",
-                height: 78,
-                paddingTop: 10,
-                paddingRight: 10,
-                paddingLeft: 10,
-                justifyContent: isSingle ? "flex-start" : event.imageUrl ? "space-between" : "flex-end",
-            }}>
+            <div className="event-title">
                 {
-                    event.imageUrl && <div style={{ width: 78 }}>
-                        <img src={event.imageUrl} style={{
-                            maxWidth: Design.eventImageSize,
-                            maxHeight: Design.eventImageSize,
-                            borderRadius: 10,
-                            objectFit: "cover",
-                        }} alt="תמונה"
-                        />
+                    event.imageUrl && <img src={event.imageUrl} style={{
+                        maxWidth: Design.eventImageSize * imageSize,
+                        maxHeight: Design.eventImageSize * imageSize,
+                        borderRadius: 10,
+                        objectFit: "cover",
+                    }} alt="תמונה"
+                    />
+                }
+                {titleAndLocation}
+            </div>
+            <div className="event-footer-right">
+                <AccessTime style={{ fontSize: hourSize + "em", color: Colors.EventIcons }} />
+                <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
+            </div>
+
+            <div className="event-footer-left">
+                {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
+                {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
+                {
+                    event.audioUrl &&
+                    <div style={{
+                        height: Design.buttonSize, minWidth: Design.buttonSize,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        color: "white",
+                        backgroundColor: Colors.EventIcons,
+                        borderRadius: Design.buttonSize / 2,
+                    }}>
+                        <MicOutlined style={{
+                            fontSize: Design.buttonSize * .7,
+                        }} />
                     </div>
                 }
-                {!isSingle && event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
-                {/* {<Spacer height={buttonSize} />} */}
-                {isSingle && titleAndLocation}
             </div>
-            <Spacer height={5} />
-            {!isSingle && titleAndLocation}
-            {!isSingle && <Spacer height={25} />}
-            <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
+            {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
                     <HBox style={{ alignItems: "center", width: "100%" }}>
                         <AccessTime style={{ color: Colors.EventIcons }} />
 
                         <Spacer />
-                        {showingKeyEvent && <Text width={"70%"} aria-hidden="true" fontSize="0.7em">{getNiceDate(event.date, true)}</Text>}
+                        
 
-                        <Text aria-hidden="true" fontSize="0.7em">{event.allDay ? "כל היום" : t1 + " - " + t2}</Text>
+                        <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
                     </HBox>
                     <Spacer />
                     {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
@@ -220,7 +229,7 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
                     {isSingle && event.guide ? <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} /> : isSingle && <Spacer width={Design.avatarSize} />}
                     <Spacer height={Design.avatarSize} />
                 </HBox>
-            </HBoxSB>
+            </HBoxSB> */}
 
             {
                 minutesBefore > 0 && minutesBefore < 120 && <div style={{
@@ -244,9 +253,9 @@ export default function EventElement({ event, single, firstInGroup, now, width, 
     );
 }
 
-function getAccessibleEventText(evt:Event) : string {
+function getAccessibleEventText(evt: Event): string {
     let ret = evt.title + " בשעה " + timeRange2Text(evt.start, evt.end);
-    if(evt.audioUrl) {
+    if (evt.audioUrl) {
         ret += ". לשמיעה יש ללחוץ אנטר"
     }
     console.log(ret)

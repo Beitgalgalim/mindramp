@@ -73,7 +73,7 @@ export const day2DayName: { [id: number]: string; } = {
 
 export const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
 
-export const removeTime = (d: Dayjs|string) => dayjs(d).format(DateFormats.DATE);
+export const removeTime = (d: Dayjs | string) => dayjs(d).format(DateFormats.DATE);
 
 export function getDayDesc(date: Dayjs): string {
 
@@ -127,7 +127,7 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                 const date = today.add(i, "days");
                 const dateStr = date.format(DateFormats.DATE);
                 const daysSinceStart = - start.diff(date, "days");
-                
+
                 if (!rec.exclude?.includes(dateStr) && daysSinceStart >= 0) {
                     if (rec.freq === "daily" ||
                         (rec.freq === "weekdays" && date.day() >= 0 && date.day() <= 4) ||
@@ -289,19 +289,21 @@ export function time2Text(timeStr: string, omitAmPmIfSame: string | undefined = 
         if (d.minute() < 10) {
             result += " ו" + number2Text(d.minute(), false) + " דקות";
         } else if (d.minute() % 10 === 0) {
-            result += " ו" + number2Text(d.minute(), false);
+            result += " ו" + number2Text(d.minute(), false, true);
+        } else if (d.minute() < 20) {
+            result += " ו" +  number2Text(d.minute(), false);
         } else {
-            result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false);
+            result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false, true);
         }
     }
     if (pm && !omitAmPm) {
-        result += " אחר הצהריים"
+        result += " אחר הצהריים";
     }
 
     return result;
 }
 
-function number2Text(num: number, isHour: boolean): string {
+function number2Text(num: number, isHour: boolean, isMusculer?: boolean): string {
     switch (num) {
         case 0:
             return "אפס";
@@ -314,7 +316,9 @@ function number2Text(num: number, isHour: boolean): string {
         case 4:
             return "ארבע";
         case 5:
-            return "חמש";
+            return isMusculer ?
+                "חמישה" :
+                "חמש";
         case 6:
             return "שש";
         case 7:
@@ -324,11 +328,21 @@ function number2Text(num: number, isHour: boolean): string {
         case 9:
             return "תשע";
         case 10:
-            return "עשר";
+            return isMusculer ?
+                "עשרה" :
+                "עשר";
         case 11:
             return "אחת עשרה";
         case 12:
             return "שתיים עשרה";
+        case 13:
+            return "שלוש עשרה";
+        case 14:
+            return "ארבע עשרה";
+        case 15:
+            return isHour?
+            "חמש עשרה":
+            "רבע";
         case 20:
             return "עשרים";
         case 30:

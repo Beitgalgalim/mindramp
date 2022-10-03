@@ -3,6 +3,7 @@ import { Event } from './event';
 import { User } from '@firebase/auth';
 import { Dayjs } from "dayjs";
 import { MessagePayload } from "@firebase/messaging";
+import { MutableRefObject } from "react";
 
 export function isDev(): boolean {
     if (window.location.hostname.includes("preview")) return true;
@@ -92,6 +93,20 @@ export interface UserDocument {
     type?:UserType;
 }
 
+export interface AccessibilitySettingsData {
+    imageSize:number,
+    titleSize: number,
+    hoursSize: number,
+}
+
+export interface UserElementProps {
+    event: Event, single: boolean, firstInGroup: boolean, now: Dayjs,
+    accessibilitySettings?: AccessibilitySettingsData
+    width: number,
+    audioRef?: MutableRefObject<HTMLAudioElement>,
+    showingKeyEvent: boolean,
+    onSetRead?: () => void
+}
 
 export interface MediaResource {
     name: string,
@@ -190,14 +205,22 @@ export interface UserSettingsProps extends WithUser, Notifying {
     onSaveNickName: (newNick: string) => void,
     onClose:Callback,
     nickName: string,
+    onAccessibilitySettings: ()=>void,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
 }
 
+export interface AccessibilitySettingsProps {
+    onClose:Callback,
+    accSettings: AccessibilitySettingsData | undefined,
+    onSettingsChange: (accSettings: AccessibilitySettingsData)=>void,
+}
+
 export interface EventsHeaderProps extends WithUser {
     onLogoDoubleClicked: Callback,
+    onLogoTripleClicked?: Callback,
     nickName: string,
     isAdmin: boolean,
     isGuide: boolean,
