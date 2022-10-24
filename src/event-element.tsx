@@ -152,7 +152,7 @@ export default function EventElement({
 
             {/** pin for personal events */
                 event.isPersonal === true &&
-                <div style={{ position: "absolute", top: -20, left: "45%", }}>
+                <div className="event-personal-pin">
                     {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
                     <img src={myEvent} style={{ width: 45, height: 45 }} />
                 </div>
@@ -169,7 +169,7 @@ export default function EventElement({
                 }
                 {titleAndLocation}
             </div>
-            <div className="event-footer-right">
+            <div className="event-footer-right" style={{ lineHeight: hourSize + "em"}}>
                 <AccessTime style={{ fontSize: hourSize + "em", color: Colors.EventIcons }} />
                 <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
             </div>
@@ -232,20 +232,7 @@ export default function EventElement({
             </HBoxSB> */}
 
             {
-                minutesBefore > 0 && minutesBefore < 120 && <div style={{
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    bottom: 5,
-                    right: 10,
-                    height: 25,
-                    width: "fit-content",
-                    backgroundColor: "#C4C4C4",
-                    fontSize: "0.7em",
-                    borderRadius: 5,
-                    paddingLeft: 10,
-                    paddingRight: 10,
-                }}>
+                minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
                     <Text>{getBeforeTimeText(minutesBefore)}</Text>
                 </div>
             }
