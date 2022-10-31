@@ -227,7 +227,8 @@ function App(props: any) {
                 onLogin={(u: User) => { console.log("logged?") }}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {
-                  //todo
+                  console.log("החלפת סיסמא")
+                  notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ. דוגמא: 'סיסמא new123' להחלפה לסיסמא new123");
                 }}
               />
                 :

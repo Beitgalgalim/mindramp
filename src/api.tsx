@@ -240,7 +240,7 @@ export function getEvents(filter: boolean = false, user: string = ""): Promise<E
 
     if (participantKey?.length > 0) {
         waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey , "!=", null)
+            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey, "!=", null)
         );
         waitFor.push(
             _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
@@ -296,15 +296,15 @@ export function getUsers(): Promise<UserInfo[]> {
 
 export function getKioskUsers(): Promise<UserInfo[]> {
     return _getCollectionWithCond(Collections.USERS_COLLECTION, "showInKiosk", "==", true).then(items => items.map(d =>
-        ({
-            fname: d.fname,
-            lname: d.lname,
-            avatar: d.avatar,
-            _ref: d._ref,
-            displayName: d.fname + " " + d.lname,
-            phone: d.phone,
-            type: d.type,
-        })));
+    ({
+        fname: d.fname,
+        lname: d.lname,
+        avatar: d.avatar,
+        _ref: d._ref,
+        displayName: d.fname + " " + d.lname,
+        phone: d.phone,
+        type: d.type,
+    })));
 }
 
 export function getLocations(): Promise<LocationInfo[]> {
@@ -533,7 +533,16 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
         if (userInfo.fname) existing_info.fname = userInfo.fname;
         if (userInfo.lname) existing_info.lname = userInfo.lname;
         existing_info.type = userInfo.type || UserType.PARTICIPANT;
-        if (userInfo.phone) existing_info.phone = userInfo.phone;
+        if (userInfo.phone) {
+            // Verify phone has no spaces or dash or + ...
+            let phone = userInfo.phone.replace(/[^\d]+/g, "");
+            if (phone.startsWith("972")) {
+                phone = phone.replace("972", "0")
+            }
+            existing_info.phone = phone;
+        }
+
+
         let old_pic_path = existing_info.avatar?.path;
 
         if (existing_info.showInKiosk && !userInfo.showInKiosk) {

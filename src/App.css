@@ -40,13 +40,13 @@
 
 .manageButtonContainer {
   position: absolute;
-  left:120px;
+  left:90px;
   top: 20px;
   z-index: 1000;
 }
 
 
-@media (max-width: 600px) {
+@media (max-width: 360px) {
   .manageButtonContainer {
     left:0px;
   }

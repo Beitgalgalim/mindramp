@@ -159,7 +159,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 onLogin={(u: User) => { }}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {
-                    //todo
+                    notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ. דוגמא: 'סיסמא new123' להחלפה לסיסמא new123");
                 }}
             />
         }

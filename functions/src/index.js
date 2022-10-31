@@ -459,6 +459,15 @@ exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) 
 exports.registerUser = functions.region("europe-west1").https.onCall((data, context) => {
     functions.logger.info("register new user", data);
     const isDev = data.isDev;
+    const info = data.info;
+    if (info.phone) {
+        let phone = info.phone.replace(/[^\d]+/g, "");
+        if (phone.startsWith("972")) {
+            phone = phone.replace("972", "0")
+        }
+        info.phone = phone;
+    }
+
 
     return isAdmin(isDev, context).then(
         () => {
@@ -474,7 +483,7 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
                 .then(
                     () => {
                         return db.collection(isDev ? "users_dev" : "users").doc(data.email).set({
-                            ...data.info
+                            ...info
                         }).then(
                             () => {
                                 if (data.isAdmin) {
@@ -623,7 +632,7 @@ const addNotificationFree = (message_body, toEmailArray, isDev) => {
     const notifDoc = db.collection(NOTIFICATIONS_COLLECTION).doc();
     const docData = {
         message_body,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
         to: toEmailArray,
         isDev,
     };
@@ -662,7 +671,7 @@ app.post("/whatsapp/webhooks", (req, res) => {
     }
     // if it exists, the x-hub-sgnature middleware has checked it to be valid.
 
-    if (req.body.object === "whatsapp_business_account") {
+    if (req.body?.object === "whatsapp_business_account") {
         const entry = req.body ? req.body.entry[0] : undefined;
         if (entry) {
             const waitFor = entry.changes.map(change => {
@@ -696,7 +705,11 @@ app.post("/whatsapp/webhooks", (req, res) => {
                                                     return addNotificationFree("החלפת סיסמא נכשלה.\nשגיאה: " + err.toString() + "\n", [email], false);
                                                 });
                                         });
+                                    } else {
+                                        functions.logger.info("unknown text message: ", text);
                                     }
+                                } else {
+                                    functions.logger.info("Unknown phone", phoneNumber, "msg", text);
                                 }
                             });
                         } else {
@@ -711,7 +724,11 @@ app.post("/whatsapp/webhooks", (req, res) => {
             });
 
             return Promise.all(waitFor).then(() => res.status(200).send("EVENT_RECEIVED"));
+        } else {
+            functions.logger.info("No entry");
         }
+    } else {
+        functions.logger.info("unknown message type");
     }
 
     res.status(200).send("EVENT_RECEIVED");

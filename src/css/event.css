@@ -29,14 +29,25 @@
 }
 .event-footer-right {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     position: absolute;
     align-items: center;
     bottom: 0;
     justify-items: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
     background-color: rgba(255,255,255,.7)
-    
 }
+.event-time {
+    display: flex;
+    flex-direction: row;
+}
+
+.event-progress {
+    margin-top: 5px;
+    width:100%;
+}
+
 
 .event-footer-left {
     display: flex;

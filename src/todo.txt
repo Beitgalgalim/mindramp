@@ -30,12 +30,14 @@ TV:
 bugs:
 V- new event, the allDay - endDate is one day back
 V- update photo - not visible
-- larger: icons, bell, larger font
+V- larger: icons, bell, larger font
 V- button to move to admin and back
 V- users read if same user rule.
+- Admin: moving a series meeting with drag and drop, then canceling - does not restore the location in the calendar
+
 
 
 Kiosk:
 - finegrained security rules, so only users defined as kiosk users are allowed to be viewed by kiosk
-- if no icon - image is too small
+V- if no icon - image is too small
 - handle state saved in localstorage per delagated user (V - nick-name, todo: events and notifications...)

@@ -170,8 +170,13 @@ export default function EventElement({
                 {titleAndLocation}
             </div>
             <div className="event-footer-right" style={{ lineHeight: hourSize + "em"}}>
+                <div className="event-time">
                 <AccessTime style={{ fontSize: hourSize + "em", color: Colors.EventIcons }} />
                 <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
+                </div>
+                <div className="event-progress">
+                {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
+                </div>
             </div>
 
             <div className="event-footer-left">
