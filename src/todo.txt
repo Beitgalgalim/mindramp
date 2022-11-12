@@ -30,7 +30,7 @@ Bugs Medium
 - Kiosk: Handle state saved in localstorage per delagated user
   - nick-name - done
   - Events and notifications view status
-
+- An end time after or at midnight - result in wrong message
 
 
 Bugs Low

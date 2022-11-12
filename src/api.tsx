@@ -232,8 +232,15 @@ export function getEventsNew() {
     return getEvents2(payload);
 }
 
-export function getPersonalizedEvents(user: string): Promise<Event[]> {
-    return getEvents(true, user);
+export function getPersonalizedEvents(user: string | undefined, eTag: string | undefined): Promise<any> { // todo not any
+    //return getEvents(true, user);
+    const getEventsFunc = httpsCallable(functions, 'getEvents');
+    const payload: any = {
+        isDev: isDev(),
+        impersonateUser:user,
+        eTag,
+    };
+    return getEventsFunc(payload).then(res=>res.data);
 }
 export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
     if (!filter) {
@@ -333,30 +340,22 @@ export function getMedia(): Promise<MediaResource[]> {
 }
 
 export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
-    const eventObj = Event.fromEventAny(event)
+    const eventObj = Event.fromEventAny(event);
+    const dbEventObj = eventObj.toDbObj(ref === undefined);
 
+    const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
+    const payload: any = {
+        isDev: isDev(),
+        id:ref?.id,
+        event: dbEventObj,
+    };
 
-    if (ref) {
-        if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
-            eventObj.recurrent.gid = ref.id;
-        }
-
-        const dbDoc = eventObj.toDbObj(false);
-        return updateDoc(ref, dbDoc).then(() => {
-            eventObj._ref = ref;
-            return eventObj;
-        })
-    } else {
-        const dbDoc = eventObj.toDbObj(true);
-        const docRef = doc(collection(db, Collections.EVENT_COLLECTION));
-        if (eventObj.recurrent && eventObj.recurrent.gid === undefined) {
-            dbDoc.recurrent.gid = docRef.id;
-        }
-        return setDoc(docRef, dbDoc).then(() => {
-            eventObj._ref = docRef;
-            return eventObj;
-        });
-    }
+    return upsertEventFunc(payload).then((res : any) => {
+        console.log("upsertEvent", res);
+        const id = res.data.id;
+        const docRef = doc(collection(db, Collections.EVENT_COLLECTION), id);
+        return Event.fromDbObj(res.data.event, docRef);
+    });
 }
 
 
@@ -428,23 +427,15 @@ export async function createEventInstanceAsDeleted(excludeDate: string, ref: Doc
 
 
 export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
-    if (ref) {
-        if (deleteModifiedInstance) {
-            const q = query(collection(db, Collections.EVENT_COLLECTION), where("recurrent.gid", "==", ref.id));
-            return getDocs(q).then(instances => {
-                let batch = writeBatch(db);
-                const removedIDs: string[] = []
-                instances.docs.forEach(doc => {
-                    batch.delete(doc.ref)
-                    removedIDs.push(doc.ref.id)
-                });
-                batch.delete(ref)
-                removedIDs.push(ref.id)
-                return batch.commit().then(() => removedIDs);
-            })
-        }
+    const deleteEventFunc = httpsCallable(functions, 'deleteEvent');
+    const payload: any = {
+        isDev: isDev(),
+        id:ref.id,
+        deleteModifiedInstance,
+    };
 
-        return deleteDoc(ref).then(() => [ref.id]);
+    if (ref) {
+        return deleteEventFunc(payload).then((res : any) => res.data);
     }
     return [];
 }
@@ -536,7 +527,7 @@ function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
         } else if (!adminDoc.exists && isAdmin) {
             return setDoc(docRef, { admin: true });
         }
-    })
+    });
 }
 
 export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, isAdmin: boolean) {

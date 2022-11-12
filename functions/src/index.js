@@ -3,6 +3,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const {
     FieldValue,
+    FieldPath,
 } = require("@google-cloud/firestore");
 
 const axios = require("axios");
@@ -27,7 +28,7 @@ const app = express();
 
 const NOTIFICATIONS_COLLECTION = "notifications";
 const USERS_COLLECTION = "users";
-
+const tagFormat = "YYYY-MM-DD HH:mm:ss.SSS";
 
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -179,89 +180,57 @@ exports.notifications = functions.region("europe-west1").pubsub
     .timeZone(JERUSALEM)
     .onRun(async (context) => {
         const now = dayjs().utc().tz(JERUSALEM);
-        if (now.hour() < 7 || now.hour() > 20) return; // offhour, save cost
 
-        function handleReminders(isDev) {
+        async function handleReminders(isDev) {
             const twoDaysAhead = now.add(2, "days");
 
-            const eventsCollection = isDev ? "event_dev" : "event";
+            const cachedEvents = await getEventsViaCache(isDev);
 
-            return db.collection(eventsCollection).get().then(res => {
-                // filter to events between today and 2 days ahead
-                const events = res.docs.map(doc => ({ ref: doc.ref, ...doc.data() })).filter(ev =>
-                    ev.reminderMinutes !== undefined &&
-                    ev.date >= now.format("YYYY-MM-DD") &&
-                    ev.date <= twoDaysAhead.format("YYYY-MM-DD") &&
-                    ev.notified !== true);
+            const allEvents = eventsUtil.explodeEvents(cachedEvents.events.map(entry => ({ id: entry.id, ...entry.event })), 1, 2);
 
-                const allEvents = eventsUtil.explodeEvents(events, 0, 1);
+            const events = allEvents.filter(ev => ev.reminderMinutes !== undefined &&
+                ev.date >= now.format("YYYY-MM-DD") &&
+                ev.date <= twoDaysAhead.format("YYYY-MM-DD") &&
+                (
+                    !ev.notified ||
+                    ev.recurrent && !ev.instanceStatus && ev.notified < now.format("YYYY-MM-DD") // recurrent meeting (not instance)
+                )
+            );
 
-                const notifyEvents = [];
-                const reccurentEventsInstances = [];
-                allEvents.forEach(ev => {
-                    const reminderStart = dayjs.tz(ev.start, JERUSALEM).subtract(ev.reminderMinutes, "minutes");
+            const notifyEvents = [];
 
-                    if (reminderStart.isBefore(now)) {
-                        notifyEvents.push(ev);
-                        if (ev.recurrent && ev.instanceStatus !== true) {
-                            // If no materialized instance for the event instance, the "notified" flag will be
-                            // persisted in a sub collection under the event
-                            // event/<event-id>/instancesInfo/<date>
-                            //  {notified:true}
-                            reccurentEventsInstances.push(ev.ref.collection("instancesInfo").doc(ev.date));
-                        }
-                    } else {
-                        functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.ref.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
-                    }
-                });
-                functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events" + (isDev ? " dev" : ""), notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.ref.id })));
-
-                if (notifyEvents.length > 0) {
-                    const waitForInstancesInfo = [];
-
-                    reccurentEventsInstances.forEach(ei => waitForInstancesInfo.push(
-                        ei.get()
-                    ));
-
-                    return Promise.all(waitForInstancesInfo).then(allRecurrentEventInstancesInfo => {
-                        const instancesInfo = allRecurrentEventInstancesInfo.filter(doc => doc.exists)
-                            .map(doc2 => ({ eventID: doc2.ref._path.segments[1], date: doc2.id, ...doc2.data() }));
-                        const waitForNotifications = [];
-                        notifyEvents.forEach(ev => {
-                            // makes sure the recurrent instance is not already notified
-                            if (ev.recurrent && ev.instanceStatus !== true) {
-                                const instanceInfo = instancesInfo.find(ii => ii.eventID === ev.ref.id && ii.date === ev.date);
-                                if (instanceInfo && instanceInfo.notified === true) {
-                                    return;
-                                }
-                            }
-
-                            const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
-                            if (ev.guide && !notifyList.find(nl => nl === ev.guide.email)) {
-                                notifyList.push(ev.guide.email);
-                            }
-
-                            const batch = db.batch();
-
-                            addNotification(batch, "event_reminder", [ev.title, getReminderString(ev)], [], notifyList, isDev);
-
-                            // Update event being notified:
-                            if (ev.recurrent && ev.instanceStatus !== true) {
-                                const instanceDocRef = ev.ref.collection("instancesInfo").doc(ev.date);
-                                batch.set(instanceDocRef, { notified: true });
-                            } else {
-                                batch.update(ev.ref, { notified: true });
-                            }
-                            waitForNotifications.push(batch.commit());
-                        });
-                        return Promise.all(waitForNotifications);
-                    });
+            events.forEach(ev => {
+                const reminderStart = dayjs.tz(ev.start, JERUSALEM).subtract(ev.reminderMinutes, "minutes");
+                if (reminderStart.isBefore(now)) {
+                    notifyEvents.push(ev);
+                } else {
+                    functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
                 }
             });
-        }
 
+            functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events" + (isDev ? " dev" : ""), notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.id })));
+
+            if (notifyEvents.length > 0) {
+                const batch = db.batch();
+                const notifiedChange = { notified: now.format("YYYY-MM-DD HH:mm:ss") };
+                notifyEvents.forEach(ev => {
+                    const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
+                    if (ev.guide && !notifyList.find(nl => nl === ev.guide.email)) {
+                        notifyList.push(ev.guide.email);
+                    }
+
+                    addNotification(batch, "event_reminder", [ev.title, getReminderString(ev)], [], notifyList, isDev);
+
+                    // Update event being notified:
+                    const docRef = db.collection(isDev ? "event_dev" : "event").doc(ev.id);
+                    batch.update(docRef, notifiedChange);
+                    updateEventInCache(isDev, ev.id, notifiedChange);
+                });
+                return batch.commit();
+            }
+        }
         return Promise.all([
-            // handleReminders(true), // disable dev reminder (cost)
+            handleReminders(true),
             handleReminders(false),
         ]);
     });
@@ -318,13 +287,13 @@ function getBeforeTimeText(minutes) {
     return "עוד מעל שעתיים";
 }
 
-exports.participantAdded = functions.region("europe-west1").firestore
+exports.eventChanged = functions.region("europe-west1").firestore
     .document("event/{eventID}")
     .onWrite((change, context) => {
         return handleParticipantAdded(false, change, context);
     });
 
-exports.participantAddedDev = functions.region("europe-west1").firestore
+exports.eventChangedDev = functions.region("europe-west1").firestore
     .document("event_dev/{eventID}")
     .onWrite((change, context) => {
         return handleParticipantAdded(true, change, context);
@@ -506,27 +475,215 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
 /**
  * Events Management
  */
-let gEventsCount = 0;
+let gEvents;
+let gEventsDev;
+let gEtagDev;
+let gEtag;
+
+async function promoteTag(isDev, tag, noCreate) {
+    const storageRef = admin.storage().bucket();
+
+    const metadata = {
+        metadata: {
+            tag,
+        }
+    };
+    const fileName = isDev ? "event-marker-dev" : "event-marker";
+    try {
+        await storageRef.file(fileName).setMetadata(metadata);
+    } catch (e) {
+        functions.logger.error("Cannot update event marker" + (noCreate ? "" : " try create file"), e, "isDev", isDev);
+        if (!noCreate) {
+            const file = storageRef.file(fileName);
+            return file.save("", {
+                gzip: false,
+                contentType: "text/plain"
+            }).then(() => {
+                return promoteTag(isDev, tag, true);
+            });
+        }
+    }
+}
+
+async function getTag(isDev) {
+    const storageRef = admin.storage().bucket();
+    const fileName = isDev ? "event-marker-dev" : "event-marker";
+    try {
+        const metadata = await storageRef.file(fileName).getMetadata();
+        return metadata[0].metadata.tag;
+    } catch (e) {
+        return undefined;
+    }
+}
 
 exports.upsertEvent = functions.region("europe-west1").https.onCall((data, context) => {
-    
+    const isDev = data.isDev;
+    const eventObj = data.event;
+    const id = data.id;
+
+    // Verify user is admin
+    return isAdmin(isDev, context).then(() => {
+        const collection = isDev ? db.collection("event_dev") : db.collection("event");
+        const returnEvent = {};
+
+        eventObj.modifiedAt = dayjs().format(tagFormat);
+
+        // Translate deleteField() from client into FieldValue.delete()
+        Object.entries(eventObj).forEach(([key, value]) => {
+            if (value && value._methodName === "deleteField") {
+                eventObj[key] = FieldValue.delete();
+            } else if (value !== undefined) {
+                returnEvent[key] = value;
+            }
+        });
+
+
+        if (id) {
+            const docRef = collection.doc(id);
+            if (returnEvent.recurrent && returnEvent.recurrent.gid === undefined) {
+                eventObj.recurrent.gid = id;
+                returnEvent.recurrent.gid = id;
+            }
+
+            return docRef.update(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
+                event: returnEvent,
+                id: docRef.id,
+            })));
+        } else {
+            const docRef = collection.doc();
+            if (returnEvent.recurrent && returnEvent.recurrent.gid === undefined) {
+                eventObj.recurrent.gid = docRef.id;
+                returnEvent.recurrent.gid = id;
+            }
+            return docRef.set(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
+                event: returnEvent,
+                id: docRef.id,
+            })));
+        }
+    });
 });
 
 exports.createEventInstance = functions.region("europe-west1").https.onCall((data, context) => {
 });
 
 exports.deleteEvent = functions.region("europe-west1").https.onCall((data, context) => {
+    const isDev = data.isDev;
+    const id = data.id;
+    const deleteModifiedInstance = data.deleteModifiedInstance;
+
+    // Verify user is admin
+    return isAdmin(isDev, context).then(() => {
+        const collection = isDev ? db.collection("event_dev") : db.collection("event");
+
+        if (id) {
+            const docRef = collection.doc(id);
+            if (deleteModifiedInstance) {
+                return collection.where("recurrent.gid", "==", id).get().then(instances => {
+                    const batch = db.batch();
+                    const removedIDs = [];
+                    instances.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                        removedIDs.push(doc.ref.id);
+                    });
+                    batch.delete(docRef);
+                    removedIDs.push(id);
+                    return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => removedIDs);
+                });
+            }
+
+            return docRef.delete().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => [id]);
+        }
+    });
 });
 
 
-exports.getEvents = functions.region("europe-west1").https.onCall((data, context) => {
-    //const isDev = data.isDev;
-    const email = context?.auth?.token?.email;
+function updateEventInCache(isDev, id, change) {
+    const cachedEvents = isDev ? gEventsDev : gEvents;
+    if (cachedEvents && change) {
+        const event = cachedEvents.find(ev => ev.id === id);
+        if (event) {
+            for (const [key, value] of Object.entries(change)) {
+                event.event[key] = value;
+            }
+        }
+    }
+}
 
-    gEventsCount++;
+
+async function getEventsViaCache(isDev) {
+    const collection = isDev ? db.collection("event_dev") : db.collection("event");
+    let cachedEvents = isDev ? gEventsDev : gEvents;
+    let cachedEtag = isDev ? gEtagDev : gEtag;
+    let latestTag = await getTag(isDev);
+
+    if (cachedEvents) {
+        // functions.logger.info("Tags", "saved", latestTag, "calc", currentEtag);
+        if (cachedEtag !== latestTag) {
+            cachedEvents = undefined;
+            cachedEtag = latestTag;
+        }
+    }
+
+    if (!cachedEvents) {
+        const res = await collection.get();
+        const events = res.docs.map(doc => ({ event: doc.data(), id: doc.id }));
+        if (isDev) {
+            gEventsDev = events;
+            gEtagDev = latestTag;
+        } else {
+            gEvents = events;
+            gEtag = latestTag;
+        }
+        cachedEvents = events;
+    }
     return {
-        count: gEventsCount,
-        user: email
+        events: cachedEvents,
+        eTag: latestTag,
+    };
+}
+
+
+exports.getEvents = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const isDev = data.isDev;
+    const email = context?.auth?.token?.email;
+    const impersonateUser = data.impersonateUser;
+    const eTag = data.eTag;
+
+    if (impersonateUser && impersonateUser !== email) {
+        if (!email) {
+            throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied");
+        }
+        await db.collection(isDev ? "users_dev" : "users").where(FieldPath.documentId(), "in", [email, impersonateUser]).get().then(res => {
+            const uDoc = res.docs.find(doc => doc.id === email);
+            if (!uDoc || uDoc.data().type !== 3) {
+                throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "User is not a Kiosk User");
+            }
+            const impDoc = res.docs.find(doc => doc.id === impersonateUser);
+            if (!impDoc || impDoc.data().showInKiosk !== true) {
+                throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
+            }
+        });
+    }
+    const effectiveEmail = impersonateUser || email;
+    const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
+
+
+    const cachedEvents = await getEventsViaCache(isDev);
+
+    if (cachedEvents.eTag === eTag) {
+        // No Change
+        return { noChange: true };
+    }
+
+    const returnEvents = cachedEvents.events.filter(entry =>
+        entry.event.participants === undefined || // public event
+        Object.entries(entry.event.participants).length === 0 ||
+        (participantKey && entry.event.participants && entry.event.participants[participantKey]) || // The user is a participant
+        entry.event.guide && entry.event.guide.email === effectiveEmail); // the user is a guide
+
+    return {
+        eTag: cachedEvents.eTag,
+        events: returnEvents,
     };
 });
 
@@ -676,10 +833,7 @@ function archiveData() {
   - password reset (done)
   - meeting reminder (todo)
   - backup failed - send to system operators (todo)
-
-
 **/
-
 
 const addNotification = (batch, message_template, parametersValues, quickReplyParameters, toEmailArray, isDev) => {
     const notifDoc = db.collection(NOTIFICATIONS_COLLECTION).doc();
@@ -688,7 +842,7 @@ const addNotification = (batch, message_template, parametersValues, quickReplyPa
         message_template,
         parameters,
         quickReplyParameters,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
         to: toEmailArray,
         isDev,
     };

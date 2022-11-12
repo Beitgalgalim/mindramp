@@ -62,6 +62,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     onPushNotification, onGoHome }: UserEventsProps) {
 
     const [events, setEvents] = useState<any[]>([]);
+    const [etag, setEtag] = useState<string | undefined>();
     const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
     const [refresh, setRefresh] = useState<number>(0);
@@ -101,15 +102,23 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const isTV = searchParams.get("isTv") === "true";
 
     useEffect(() => {
+        setEtag(undefined);
+    }, [user]);
+
+    useEffect(() => {
         if (!connected || startDate === "")
             return;
         setLoadingEvents(true);
         console.log("reloading...")
-        api.getPersonalizedEvents(user || "").then(evts => {
-            const evtsWithId = evts.map((e, i) => {
-                e.tag = e._ref?.id || ("" + i);
-                return e;
-            })
+        api.getPersonalizedEvents(user ? user : undefined, etag).then(eventsResponse => {
+            if (eventsResponse.noChange) return;
+
+            setEtag(eventsResponse.eTag);
+            
+            const evtsWithId = eventsResponse.events.map((e:any) => ({
+                ...e.event, tag: e.id
+            }));
+
             const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
 
             const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= dateTimeNoOffset.format(DateFormats.DATE));
@@ -131,8 +140,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     useEffect(() => {
         let intervalId = setInterval(() => {
             setRefresh(old => {
-                if ((old + 1) % 30 === 0) {
-                    //every 5 min
+                if ((old + 1) % 15 === 0) {
+                    //every 2.5 min
                     console.log("set reload")
                     setReload(reloadOld => reloadOld + 1);
                 }

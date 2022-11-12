@@ -75,6 +75,7 @@ export class Event {
     clearAudio?: boolean;
     isPersonal?: boolean;
     unread?: boolean;
+    modifiedAt?:string;
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
@@ -114,7 +115,7 @@ export class Event {
         assignIfExists(evt, "keyEvent", doc);
         assignIfExists(evt, "allDay", doc);
         assignIfExists(evt, "reminderMinutes", doc);
-
+        assignIfExists(evt, "modifiedAt", doc);
         evt.isPersonal = isPersonal;
 
         return evt;
@@ -207,6 +208,7 @@ export class Event {
         delete eventObj.clearAudio;
         delete eventObj.isPersonal;
         delete eventObj.unread;
+        delete eventObj.modifiedAt;
         return eventObj;
     }
 
