@@ -178,8 +178,10 @@ exports.notifications = functions.region("europe-west1").pubsub
     .schedule("every 1 minutes")
     .timeZone(JERUSALEM)
     .onRun(async (context) => {
+        const now = dayjs().utc().tz(JERUSALEM);
+        if (now.hour() < 7 || now.hour() > 20) return; // offhour, save cost
+
         function handleReminders(isDev) {
-            const now = dayjs().utc().tz(JERUSALEM);
             const twoDaysAhead = now.add(2, "days");
 
             const eventsCollection = isDev ? "event_dev" : "event";
@@ -259,7 +261,7 @@ exports.notifications = functions.region("europe-west1").pubsub
         }
 
         return Promise.all([
-            handleReminders(true),
+            // handleReminders(true), // disable dev reminder (cost)
             handleReminders(false),
         ]);
     });
@@ -463,7 +465,7 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
     if (info.phone) {
         let phone = info.phone.replace(/[^\d]+/g, "");
         if (phone.startsWith("972")) {
-            phone = phone.replace("972", "0")
+            phone = phone.replace("972", "0");
         }
         info.phone = phone;
     }
@@ -501,9 +503,37 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
     );
 });
 
+/**
+ * Events Management
+ */
+let gEventsCount = 0;
+
+exports.upsertEvent = functions.region("europe-west1").https.onCall((data, context) => {
+    
+});
+
+exports.createEventInstance = functions.region("europe-west1").https.onCall((data, context) => {
+});
+
+exports.deleteEvent = functions.region("europe-west1").https.onCall((data, context) => {
+});
+
+
+exports.getEvents = functions.region("europe-west1").https.onCall((data, context) => {
+    //const isDev = data.isDev;
+    const email = context?.auth?.token?.email;
+
+    gEventsCount++;
+    return {
+        count: gEventsCount,
+        user: email
+    };
+});
+
 
 const backupCollections = [
     { name: "event" },
+    { name: "event-archive" },
     { name: "media" },
     { name: "rooms" },
     {
@@ -575,11 +605,53 @@ exports.BackupDB = functions.region("europe-west1").pubsub
                 () => admin.storage().bucket().upload("/tmp/" + zipName, {
                     destination: `backups/${zipName}`,
                 }).then(
-                    () => console.log("Backup complete successfuly!"),
+                    () => {
+                        console.log("Backup complete successfuly!");
+                        return archiveData();
+                    },
                     (err) => console.log("Backup failed", err)),
             );
         });
     });
+
+
+function archiveData() {
+    const thresholdDate = dayjs().subtract(7, "day").format("YYYY-MM-DD");
+
+    return db.collection("event").get().then(ev => {
+        let past = 0;
+        let recurrent = 0;
+        let instance = 0;
+        let pastInstance = 0;
+        const batch = db.batch();
+        ev.docs.forEach(event => {
+            const data = event.data();
+            if (data.recurrent) {
+                recurrent++;
+                if (data.instanceStatus) {
+                    instance++;
+                    if (data.date < thresholdDate) {
+                        pastInstance++;
+                    }
+                }
+            }
+            if (data.date < thresholdDate) {
+                past++;
+
+                // only move non-recurrent or recurrent's instances which are in the past
+                if ((!data.recurrent || data.instanceStatus) &&
+                    (!data.allDay || (data.allDay && dayjs(data.enddate).format("YYYY-MM-DD") < thresholdDate))) {
+                    batch.delete(event.ref);
+                    batch.set(db.collection("event-archive").doc(event.ref.id), data);
+                    // console.log("archive", data.title, data.date, data.recurrent, data.instanceStatus, data.allDay, data.enddate);
+                }
+            }
+        });
+
+        functions.logger.info("Current events", ev.docs.length, "All past-events", past, "Recurrent-events", recurrent, "instance-events", instance, "past recurring-instance-events", pastInstance);
+        return batch.commit();
+    });
+}
 
 /**
 *  *******************
@@ -687,29 +759,17 @@ app.post("/whatsapp/webhooks", (req, res) => {
                             return db.collection("users").where("phone", "==", phoneNumber).get().then(res => {
                                 if (res.docs && res.docs.length > 0) {
                                     const email = res.docs[0].id;
-                                    if (text.startsWith("סיסמא") || text.startsWith("סיסמה")) {
-                                        const newPwd = text.substr(5).trim();
-                                        // change password flow:
-                                        const auth = admin.auth();
-                                        return auth.getUserByEmail(email).then((userRecord) => {
-                                            auth.updateUser(userRecord.uid, {
-                                                email: email,
-                                                password: newPwd,
-                                            }).then(
-                                                () => {
-                                                    functions.logger.info("Successful password reset", email);
-                                                    return addNotificationFree("סיסמא הוחלפה בהצלחה. \nמשתמש: " + email + "\nסיסמא חדשה: " + newPwd + "\n", [email], false);
-                                                },
-                                                err => {
-                                                    functions.logger.info("Password reset failed", email, err);
-                                                    return addNotificationFree("החלפת סיסמא נכשלה.\nשגיאה: " + err.toString() + "\n", [email], false);
-                                                });
-                                        });
-                                    } else {
-                                        functions.logger.info("unknown text message: ", text);
-                                    }
+                                    return handleIncomingTextMessage(text, email, false);
                                 } else {
-                                    functions.logger.info("Unknown phone", phoneNumber, "msg", text);
+                                    // try dev users:
+                                    return db.collection("users_dev").where("phone", "==", phoneNumber).get().then(res => {
+                                        if (res.docs && res.docs.length > 0) {
+                                            const email = res.docs[0].id;
+                                            return handleIncomingTextMessage(text, email, true);
+                                        } else {
+                                            functions.logger.info("Unknown phone", phoneNumber, "msg", text);
+                                        }
+                                    });
                                 }
                             });
                         } else {
@@ -733,6 +793,30 @@ app.post("/whatsapp/webhooks", (req, res) => {
 
     res.status(200).send("EVENT_RECEIVED");
 });
+
+const handleIncomingTextMessage = (text, fromEmail, isDev) => {
+    if (text.startsWith("סיסמא") || text.startsWith("סיסמה")) {
+        const newPwd = text.substr(5).trim();
+        // change password flow:
+        const auth = admin.auth();
+        return auth.getUserByEmail(fromEmail).then((userRecord) => {
+            auth.updateUser(userRecord.uid, {
+                email: fromEmail,
+                password: newPwd,
+            }).then(
+                () => {
+                    functions.logger.info("Successful password reset", fromEmail);
+                    return addNotificationFree("סיסמא הוחלפה בהצלחה. \nמשתמש: " + fromEmail + "\nסיסמא חדשה: " + newPwd + "\n", [fromEmail], isDev);
+                },
+                err => {
+                    functions.logger.info("Password reset failed", fromEmail, err);
+                    return addNotificationFree("החלפת סיסמא נכשלה.\nשגיאה: " + err.toString() + "\n", [fromEmail], isDev);
+                });
+        });
+    } else {
+        functions.logger.info("unknown text message: ", text, fromEmail);
+    }
+};
 
 
 const sendFreeMessage = (msg_body, numbers) => {

@@ -250,7 +250,7 @@ function getAccessibleEventText(evt: Event): string {
     if (evt.audioUrl) {
         ret += ". לשמיעה יש ללחוץ אנטר"
     }
-    console.log(ret)
+    //console.log(ret)
     return ret;
 
 }

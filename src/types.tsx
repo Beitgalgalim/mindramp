@@ -19,7 +19,6 @@ export const Collections =
             MEDIA_COLLECTION: "media_dev",
             USERS_COLLECTION: "users_dev",
             LOCATIONS_COLLECTION: "locations_dev",
-            PERSONAL_EVENT_COLLECTION: "personal_event_dev",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
         }
@@ -29,7 +28,6 @@ export const Collections =
             MEDIA_COLLECTION: "media",
             USERS_COLLECTION: "users",
             LOCATIONS_COLLECTION: "locations",
-            PERSONAL_EVENT_COLLECTION: "personal_event",
             USER_PERSONAL_SUBCOLLECTION: "personal",
             USER_SYSTEM_SUBCOLLECTION: "system",
         }
@@ -73,6 +71,10 @@ export interface UserInfo {
     type: UserType,
     showInKiosk?: boolean;
     _ref?: DocumentReference
+}
+
+export interface ImageInfo extends MediaResource {
+    keywords?:string[]
 }
 
 export interface LocationInfo {
@@ -249,6 +251,13 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     onCancel: Callback;
     onDelete?: (editEvent: EditEventArgs, ref: DocumentReference) => void;
     events:Event[];
+}
+
+export interface EditImageProps extends Notifying {
+    imageInfo : ImageInfo
+    onSave: (imageInfo:ImageInfo, file?: File) => void,
+    onDelete: (imageInfo:ImageInfo) =>void,
+    onCancel?: Callback,
 }
 
 export interface EditUserProps extends Notifying {

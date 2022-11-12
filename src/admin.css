@@ -22,3 +22,18 @@
   .custom-file-input:active::before {
     background: -webkit-linear-gradient(top, #e3e3e3, #f9f9f9);
   }
+
+  .media-entry {
+    display: flex;
+    flex-direction: row;
+    margin: 10px;
+    align-items: center;
+    font-size: 25px;
+    border-bottom: solid 1px lightgray;
+  }
+
+  .media-entry > img {
+    width:120px;
+    height:120px;
+    margin: 10px;
+  }

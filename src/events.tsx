@@ -150,7 +150,9 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                 },
                 {
                     caption: "בטל",
-                    callback: () => { }
+                    callback: () => { 
+                        eventChangedArg.revert();
+                    }
                 },
             ])
         } else {

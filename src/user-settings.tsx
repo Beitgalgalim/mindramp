@@ -147,6 +147,21 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                                 onClick={() => {
                                     api.logout();
                                 }}>התנתקות</Button>
+
+                            <Button
+                                style={{ minWidth: 180 }}
+                                //disabled={!notificationOn}
+                                variant="outlined"
+                                
+                                classes={{ endIcon: classes.buttonIcon }}
+                                onClick={() => api.getEventsNew().then((res) => {
+                                    notify.success(JSON.stringify(res))
+                                }).catch(e => {
+                                    notify.error("בדיקה נכשלה. שגיאה:" + e.message);
+                                })} >
+                                בדיקת אירועים
+                            </Button>
+
                         </HBox>
                     </VBoxC>
                 }

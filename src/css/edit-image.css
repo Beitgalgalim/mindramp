@@ -1,0 +1,31 @@
+.edit-image-container {
+    direction: rtl;
+
+}
+
+
+.edit-image-fields-container {
+    width:90%;
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    row-gap: 10px;
+    margin: 5%;
+
+}
+
+.edit-image-img-cont {
+    display: flex;
+    flex-direction: row;
+}
+
+.edit-image-img {
+    width: 280px;
+    height: 280px;
+    object-fit: scale-down;
+}
+
+.border {
+    border-color:black;
+    border-width: 1px;
+    border-style: solid;
+}

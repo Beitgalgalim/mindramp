@@ -1,43 +1,40 @@
-- Backup
-- Archive old meetings
-V- notify personal meetings
-V- Key Events visual
-V - Personal meeting visual
-- tv view - scroll side-ways, key events?
+Backlog:
+-------
+- Optimize: (~650k reads per day, ~ 2 NIS per day...)
+  - not query for guide's events if user is not a guide
+  - remove old records of event - move to Archive
 
 
 
-- if change time of an instance of the same day of series, rest of series is gone
+- UI Improvments in User Events
+  - pending approval...
+
+- Add nickname to users:
+  - editing UI
+  - migrate from localstorage?
+  - use in UserEvents
+  - Remove green circle for login
+- Edit Event UI refactor:
+  - Open in view mode, and add "edit mode"
+  - regular/special/message - make one field (mutally exclusive)
+- Archive old events
+- TV mode:
+  - scroll side-ways, key events?
+- Improve media management UI
+
+
+
+
+Bugs Medium
+-----------
+- Kiosk: Handle state saved in localstorage per delagated user
+  - nick-name - done
+  - Events and notifications view status
+
+
+
+Bugs Low
+--------
 - In admin
   - close list on second click on down arrow
 
-
-
----------
-V - smaller font of the buttons
-V - smaller font of greeting message
-V - star/pin/... as indicator for private meetings
-V - sort mine first
-less space between cards?
-
-Key events:
-V - another option: treat as notification, in an overlay. have a separation between reminders and key events
-
-TV:
-- only one column moves. lateral movement only when the top one
-
-
-bugs:
-V- new event, the allDay - endDate is one day back
-V- update photo - not visible
-V- larger: icons, bell, larger font
-V- button to move to admin and back
-V- users read if same user rule.
-- Admin: moving a series meeting with drag and drop, then canceling - does not restore the location in the calendar
-
-
-
-Kiosk:
-- finegrained security rules, so only users defined as kiosk users are allowed to be viewed by kiosk
-V- if no icon - image is too small
-- handle state saved in localstorage per delagated user (V - nick-name, todo: events and notifications...)

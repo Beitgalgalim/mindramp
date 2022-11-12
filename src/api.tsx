@@ -22,7 +22,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 import { sortEvents } from './utils/date';
@@ -222,6 +222,14 @@ export async function getUserInfo(user: string, pwd: string) {
 
 export async function logout() {
     return signOut(auth);
+}
+
+export function getEventsNew() {
+    const getEvents2 = httpsCallable(functions, 'getEvents');
+    const payload: any = {
+        isDev: isDev(),
+    };
+    return getEvents2(payload);
 }
 
 export function getPersonalizedEvents(user: string): Promise<Event[]> {
@@ -439,6 +447,15 @@ export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance
         return deleteDoc(ref).then(() => [ref.id]);
     }
     return [];
+}
+
+export async function updateMediaInfo(imageInfo:ImageInfo) {
+    if (imageInfo._ref) {
+        return updateDoc(imageInfo._ref, {
+            name:imageInfo.name,
+            keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
+        });
+    }
 }
 
 export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {

@@ -104,6 +104,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         if (!connected || startDate === "")
             return;
         setLoadingEvents(true);
+        console.log("reloading...")
         api.getPersonalizedEvents(user || "").then(evts => {
             const evtsWithId = evts.map((e, i) => {
                 e.tag = e._ref?.id || ("" + i);
@@ -129,11 +130,15 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
     useEffect(() => {
         let intervalId = setInterval(() => {
-            setRefresh(old => old + 1);
-            if (refresh % 30 === 0) {
-                //every 5 min
-                setReload(old => old + 1);
-            }
+            setRefresh(old => {
+                if ((old + 1) % 30 === 0) {
+                    //every 5 min
+                    console.log("set reload")
+                    setReload(reloadOld => reloadOld + 1);
+                }
+                return old + 1
+
+            });
         }, 10 * 1000)
 
         return (() => {
@@ -233,7 +238,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         />
     }
 
-    
+
     return <div dir={"rtl"} className="userEventsContainer"
         onKeyDown={(key) => {
             if (!kioskMode) return;
