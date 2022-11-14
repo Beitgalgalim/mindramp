@@ -1,17 +1,10 @@
-import { useCallback, useState, useEffect } from 'react';
-import Avatar from '@material-ui/core/Avatar';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import Link from '@material-ui/core/Link';
+import { useState, useEffect, useRef, MutableRefObject, LegacyRef, forwardRef } from 'react';
 import { PersonOutlined } from '@mui/icons-material';
-import Typography from '@material-ui/core/Typography';
 
 import * as api from './api'
 import { KioskProps, UserInfo } from './types';
-import { HBox, Spacer, VBoxC } from './elem';
-import { Checkbox, FormControlLabel } from '@mui/material';
-import { Person } from './people-picker';
 import "./css/kiosk.css"
+import { beep } from './utils/common';
 
 // const colors = [
 //     '#6DB1B9',
@@ -41,31 +34,50 @@ function hashForColor(name: string) {
 }
 
 
-function KioskPerson(props: any) {
-    return <button className="kiosk-person" onClick={props.onPress} style={{ backgroundColor: hashForColor(props.name) }}>
+const KioskPerson = forwardRef((props: any, ref: LegacyRef<HTMLButtonElement>) => {
+    return <button ref={ref} className="kiosk-person"
+        tab-marker={props["tab-marker"]}
+        onClick={props.onPress} style={{ backgroundColor: hashForColor(props.name) }}
+        onKeyDown={props.onKeyDown}
+    >
         {props.icon ? <img className="kiosk-person-img" src={props.icon} /> : <PersonOutlined style={{ fontSize: 180 }} />}
         <span>{props.name}</span>
     </button>
-}
+});
 
 
 export default function Kiosk({ onSelectUser }:
     KioskProps) {
     const [users, setUsers] = useState<UserInfo[]>([]);
+    const [focusIndex, setFocusIndex] = useState(0);
+    const firstElemRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         api.getKioskUsers().then((users: UserInfo[]) => setUsers(users));
     }, []);
+    const maxTabIndex = users.length - 1;
 
     return <div >
         <h1>יומן בית הגלגלים - בחירת משתמשים</h1>
-        <div className="kiosk-container">
+        <div className="kiosk-container"
+            onKeyDown={(e: any) => {
+                if (e.key == "Tab" && !e.shiftKey) {
+                    beep(200, 50, 40)
+                    if (e.target.getAttribute("tab-marker") === "last") {
+                        firstElemRef.current?.focus();
+                        e.preventDefault();
+                    }
+                }
+            }}
+        >
             {users.map((user, i) => (<KioskPerson
+                ref={i === 0 ? firstElemRef : undefined}
                 key={i}
                 name={user.fname + " " + user.lname}
                 icon={user.avatar?.url}
                 onPress={() => onSelectUser(user._ref?.id)}
+                tab-marker={i === users.length-1?"last":""}
             />))}
         </div>
-    </div>
+    </div >
 }

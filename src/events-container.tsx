@@ -18,11 +18,18 @@ export function EventsContainer(props: any) {
             //totalElementsHeight = child.reduce((sum, section) => section.props.itemHeightPixels + sum, 0)
 
             for (let i = child.length - 1; i >= 0; i--) {
-                sumHeightFromBottom += child[i].props.itemHeightPixels;
-                if (sumHeightFromBottom > viewPortHeight) {
-                    break;
+                const childItem = child[i];
+                if (Array.isArray(childItem)) {
+                    // todo
                 } else {
-                    elementsToScroll--;
+
+
+                    sumHeightFromBottom += child[i].props.itemHeightPixels;
+                    if (sumHeightFromBottom > viewPortHeight) {
+                        break;
+                    } else {
+                        elementsToScroll--;
+                    }
                 }
             }
         }

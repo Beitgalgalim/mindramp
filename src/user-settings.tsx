@@ -21,6 +21,8 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
     onAccessibilitySettings,
     onNotificationToken,
     onPushNotification,
+    onBetaChange,
+    beta,
 }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName);
 
@@ -104,16 +106,16 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 }
             </HBoxC>
 
-            {/* <Spacer height={20} />
-            { user && <HBox style={{ alignItems: "center" }}>
-                <Checkbox onChange={(evt) => {
-                    handleNotificationOnClick()
-                }} checked={notificationOn}
+            <Spacer height={20} />
+            <HBox style={{ alignItems: "center" }}>
+                <Checkbox onChange={() => {
+                    onBetaChange(!beta)
+                }} checked={beta}
                     style={{ paddingRight: 0 }} />
-                <Text fontSize={13}>אפשר התראות</Text>
+                <Text fontSize={13}>השתתפות בבטא</Text>
                 <Spacer />
 
-            </HBox>} */}
+            </HBox>
 
             <Spacer height={20} />
             <HBoxC>

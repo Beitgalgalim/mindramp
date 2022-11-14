@@ -108,7 +108,10 @@ export interface UserElementProps {
     width: number,
     audioRef?: MutableRefObject<HTMLAudioElement>,
     showingKeyEvent: boolean,
-    onSetRead?: () => void
+    onSetRead?: () => void,
+    itemHeightPixels?:number,
+    tabMarker?:string,
+    kioskMode:boolean,
 }
 
 export interface MediaResource {
@@ -213,6 +216,8 @@ export interface UserSettingsProps extends WithUser, Notifying {
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
+    onBetaChange: (on: boolean)=> void,
+    beta:boolean,
 }
 
 export interface AccessibilitySettingsProps {
@@ -236,6 +241,7 @@ export interface EventsHeaderProps extends WithUser {
     newNotificationCount:number,
     kioskMode:boolean,
     onGoHome:()=>void,
+    firstElemRef: any,
 }
 
 

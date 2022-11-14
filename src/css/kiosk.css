@@ -1,3 +1,4 @@
+
 .kiosk-container {
     width: 100vw;
     height: 90vh;
@@ -12,14 +13,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    border:0;
-    padding:10px;
+    padding:20px;
+    border: 0;
     width:250px;
     height:250px;
     font-size: 30px;
-    margin: 10px;
     background-color:lightblue;
     border-radius: 10px;
+    margin: 10px;
+    
+}
+
+.kiosk-person:focus {
+    outline: 10px solid lightsalmon !important;
 }
 
 .kiosk-person-img {

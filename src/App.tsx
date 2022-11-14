@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
-import './App.css';
+import './css/App.css';
 import { Alert, AlertTitle } from '@mui/material'
 import { Text, Spacer, HBoxC } from './elem';
 

@@ -6,14 +6,14 @@ import { Event } from './event';
 import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
-import './css/event.css'
+import './css/event-new.css'
 
 
 import { AccessTime, MicOutlined } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
 import { AccessibilitySettingsData, UserElementProps } from "./types";
-export default function EventElement({
+export default function EventElementNew({
     accessibilitySettings,
     event, single, firstInGroup,
     now, width, audioRef, showingKeyEvent, onSetRead, tabMarker, kioskMode }: UserElementProps
@@ -61,6 +61,7 @@ export default function EventElement({
 
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
+    const meetingLengthMinutes = dayjs(event.end).diff(event.start, "minute");
 
     const eventProgress = Math.abs(now.diff(event.start, "minutes")) <= 1 ? 0 :
         now.isAfter(event.start) && now.isBefore(event.end) ?
@@ -83,7 +84,7 @@ export default function EventElement({
         {event.location && <Text fontSize={0.7 * titleSize + "em"}>{event.location}</Text>}
     </div>
 
-    const dateTime = event.allDay ? "כל היום" : t1 + " - " + t2 +
+    const dateTime = (event.allDay ? "כל היום" : t1 + " - " + t2) +
         (showingKeyEvent ? " " + getNiceDate(event.date, true) : "");
 
 
@@ -94,113 +95,116 @@ export default function EventElement({
     const isSingle = !!single;
     const widthPixels = window.innerWidth * (width / 100);
     return (
-        <button
-            className={ "event-container" + (kioskMode ? " kiosk-nav" : "")}
-            tab-marker={tabMarker}
-            aria-label={getAccessibleEventText(event)}
-            style={{
+        <div className="event-container-outer">
 
-                width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
-                height: single ? Design.singleEventHeight : Design.multiEventHeight,
-                background: playProgress >= 0 ?
-                    `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
-                    "white",
-                marginRight: firstInGroup ? 24 : 0,
-            }}
-            onClick={() => {
-                if (event.unread === true && onSetRead) {
-                    onSetRead();
-                }
+            <div className="event-time-new">
+                <Text aria-hidden="true" fontSize={hourSize*1.5 + "em"}>{t1}</Text>
+                <Text aria-hidden="true" fontSize={hourSize + "em"}>{meetingLengthMinutes} דק׳</Text>
+            </div>
+            <button
+                tab-marker={tabMarker}
+                className={ "event-container2" + (kioskMode ? " kiosk-nav" : "")}
+                aria-label={getAccessibleEventText(event)}
+                style={{
 
-                // plays the audio if exists
-                if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
-                    // console.log(e.detail)
-                    if (audioRef.current.src === event.audioUrl) {
-                        // avoid multiple clicks
-                        if (eventAudioLoading) {
-                            console.log("audio is still loading - ignore click")
+                    width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
+                    height: single ? Design.singleEventHeight : Design.multiEventHeight,
+                    background: playProgress >= 0 ?
+                        `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
+                        "white",
+                    //marginRight: firstInGroup ? 24 : 0,
+                }}
+                onClick={() => {
+                    if (event.unread === true && onSetRead) {
+                        onSetRead();
+                    }
+
+                    // plays the audio if exists
+                    if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
+                        // console.log(e.detail)
+                        if (audioRef.current.src === event.audioUrl) {
+                            // avoid multiple clicks
+                            if (eventAudioLoading) {
+                                console.log("audio is still loading - ignore click")
+                                return;
+                            }
+
+                            if (audioRef.current.paused) {
+                                audioRef.current.play().then(() => startTimer());
+                            } else {
+                                audioRef.current.pause();
+                                stopTimer();
+                                setEventAudioLoading(false);
+                                console.log("audio loading off 2")
+                            }
+
                             return;
                         }
 
-                        if (audioRef.current.paused) {
-                            audioRef.current.play().then(() => startTimer());
-                        } else {
-                            audioRef.current.pause();
+                        setEventAudioLoading(true);
+                        console.log("audio start loading")
+                        audioRef.current.src = event.audioUrl;
+                        audioRef.current.onended = () => {
                             stopTimer();
+                            console.log("ended")
                             setEventAudioLoading(false);
-                            console.log("audio loading off 2")
+                            setPlayProgress(-1);
                         }
-
-                        return;
+                        audioRef.current.play().then(() => startTimer());
                     }
+                }}
 
-                    setEventAudioLoading(true);
-                    console.log("audio start loading")
-                    audioRef.current.src = event.audioUrl;
-                    audioRef.current.onended = () => {
-                        stopTimer();
-                        console.log("ended")
-                        setEventAudioLoading(false);
-                        setPlayProgress(-1);
-                    }
-                    audioRef.current.play().then(() => startTimer());
-                }
-            }}
-
-        >
-            {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
+            >
+                {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
 
 
-            {/** pin for personal events */
-                event.isPersonal === true &&
-                <div className="event-personal-pin">
-                    {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
-                    <img src={myEvent} style={{ width: 45, height: 45 }} />
-                </div>
-            }
-            <div className="event-title">
-                {
-                    event.imageUrl && <img src={event.imageUrl} style={{
-                        maxWidth: Design.eventImageSize * imageSize,
-                        maxHeight: Design.eventImageSize * imageSize,
-                        borderRadius: 10,
-                        objectFit: "cover",
-                    }} alt="תמונה"
-                    />
-                }
-                {titleAndLocation}
-            </div>
-            <div className="event-footer-right" style={{ lineHeight: hourSize + "em"}}>
-                <div className="event-time">
-                <AccessTime style={{ fontSize: hourSize + "em", color: Colors.EventIcons }} />
-                <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
-                </div>
-                <div className="event-progress">
-                {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
-                </div>
-            </div>
-
-            <div className="event-footer-left">
-                {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
-                {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
-                {
-                    event.audioUrl &&
-                    <div style={{
-                        height: Design.buttonSize, minWidth: Design.buttonSize,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        color: "white",
-                        backgroundColor: Colors.EventIcons,
-                        borderRadius: Design.buttonSize / 2,
-                    }}>
-                        <MicOutlined style={{
-                            fontSize: Design.buttonSize * .7,
-                        }} />
+                {/** pin for personal events */
+                    event.isPersonal === true &&
+                    <div className="event-personal-pin">
+                        {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
+                        <img src={myEvent} style={{ width: 45, height: 45 }} />
                     </div>
                 }
-            </div>
-            {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
+                <div className="event-title">
+                    {
+                        event.imageUrl && <img src={event.imageUrl} style={{
+                            maxWidth: Design.eventImageSize * imageSize,
+                            maxHeight: Design.eventImageSize * imageSize,
+                            borderRadius: 10,
+                            objectFit: "cover",
+                        }} alt="תמונה"
+                        />
+                    }
+                    {titleAndLocation}
+                </div>
+                <div className="event-footer-right" style={{ lineHeight: hourSize + "em" }}>
+
+                    <div className="event-progress">
+                        {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
+                    </div>
+                </div>
+
+                <div className="event-footer-left">
+                    {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
+                    {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
+                    {
+                        event.audioUrl &&
+                        <div style={{
+                            height: Design.buttonSize, minWidth: Design.buttonSize,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            color: "white",
+                            backgroundColor: Colors.EventIcons,
+                            borderRadius: Design.buttonSize / 2,
+                        }}>
+                            <MicOutlined style={{
+                                fontSize: Design.buttonSize * .7,
+                            }} />
+                        </div>
+                    }
+                </div>
+                {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
                     <HBox style={{ alignItems: "center", width: "100%" }}>
                         <AccessTime style={{ color: Colors.EventIcons }} />
@@ -237,12 +241,14 @@ export default function EventElement({
                 </HBox>
             </HBoxSB> */}
 
-            {
-                minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
-                    <Text>{getBeforeTimeText(minutesBefore)}</Text>
-                </div>
-            }
-        </button >
+                {
+                    minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
+                        <Text>{getBeforeTimeText(minutesBefore)}</Text>
+                    </div>
+                }
+            </button >
+        </div>
+
     );
 }
 

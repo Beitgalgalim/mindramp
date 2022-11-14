@@ -35,8 +35,8 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onTripleClick?
     return () => setClick(prev => prev + 1);
 }
 
-export default function EventsHeader({ user, 
-    onLogoDoubleClicked, 
+export default function EventsHeader({ user,
+    onLogoDoubleClicked,
     onLogoTripleClicked,
     nickName, showDateTime, height, centered,
     isAdmin,
@@ -44,7 +44,9 @@ export default function EventsHeader({ user,
     kioskMode,
     onGoHome,
     notificationOn,
-    onNotificationClick, showingNotifications, newNotificationCount }: EventsHeaderProps) {
+    onNotificationClick, showingNotifications, newNotificationCount,
+    firstElemRef,
+}: EventsHeaderProps) {
     const navigate = useNavigate();
 
     const handleClick = useSingleAndDoubleClick(
@@ -102,10 +104,12 @@ export default function EventsHeader({ user,
 
         {
             /** Notifications */
-            <div style={{
-                position: "absolute", right: 0, top: 0, width: 50, height: 50,
-
-            }} onClick={onNotificationClick}>
+            <button
+                className="event-notification-btn"
+                ref={!kioskMode ? firstElemRef : undefined}
+                onClick={onNotificationClick}
+                tabIndex={kioskMode?-1:0}
+            >
                 {newNotificationCount > 0 && !showingNotifications &&
                     <div style={{
                         position: "absolute",
@@ -121,14 +125,15 @@ export default function EventsHeader({ user,
                     }}
                     >{newNotificationCount}</div>
                 }
-                <NotificationIcon style={{
-                    width: 30, height: 30,
-                    borderRadius: 15,
-                    padding: 2,
-                    //backgroundColor: showingNotifications ? "gray" : "transparent"
-                }} />
+                <NotificationIcon
+                    style={{
+                        width: 30, height: 30,
+                        borderRadius: 15,
+                        padding: 2,
+                        //backgroundColor: showingNotifications ? "gray" : "transparent"
+                    }} />
 
-            </div>
+            </button>
         }
         <Text textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
 
@@ -141,7 +146,8 @@ export default function EventsHeader({ user,
                     }}>ניהול</Button>
             </div>}
         {kioskMode && <button
-            className="event-home-btn"
+            ref={kioskMode && firstElemRef}
+            className={"event-home-btn kiosk-nav"}
             aria-label="חזרה למסך בחירת משתמשים"
             onClick={() => onGoHome()}>
             <Home

@@ -21,6 +21,8 @@ import Message from "./message";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
+import EventElementNew from "./event-element-new";
+import { beep } from "./utils/common";
 
 
 function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
@@ -36,24 +38,6 @@ function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[])
 
 function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
     return msg1.title === msg2.title && msg1.body === msg2.body;
-}
-
-let actx: AudioContext | undefined = undefined;
-
-function beep(vol: number, freq: number, duration: number) {
-    try {
-        if (!actx) actx = new AudioContext();
-        let v = actx.createOscillator();
-        let u = actx.createGain();
-        v.connect(u);
-        v.frequency.value = freq;
-        u.connect(actx.destination);
-        u.gain.value = vol * 0.01;
-        v.start(actx.currentTime);
-        v.stop(actx.currentTime + duration * 0.001);
-    } catch {
-        // ignore
-    }
 }
 
 
@@ -74,10 +58,14 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
     const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
     const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
+    const [beta, setBeta, betaMore] = useLocalStorageState<any>("beta");
     const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
     const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
 
+
     const audioRef = useRef<HTMLAudioElement>(new Audio());
+    const firstElemRef = useRef<HTMLButtonElement>(null);
+
 
     const location = useLocation();
     let showDateTime: Dayjs;
@@ -114,8 +102,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             if (eventsResponse.noChange) return;
 
             setEtag(eventsResponse.eTag);
-            
-            const evtsWithId = eventsResponse.events.map((e:any) => ({
+
+            const evtsWithId = eventsResponse.events.map((e: any) => ({
                 ...e.event, tag: e.id
             }));
 
@@ -157,9 +145,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const days = [];
     const showingKeyEvents = showNotifications && notificationsPane == 1;
     const NoEventsMsg = "אין אירועים";
+    let showingEvents = [];
 
     if (!showNotifications) {
-        const showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
+        showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
             e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
 
         days.push({
@@ -242,18 +231,21 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onNotificationOnChange={onNotificationOnChange}
             onNotificationToken={onNotificationToken}
             onPushNotification={onPushNotification}
+            onBetaChange={(on) => setBeta(on)}
+            beta={beta === true}
             notify={notify}
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
         />
     }
 
-
     return <div dir={"rtl"} className="userEventsContainer"
-        onKeyDown={(key) => {
-            if (!kioskMode) return;
-            if (key.key == "Tab") {
-                console.log("keyDown", key);
-                beep(200, 50, 40)
+        onKeyDown={(e: any) => {
+            if (e.key == "Tab" && !e.shiftKey) {
+                if (kioskMode)  beep(200, 50, 40)
+                if (e.target.getAttribute("tab-marker") === "last") {
+                    firstElemRef.current?.focus();
+                    e.preventDefault();
+                }
             }
         }}
 
@@ -274,6 +266,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             user={user}
             kioskMode={kioskMode}
             onGoHome={onGoHome}
+            firstElemRef={firstElemRef}
         />
 
         <HBox style={{ justifyContent: "space-evenly" }}>
@@ -285,12 +278,16 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                         currentNavigation={daysOffset}
                         onNavigate={(offset: number) => setDaysOffset(offset)}
                         buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
+                        tabMarker={day.eventGroup && day.eventGroup.length > 0?"":"last"}
+                        kiosk={kioskMode}
                     /> :
                         showNotifications && <EventsNavigation
                             height={"10vh"}
                             currentNavigation={notificationsPane}
                             onNavigate={(offset: number) => setNotificationsPane(offset)}
                             buttons={[{ caption: "הודעות", badge: newMessagesCount }, { caption: "אירועים", badge: newKeyEventsCount }]}
+                            tabMarker={day.eventGroup && day.eventGroup.length > 0?"":"last"}
+                            kiosk={kioskMode}
                         />}
 
                     {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
@@ -301,38 +298,67 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                         autoScroll={isTV}
                     >
                         {day.eventGroup?.map((evGroup, i) =>
-                            <HBox
-                                style={{
-                                    width: "100%",
-                                    overflowX: evGroup.length > 1 ? "auto" : "hidden",
-                                    flexWrap: "nowrap",
-                                }}
-                                key={evGroup.length > 0 ? evGroup[0].tag : i}
-                                itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
-                            >
-                                {
-                                    evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
-                                        accessibilitySettings={accSettings}
-                                        showingKeyEvent={showingKeyEvents}
-                                        width={columnWidth - 1}
-                                        single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
-                                        audioRef={audioRef}
-                                        onSetRead={showingKeyEvents ?
-                                            () => {
-                                                setKeyEvents(curr =>
-                                                (curr ?
-                                                    curr.map(ke => {
-                                                        if (Event.equals(ke, ev)) {
-                                                            return { ...ke, unread: false } as Event;
-                                                        }
-                                                        return ke
-                                                    }) :
-                                                    undefined));
-                                            }
-                                            : undefined}
-                                    />))
-                                }
-                            </HBox>)
+                            beta ?
+                                evGroup.map((ev, j, ar) => (<EventElementNew
+                                    kioskMode={kioskMode}
+                                    tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
+                                    key={ev.tag}
+                                    itemHeightPixels={Design.singleEventHeight}
+                                    accessibilitySettings={accSettings}
+                                    showingKeyEvent={showingKeyEvents}
+                                    width={columnWidth - 1}
+                                    single={true} firstInGroup={true} event={ev} now={showDateTime}
+                                    audioRef={audioRef}
+                                    onSetRead={showingKeyEvents ?
+                                        () => {
+                                            setKeyEvents(curr =>
+                                            (curr ?
+                                                curr.map(ke => {
+                                                    if (Event.equals(ke, ev)) {
+                                                        return { ...ke, unread: false } as Event;
+                                                    }
+                                                    return ke
+                                                }) :
+                                                undefined));
+                                        }
+                                        : undefined}
+                                />))
+                                :
+
+                                <HBox
+                                    style={{
+                                        width: "100%",
+                                        overflowX: evGroup.length > 1 ? "auto" : "hidden",
+                                        flexWrap: "nowrap",
+                                    }}
+                                    key={evGroup.length > 0 ? evGroup[0].tag : i}
+                                    itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
+                                >
+                                    {
+                                        evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                            kioskMode={kioskMode}
+                                            tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
+                                            accessibilitySettings={accSettings}
+                                            showingKeyEvent={showingKeyEvents}
+                                            width={columnWidth - 1}
+                                            single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
+                                            audioRef={audioRef}
+                                            onSetRead={showingKeyEvents ?
+                                                () => {
+                                                    setKeyEvents(curr =>
+                                                    (curr ?
+                                                        curr.map(ke => {
+                                                            if (Event.equals(ke, ev)) {
+                                                                return { ...ke, unread: false } as Event;
+                                                            }
+                                                            return ke
+                                                        }) :
+                                                        undefined));
+                                                }
+                                                : undefined}
+                                        />))
+                                    }
+                                </HBox>)
                         }
                         {day.messages?.map((msg, i) =>
                             <Message

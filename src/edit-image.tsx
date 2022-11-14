@@ -97,7 +97,7 @@ function dataURLtoFile(dataurl: string, filename: string): File | undefined {
     }
 }
 
-const aspect = 6 / 9;
+const aspect = 80 / 85;
 
 export default function EditImage(
     { notify, imageInfo, onSave, onDelete, onCancel }: EditImageProps) {
@@ -142,7 +142,10 @@ export default function EditImage(
             <div>תמונה*</div>
             <div className="edit-image-img-cont">
                 {preview && !imageInfo._ref ?
-                    <ReactCrop crop={crop} onChange={(c: PixelCrop, p: PercentCrop) => { setCrop(p) }}
+                    <ReactCrop crop={crop} onChange={(c: PixelCrop, p: PercentCrop) => { 
+                        if (p.width < 10 || p.height < 10) return;
+                        setCrop(p) 
+                    }}
                         aspect={aspect}>
                         <img ref={imgRef} className="edit-image-img" src={preview} onLoad={onImageLoad}
                         />

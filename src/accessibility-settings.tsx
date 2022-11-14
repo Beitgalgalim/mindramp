@@ -100,6 +100,7 @@ export default function AccessibilitySettings({
         </div>
         <div className="preview-events">
         <EventElement
+            kioskMode={false}
             event={Event.fromDbObj({
                 guide:{icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg"},
                 audioUrl: "https://noaudio.com",
@@ -119,6 +120,7 @@ export default function AccessibilitySettings({
         />
 
         <EventElement
+            kioskMode={false}
             event={Event.fromDbObj({
                 guide:{icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg"},
                 audioUrl: "https://noaudio.com",

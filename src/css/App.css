@@ -32,6 +32,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -40,7 +41,7 @@
 
 .manageButtonContainer {
   position: absolute;
-  left:90px;
+  left: 90px;
   top: 20px;
   z-index: 1000;
 }
@@ -48,7 +49,7 @@
 
 @media (max-width: 360px) {
   .manageButtonContainer {
-    left:0px;
+    left: 0px;
   }
 }
 
