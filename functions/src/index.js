@@ -516,6 +516,10 @@ async function getTag(isDev) {
     }
 }
 
+function getEventCollection(isDev) {
+    return isDev ? db.collection("event_dev") : db.collection("event");
+}
+
 exports.upsertEvent = functions.region("europe-west1").https.onCall((data, context) => {
     const isDev = data.isDev;
     const eventObj = data.event;
@@ -523,7 +527,7 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall((data, conte
 
     // Verify user is admin
     return isAdmin(isDev, context).then(() => {
-        const collection = isDev ? db.collection("event_dev") : db.collection("event");
+        const collection = getEventCollection(isDev);
         const returnEvent = {};
 
         eventObj.modifiedAt = dayjs().format(tagFormat);
@@ -564,6 +568,79 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall((data, conte
 });
 
 exports.createEventInstance = functions.region("europe-west1").https.onCall((data, context) => {
+    const isDev = data.isDev;
+    const eventObj = data.event;
+    const id = data.id;
+
+    return isAdmin(isDev, context).then(() => {
+        eventObj.instanceStatus = true;
+        eventObj.recurrent = { gid: id };
+        eventObj.modifiedAt = dayjs().format(tagFormat);
+
+        const collection = getEventCollection(isDev);
+
+        const batch = db.batch();
+        const seriesRef = collection.doc(id);
+
+        return seriesRef.get().then((seriesDoc) => {
+            const seriesDocObj = seriesDoc.data();
+
+            if (!seriesDocObj || !seriesDocObj.recurrent) {
+                // not expected
+                throw new Error("Unexpected missing recurrent info on series event");
+            }
+
+            if (!seriesDocObj.recurrent.exclude) {
+                seriesDocObj.recurrent.exclude = [eventObj.date];
+            } else {
+                seriesDocObj.recurrent.exclude.push(eventObj.date);
+            }
+
+            const instanceRef = collection.doc();
+            batch.update(seriesRef, { recurrent: seriesDocObj.recurrent, modifiedAt: eventObj.modifiedAt });
+            batch.set(instanceRef, eventObj);
+            return batch.commit().then(() => promoteTag(isDev, eventObj.modifiedAt).then(
+                () => ({
+                    seriesId: seriesRef.id,
+                    instanceId: instanceRef.id,
+                    instanceEvent: eventObj,
+                    seriesEvent: seriesDocObj,
+                })));
+        });
+    });
+});
+
+exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.onCall((data, context) => {
+    const isDev = data.isDev;
+    const id = data.id;
+    const excludeDate = data.excludeDate;
+
+    // Verify user is admin
+    return isAdmin(isDev, context).then(() => {
+        const collection = getEventCollection(isDev);
+        const seriesRef = collection.doc(id);
+        return seriesRef.get().then((seriesDoc) => {
+            const seriesDocObj = seriesDoc.data();
+            seriesDocObj.modifiedAt = dayjs().format(tagFormat);
+
+
+            if (!seriesDocObj || !seriesDocObj.recurrent) {
+                // not expected
+                throw new Error("Unexpected missing recurrent info on series event");
+            }
+            if (!seriesDocObj.recurrent.exclude) {
+                seriesDocObj.recurrent.exclude = [excludeDate];
+            } else {
+                seriesDocObj.recurrent.exclude.push(excludeDate);
+            }
+
+            return seriesRef.update(seriesDocObj).then(() => promoteTag(isDev, seriesDocObj.modifiedAt).then(
+                () => ({
+                    seriesId: seriesRef.id,
+                    seriesEvent: seriesDocObj
+                })));
+        });
+    });
 });
 
 exports.deleteEvent = functions.region("europe-west1").https.onCall((data, context) => {
@@ -573,7 +650,7 @@ exports.deleteEvent = functions.region("europe-west1").https.onCall((data, conte
 
     // Verify user is admin
     return isAdmin(isDev, context).then(() => {
-        const collection = isDev ? db.collection("event_dev") : db.collection("event");
+        const collection = getEventCollection(isDev);
 
         if (id) {
             const docRef = collection.doc(id);
@@ -609,12 +686,11 @@ function updateEventInCache(isDev, id, change) {
     }
 }
 
-
 async function getEventsViaCache(isDev) {
     const collection = isDev ? db.collection("event_dev") : db.collection("event");
     let cachedEvents = isDev ? gEventsDev : gEvents;
     let cachedEtag = isDev ? gEtagDev : gEtag;
-    let latestTag = await getTag(isDev);
+    const latestTag = await getTag(isDev);
 
     if (cachedEvents) {
         // functions.logger.info("Tags", "saved", latestTag, "calc", currentEtag);

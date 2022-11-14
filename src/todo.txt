@@ -1,10 +1,8 @@
 Backlog:
 -------
 - Optimize: (~650k reads per day, ~ 2 NIS per day...)
-  - not query for guide's events if user is not a guide
-  - remove old records of event - move to Archive
-
-
+  - cache & eTag queries - V
+  - remove old records of event - move to Archive - V
 
 - UI Improvments in User Events
   - pending approval...
@@ -20,9 +18,7 @@ Backlog:
 - Archive old events
 - TV mode:
   - scroll side-ways, key events?
-- Improve media management UI
-
-
+- Improve media management UI - V
 
 
 Bugs Medium

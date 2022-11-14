@@ -237,10 +237,10 @@ export function getPersonalizedEvents(user: string | undefined, eTag: string | u
     const getEventsFunc = httpsCallable(functions, 'getEvents');
     const payload: any = {
         isDev: isDev(),
-        impersonateUser:user,
+        impersonateUser: user,
         eTag,
     };
-    return getEventsFunc(payload).then(res=>res.data);
+    return getEventsFunc(payload).then(res => res.data);
 }
 export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
     if (!filter) {
@@ -346,11 +346,11 @@ export async function upsertEvent(event: Event | EventApi, ref: DocumentReferenc
     const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
     const payload: any = {
         isDev: isDev(),
-        id:ref?.id,
+        id: ref?.id,
         event: dbEventObj,
     };
 
-    return upsertEventFunc(payload).then((res : any) => {
+    return upsertEventFunc(payload).then((res: any) => {
         console.log("upsertEvent", res);
         const id = res.data.id;
         const docRef = doc(collection(db, Collections.EVENT_COLLECTION), id);
@@ -362,44 +362,23 @@ export async function upsertEvent(event: Event | EventApi, ref: DocumentReferenc
 export async function createEventInstance(evt: Event | EventApi, ref: DocumentReference | undefined):
     Promise<{ instance: Event, series: Event }> {
 
-    if (!ref) {
-        throw ("Ref must be valid");
-    }
+    const eventObj = Event.fromEventAny(evt);
+    const dbEventObj = eventObj.toDbObj();
 
-    const event = Event.fromEventAny(evt);
-    event.instanceStatus = true;
-    event.recurrent = { gid: ref.id };
+    const createEventInstanceFunc = httpsCallable(functions, 'createEventInstance');
+    const payload: any = {
+        isDev: isDev(),
+        id: ref?.id,
+        event: dbEventObj,
+    };
 
-    const eventObj = event.toDbObj();
-
-    let batch = writeBatch(db);
-
-    return getDoc(ref).then((seriesDoc) => {
-        const seriesDocObj = seriesDoc.data();
-
-        if (!seriesDocObj || !seriesDocObj.recurrent) {
-            // not expected
-            throw ("Unexpected missing recurrent info on series event");
-        }
-        if (!seriesDocObj.recurrent.exclude) {
-            seriesDocObj.recurrent.exclude = [eventObj.date];
-        } else {
-            seriesDocObj.recurrent.exclude.push(eventObj.date);
-        }
-
-        const instanceRef = doc(collection(db, Collections.EVENT_COLLECTION));
-        batch.update(ref, { recurrent: seriesDocObj.recurrent });
-        batch.set(instanceRef, eventObj);
-        return batch.commit().then(
-            () => {
-                event._ref = instanceRef
-                const seriesEvent = Event.fromDbObj(seriesDocObj);
-                seriesEvent._ref = ref;
-                return {
-                    instance: event,
-                    series: seriesEvent,
-                };
-            })
+    return createEventInstanceFunc(payload).then((res: any) => {
+        const instanceRef = doc(collection(db, Collections.EVENT_COLLECTION), res.data.instanceId);
+        const seriesRef = doc(collection(db, Collections.EVENT_COLLECTION), res.data.seriesId);
+        return {
+            instance: Event.fromDbObj(res.data.instanceEvent, instanceRef),
+            series: Event.fromDbObj(res.data.seriesEvent, seriesRef),
+        };
     });
 }
 
@@ -408,20 +387,16 @@ export async function createEventInstanceAsDeleted(excludeDate: string, ref: Doc
         throw ("Ref must be valid");
     }
 
-    return getDoc(ref).then((seriesDoc) => {
-        const seriesDocObj = seriesDoc.data();
+    const createEventInstanceAsDeletedFunc = httpsCallable(functions, 'createEventInstanceAsDeleted');
+    const payload: any = {
+        isDev: isDev(),
+        id: ref?.id,
+        excludeDate,
+    };
 
-        if (!seriesDocObj || !seriesDocObj.recurrent) {
-            // not expected
-            throw ("Unexpected missing recurrent info on series event");
-        }
-        if (!seriesDocObj.recurrent.exclude) {
-            seriesDocObj.recurrent.exclude = [excludeDate];
-        } else {
-            seriesDocObj.recurrent.exclude.push(excludeDate);
-        }
-
-        return updateDoc(ref, seriesDocObj).then(() => Event.fromDbObj(seriesDocObj, ref));
+    return createEventInstanceAsDeletedFunc(payload).then((res: any) => {
+        const seriesRef = doc(collection(db, Collections.EVENT_COLLECTION), res.data.seriesId);
+        return Event.fromDbObj(res.data.seriesEvent, seriesRef);
     });
 }
 
@@ -430,20 +405,20 @@ export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance
     const deleteEventFunc = httpsCallable(functions, 'deleteEvent');
     const payload: any = {
         isDev: isDev(),
-        id:ref.id,
+        id: ref.id,
         deleteModifiedInstance,
     };
 
     if (ref) {
-        return deleteEventFunc(payload).then((res : any) => res.data);
+        return deleteEventFunc(payload).then((res: any) => res.data);
     }
     return [];
 }
 
-export async function updateMediaInfo(imageInfo:ImageInfo) {
+export async function updateMediaInfo(imageInfo: ImageInfo) {
     if (imageInfo._ref) {
         return updateDoc(imageInfo._ref, {
-            name:imageInfo.name,
+            name: imageInfo.name,
             keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
         });
     }
