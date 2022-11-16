@@ -27,3 +27,36 @@
 .mainBG {
   background-color: #EBF0F2;
 }
+
+.admin-pane-btn-container {
+  display: flex;
+  width:100vw;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  background-color: lightgray;
+}
+
+.admin-pane-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2px;
+  padding-left:10px;
+  padding-right:10px;
+
+  
+}
+.selected {
+  background-color: white;
+  border-radius: 10px;
+}
+
+.admin-pane-btn > text {
+  font-size: 15px;
+  color: black;
+}
+.admin-pane-btn > svg {
+  font-size: 20 px;
+  color: black;
+}

@@ -8,7 +8,7 @@ import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, Notifi
 import { Checkbox, Grid } from '@material-ui/core';
 import MyDatePicker from './date-picker';
 import MediaPicker from './media-picker';
-import { DocumentReference } from '@firebase/firestore/dist/lite';
+// import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue, LocationsFieldKeyValue } from './event';
 import { getLocations } from './api'
 
@@ -19,7 +19,7 @@ import { removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
 
 
 export default function EditEvent(
-    { inEvent, onSave, onCancel, onDelete, media, users, notify, events }: EditEventsProps) {
+    { inEvent, onSave, onCancel, onDelete, media, users, notify, events, updateInProgress }: EditEventsProps) {
     const [title, setTitle] = useState<string>(inEvent.event.title);
     const [notes, setNotes] = useState<string>();
     const [start, setStart] = useState<string>(inEvent.event.start);
@@ -30,13 +30,13 @@ export default function EditEvent(
     const [audioPath, setAudioPath] = useState<string>();
     const [audioBlob, setAudioBlob] = useState<any>();
     const [clearAudio, setClearAudio] = useState<boolean>(false);
-    const [ref, setRef] = useState<DocumentReference | undefined>();
+    const [id, setId] = useState<string | undefined>(inEvent.event.id);
     const [instanceStatus, setInstanceStatus] = useState<boolean>();
     const [editImage, setEditImage] = useState(false);
     const [participants, setParticipants] = useState<any>({});
     const [availableUsers, setAvailableUsers] = useState<UserInfo[]>([]);
     const [keyEvent, setKeyEvent] = useState<boolean>(false);
-    const [allDay, setAllDay] = useState<boolean>(false);
+    const [allDay, setAllDay] = useState<boolean>(inEvent.event.allDay === true);
     const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
     const [recurrent, setRecurrent] = useState<EventFrequency | undefined>(undefined);
@@ -49,8 +49,8 @@ export default function EditEvent(
         const recu = event.recurrent;
         setInstanceStatus(event.instanceStatus);
 
-        if (event._ref) {
-            setRef(event._ref);
+        if (event.id) {
+            setId(event.id);
         }
         if (inEvent.editAllSeries && recu) {
             setRecurrent(recu.freq);
@@ -95,7 +95,7 @@ export default function EditEvent(
             };
             // search for overlapping events:
             events.forEach(ev => {
-                if (ev._ref?.id !== inEvent.event._ref?.id && ev.participants)
+                if (ev.id !== inEvent.event.id && ev.participants)
                     if (
                         //event overlap: 
                         ((start <= ev.start && end > ev.start) || (start >= ev.start && start < ev.end)) &&
@@ -143,7 +143,7 @@ export default function EditEvent(
             borderRadius: 15,
             boxShadow: Design.popUpboxShadow,
         }}>
-            <Text fontSize={45} textAlign="center">{ref ? "עדכון ארוע" : "ארוע חדש"}</Text>
+            <Text fontSize={45} textAlign="center">{id ? "עדכון ארוע" : "ארוע חדש"}</Text>
             {editImage && <MediaPicker media={media} title={"בחירת תמונה"}
                 onSelect={(rm: MediaResource) => {
                     setImageUrl(rm.url);
@@ -387,7 +387,7 @@ export default function EditEvent(
                             }} checked={recurrent !== undefined}
                                 disabled={inEvent.editAllSeries === false}
                                 style={{ paddingRight: 0 }} />
-                            <Text fontSize={13}>חוזר</Text>
+                            <Text >חוזר</Text>
                         </HBox>
 
                     </Grid>
@@ -424,7 +424,7 @@ export default function EditEvent(
                             }}
                                 checked={(reminderMinutes || reminderMinutes === 0) ? true : false}
                                 style={{ paddingRight: 0 }} />
-                            <Text fontSize={13}>תזכורת</Text>
+                            <Text>תזכורת</Text>
                         </HBox>
                     </Grid>
                     <Grid container item xs={6} spacing={2} >
@@ -451,7 +451,7 @@ export default function EditEvent(
             </Grid>
 
             <HBoxC style={{ position: "absolute", bottom: "2%" }}>
-                <Button variant="contained" onClick={() => {
+                <Button variant="contained" disabled={updateInProgress} onClick={() => {
 
                     const recurrentField = inEvent.event.recurrent || {};
                     recurrentField.freq = recurrent || "none";
@@ -488,12 +488,12 @@ export default function EditEvent(
                             }),
                             editAllSeries: inEvent.editAllSeries
                         },
-                        ref);
+                        id);
                 }}>שמור</Button>
                 <Spacer width={25} />
-                {ref && onDelete && <Button variant="contained" onClick={() => onDelete(inEvent, ref)}>מחק</Button>}
-                {ref && onDelete && <Spacer width={25} />}
-                <Button variant="contained" onClick={() => onCancel()} >בטל</Button>
+                {id && onDelete && <Button variant="contained"  disabled={updateInProgress} onClick={() => onDelete(inEvent, id)}>מחק</Button>}
+                {id && onDelete && <Spacer width={25} />}
+                <Button variant="contained" disabled={updateInProgress} onClick={() => onCancel()} >בטל</Button>
 
             </HBoxC>
         </div >

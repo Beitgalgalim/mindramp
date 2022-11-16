@@ -67,7 +67,11 @@ export default function Admin(props: AdminProps) {
             <ResponsiveTab label={"אנשים"} />
         </Tabs>
         <TabPanel key={"0"} value={adminTab} index={0} style={{ height: "80%" }}>
-            <Events connected={props.connected} notify={props.notify} media={media} users={users} />
+            {/* <Events 
+                notify={props.notify} 
+                media={media} 
+                users={users} 
+                events/> */}
         </TabPanel>
 
         <TabPanel key={"1"} value={adminTab} index={1} >

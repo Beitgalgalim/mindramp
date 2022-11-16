@@ -5,34 +5,87 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
-import { Fab } from '@mui/material'
-import { Add } from '@mui/icons-material';
+import { CircularProgress, Fab } from '@mui/material'
+import { Add, VolumeUp } from '@mui/icons-material';
 import { Event } from './event';
 
 import EditEvent from './edit-event';
-import { DateFormats, explodeEvents } from './utils/date';
+import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
 import dayjs from 'dayjs';
 import { EditEventArgs, EventsProps } from './types';
-import { DocumentReference } from '@firebase/firestore/dist/lite';
-import { addParticipantsIcon, addRepeatIcon } from './elem';
+import { Text } from './elem';
+import EventsNavigation from './events-navigation';
+import './css/events.css';
+
+/*
+"title":"סדנת ציור",
+"start":"2022-11-15T13:30:00+02:00",
+"end":"2022-11-15T14:00:00+02:00",
+"id":"UO96dfDuLbi7DYrximps",
+"extendedProps":{
+    "modifiedAt":"2022-11-13 07:44:52.345",
+    "audioPath":"media/audio/2022-10-20T11:11.129.wav",
+    "imageUrl":"https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Fphotos%2Fpainting.jpeg?alt=media&token=eb162b59-cdf2-4a98-bdf2-28f4aae03d0f",
+    "recurrent":
+        {"exclude":["2022-11-13","2022-11-14"],
+        "freq":"weekdays","gid":"UO96dfDuLbi7DYrximps"
+        },
+    "participants":{},
+    "audioUrl":"https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Faudio%2F2022-10-20T11%3A11.129.wav?alt=media&token=b172ab2c-75b9-42e4-ab3a-1ab07ece2ed4","tag":"UO96dfDuLbi7DYrximps"}}
+*/
+
+function getMarkerIcon(d: string) {
+    return (<svg className="event-svg-icon" width="18" height="18" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d={d} />
+    </svg>)
+}
 
 
+function renderOneEvent(event: any): any {
+    const recurrent = event.extendedProps.recurrent;
+    const instanceStatus = event.extendedProps?.instanceStatus;
+    const hasParticipants = event.extendedProps?.participants && Object.entries(event.extendedProps.participants).length > 0;
+    const t1 = dayjs(event.start).format(DateFormats.TIME)
+    const t2 = dayjs(event.end).format(DateFormats.TIME)
+    const high = dayjs(event.end).diff(event.start, "minute") > 59;
 
+    return <div className={high ? "fc-one-event-container-high" : "fc-one-event-container"}>
+        {!event.allDay && <div className="fc-one-event-time">
+            <div>
+                {t2 + "-" + t1}
+            </div>
+        </div>
+        }
+        <div className="fc-one-event-title">
+            {event.title}
+        </div>
 
-export default function Events({ connected, notify, media, users }: EventsProps) {
+        <div className="fc-one-event-markers">
+            {(recurrent || instanceStatus) && getMarkerIcon(
+                instanceStatus ?
+                    "M3 2 L24 23 L23 24 L2 3zM21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z" :
+                    "M21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z")
+            }
+            {hasParticipants && getMarkerIcon("M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z")}
+            {event.extendedProps.audioUrl && <VolumeUp />}
+            {event.extendedProps.imageUrl && <img src={event.extendedProps.imageUrl} />}
+        </div>
+    </div>;
+}
+
+export default function Events({ notify, media, users, events, refDate, daysOffset,
+    onChangeDaysOffset,
+    onRemoveEvents,
+    onUpsertEvent,
+
+}: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
-    const [events, setEvents] = useState<Event[]>([]);
-    const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
+    const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
+    // const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
-    useEffect(() => {
-        if (!connected)
-            return;
-        api.getEvents().then(evts => setEvents(evts));
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [connected]);
+    const stopUpdateInProgress = () => setUpdateInProgress(false);
 
     const calendarApi = calendarRef?.current?.getApi();
 
@@ -54,46 +107,47 @@ export default function Events({ connected, notify, media, users }: EventsProps)
 
 
     useEffect(() => {
-        const expEvents = explodeEvents(events);
-        setExplodedEvents(expEvents);
-        if (calendarApi) {
-            calendarApi.removeAllEvents();
-            expEvents.forEach(evt => {
-
-                calendarApi.addEvent(evt);
-                // {
-                //   title: evt.title, date: evt.date, start: evt.start, end: evt.end, _ref: "xyz"
-                // }
-            })
+        if (calendarRef.current) {
+            console.log("reload events into FullCalendar")
+            calendarRef.current.getApi().removeAllEvents();
+            events.forEach(evt => calendarRef.current && calendarRef.current.getApi().addEvent(evt))
         }
+    }, [events, calendarRef.current]);
 
-    }, [events]);
+    useEffect(() => {
+        const newDate = refDate.add(daysOffset, "day");
+        calendarApi?.gotoDate(newDate.format(DateFormats.DATE_TIME));
+    }, [calendarApi, daysOffset]);
 
     const eventPressed = (eventClickArg: EventClickArg) => {
-        const gid = eventClickArg.event.extendedProps?.recurrent?.gid
-        if (gid) {
-            // ask if editing the whole series or only this instance event
-            notify.ask("האם לערוך את כל הסדרה?", undefined, [
-                {
-                    caption: "כל הסדרה",
-                    callback: () => {
-                        const evt = events.find(e => e._ref?.id === gid);
-                        if (evt) {
-                            setNewEvent({ event: evt, editAllSeries: true })
+        const evt = Event.fromEventAny(eventClickArg.event);
+        if (evt.recurrent?.gid) {
+            if (evt.instanceStatus) {
+                setNewEvent({ event: evt, editAllSeries: false });
+            } else {
+                // ask if editing the whole series or only this instance event
+                notify.ask("האם לערוך את כל הסדרה?", undefined, [
+                    {
+                        caption: "כל הסדרה",
+                        callback: () => {
+                            const evt2 = events.find(e => e.id === evt.recurrent?.gid);
+                            if (evt) {
+                                setNewEvent({ event: evt2, editAllSeries: true })
+                            }
                         }
-                    }
-                },
-                {
-                    caption: "מופע נוכחי",
-                    callback: () => setNewEvent({ event: Event.fromEventAny(eventClickArg.event), editAllSeries: false })
-                },
-                {
-                    caption: "בטל",
-                    callback: () => { }
-                },
-            ])
+                    },
+                    {
+                        caption: "מופע נוכחי",
+                        callback: () => setNewEvent({ event: evt, editAllSeries: false })
+                    },
+                    {
+                        caption: "בטל",
+                        callback: () => { }
+                    },
+                ])
+            }
         } else {
-            setNewEvent({ event: Event.fromEventAny(eventClickArg.event) });
+            setNewEvent({ event: evt });
         }
     }
 
@@ -102,9 +156,12 @@ export default function Events({ connected, notify, media, users }: EventsProps)
         if (dateSelectArgs.view.type === 'timeGridDay' || dateSelectArgs.view.type === 'timeGridWeek') {
             setNewEvent({
                 event: Event.fromAny({
+                    id: "",
                     title: "",
                     start: dayjs(dateSelectArgs.start),
                     end: dayjs(dateSelectArgs.end),
+                    allDay: dateSelectArgs.start.getHours() == 0 && dateSelectArgs.start.getMinutes() === 0 &&
+                        dateSelectArgs.end.getHours() == 0 && dateSelectArgs.end.getMinutes() === 0,
                     date: dayjs(dateSelectArgs.start).format(DateFormats.DATE)
                 })
             });
@@ -114,8 +171,9 @@ export default function Events({ connected, notify, media, users }: EventsProps)
     }
 
     const eventChanged = (eventChangedArg: EventChangeArg) => {
-        const gid = eventChangedArg.event.extendedProps?.recurrent?.gid
-        if (gid && !eventChangedArg.event.extendedProps?.instanceStatus) {
+        const ev = Event.fromEventAny(eventChangedArg.event)
+        const gid = ev?.recurrent?.gid
+        if (gid && !ev?.instanceStatus) {
             // ask if editing the whole series or only this instance event
             notify.ask("האם לשנות את כל הסדרה?", undefined, [
                 {
@@ -126,59 +184,80 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                         //     //1
                         // }
                         notify.error("not implemented")
+                        eventChangedArg.revert();
                     }
                 },
                 {
                     caption: "מופע נוכחי",
                     callback: () => {
-                        api.createEventInstance(eventChangedArg.event, eventChangedArg.event.extendedProps?._ref).then(
+                        setUpdateInProgress(true);
+                        ev.id && api.createEventInstance(ev, ev.id).then(
                             (result) => {
                                 notify.success("נשמר בהצלחה");
-
-                                setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref?.id !== result.series._ref?.id)
-                                    newEvents.push(result.series);
-                                    newEvents.push(result.instance);
-                                    return newEvents;
-                                })
+                                onUpsertEvent(result.series, result.instance);
                                 setNewEvent(undefined);
                             },
                             (err) => notify.error(err)
-                        );
+                        ).finally(stopUpdateInProgress);
 
                     }
                 },
                 {
                     caption: "בטל",
-                    callback: () => { 
+                    callback: () => {
                         eventChangedArg.revert();
                     }
                 },
             ])
         } else {
-            api.upsertEvent(eventChangedArg.event, eventChangedArg.event.extendedProps?._ref).then(
+            setUpdateInProgress(true);
+            api.upsertEvent(ev, ev.id).then(
                 (newDoc) => {
                     notify.success("נשמר בהצלחה");
-                    setEvents(evts => [...evts.filter(e => e._ref?.id !== newDoc._ref?.id), newDoc]);
+                    onUpsertEvent(newDoc);
                 },
                 (err) => {
                     notify.error(err);
                     eventChangedArg.revert();
                 }
-            );
+            ).finally(stopUpdateInProgress);
         }
     }
 
-    return (<div
-        style={{ display: "inline-grid", width: "100vw", height: "90vh" }}
-    >
+    const currDate = refDate.add(daysOffset, "day");
+    const dayInWeek = currDate.day();
+
+    console.log("render", daysOffset, dayInWeek)
+    return (<div className="events-container">
+        <EventsNavigation
+            height={"10vh"}
+            currentNavigation={dayInWeek}
+            onNavigate={(offset: number) => {
+                console.log(offset, daysOffset, dayInWeek)
+                onChangeDaysOffset(offset - dayInWeek + daysOffset);
+            }}
+            kiosk={false}
+            buttons={[{ caption: "א׳", subCaption: "13" }, { caption: "ב" }, { caption: "ג" }, { caption: "ד" }, { caption: "ה" }, { caption: "ו" }, { caption: "ש" }]}
+        />
+
+        <EventsNavigation
+            height={"5vh"}
+            currentNavigation={-1}
+            onNavigate={(offset: number) => onChangeDaysOffset(daysOffset + (offset === 0 ? -7 : 7))}
+            kiosk={false}
+            buttons={[{ caption: "<" }, { caption: ">" }]}
+        />
+        <Text textAlign="center">{getNiceDate(currDate) + ", " + getDayDesc(currDate, daysOffset)}</Text>
+        {updateInProgress && <div className="event-center-progress">
+            <CircularProgress />
+        </div>}
         {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
             <Fab
                 color="primary" aria-label="הוסף"
                 variant="circular"
                 style={{
                     position: "fixed",
-                    bottom: 50,
+                    bottom: 60,
                     right: 50,
                     zIndex: 1000,
                     borderRadius: '50%'
@@ -188,15 +267,13 @@ export default function Events({ connected, notify, media, users }: EventsProps)
             </Fab>
             //</div>
         }
+
         <FullCalendar
 
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            }}
+            headerToolbar={false}
+            dayHeaders={false}
             buttonText={{
                 today: 'היום',
                 month: 'חודש',
@@ -204,6 +281,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                 day: 'יום',
                 list: 'רשימה'
             }}
+            allDayText="הודעה"
 
             initialView='timeGridDay'
             height={"100%"}
@@ -223,26 +301,25 @@ export default function Events({ connected, notify, media, users }: EventsProps)
             selectLongPressDelay={300}
             eventChange={eventChanged}
             eventClick={(arg) => eventPressed(arg)}
-            eventDidMount={(info: EventMountArg) => {
-                if (info && info.event.extendedProps?.recurrent) {
-                    addRepeatIcon(info);
-                }
-                if(info?.event?.extendedProps?.participants && Object.keys(info.event.extendedProps.participants).length > 0) {
-                    addParticipantsIcon(info);
-                }
+            eventContent={(args: any) => {
+                //console.log(JSON.stringify(args.event))
+                return renderOneEvent(args.event);
             }}
+
         />
         {
             newEvent && <EditEvent
                 notify={notify}
                 media={media}
                 users={users}
-                events={explodedEvents}
+                events={events}
                 inEvent={newEvent}
+                updateInProgress={updateInProgress}
                 onCancel={() => setNewEvent(undefined)}
-                onSave={async (editEvent: EditEventArgs, ref: DocumentReference | undefined) => {
+                onSave={async (editEvent: EditEventArgs, id?: string) => {
 
                     //Saves new Audio if needed:
+                    setUpdateInProgress(true);
                     let audioPathToDelete: string | undefined = undefined;
                     let currentPathIsNew = false;
                     if (editEvent.event.audioBlob != null) {
@@ -257,6 +334,7 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                             currentPathIsNew = true;
                         } catch (err: any) {
                             notify.error(err);
+                            setUpdateInProgress(false);
                             return;
                         }
                     } else if (editEvent.event.clearAudio) {
@@ -267,21 +345,15 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                         editEvent.event.audioUrl = undefined;
                     }
 
-                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
+                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus && id) {
                         //update instance only
-                        api.createEventInstance(editEvent.event, ref).then(
+                        api.createEventInstance(editEvent.event, id).then(
                             (result) => {
                                 if (audioPathToDelete) {
                                     api.deleteFile(audioPathToDelete);
                                 }
                                 notify.success("נשמר בהצלחה");
-
-                                setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref?.id !== result.series._ref?.id)
-                                    newEvents.push(result.series);
-                                    newEvents.push(result.instance);
-                                    return newEvents;
-                                })
+                                onUpsertEvent(result.series, result.instance)
                                 setNewEvent(undefined);
                             },
                             (err) => {
@@ -291,20 +363,15 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                                     api.deleteFile(editEvent.event.audioPath);
                                 }
                             }
-                        );
+                        ).finally(stopUpdateInProgress);
                     } else {
-                        api.upsertEvent(editEvent.event, ref).then(
+                        api.upsertEvent(editEvent.event, id).then(
                             (evt2) => {
                                 if (audioPathToDelete) {
                                     api.deleteFile(audioPathToDelete);
                                 }
                                 notify.success("נשמר בהצלחה");
-
-                                setEvents(evts => {
-                                    const newEvents = evts.filter(e => e._ref?.id !== ref?.id)
-                                    newEvents.push(evt2);
-                                    return newEvents;
-                                })
+                                onUpsertEvent(evt2);
                                 setNewEvent(undefined);
                             },
                             (err) => {
@@ -314,35 +381,36 @@ export default function Events({ connected, notify, media, users }: EventsProps)
                                     api.deleteFile(editEvent.event.audioPath);
                                 }
                             }
-                        )
+                        ).finally(stopUpdateInProgress);
                     }
                 }}
 
-                onDelete={(editEvent: EditEventArgs, ref: DocumentReference) => {
+                onDelete={(editEvent: EditEventArgs, id: string) => {
                     notify.ask("האם למחוק אירוע?", "מחיקה",
                         [
                             {
                                 caption: "כן",
                                 callback: () => {
+                                    setUpdateInProgress(true);
                                     if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus) {
                                         // deletion of an instance that has no persistance
-                                        api.createEventInstanceAsDeleted(editEvent.event.date, ref).then(
+                                        api.createEventInstanceAsDeleted(editEvent.event.date, id).then(
                                             (updatedEventSeries) => {
-                                                setEvents(evts => evts.map(e => e._ref?.id !== ref?.id ? e : updatedEventSeries));
+                                                onUpsertEvent(updatedEventSeries);
                                                 setNewEvent(undefined);
                                                 notify.success("מופע זה נמחק בהצלחה");
                                             },
                                             (err: any) => notify.error(err)
-                                        )
+                                        ).finally(stopUpdateInProgress)
                                     } else {
-                                        api.deleteEvent(ref, editEvent.editAllSeries === true).then(
+                                        api.deleteEvent(id, editEvent.editAllSeries === true).then(
                                             (removedIDs) => {
-                                                setEvents(evts => evts.filter(e => e._ref?.id && !removedIDs.includes(e._ref?.id)));
+                                                onRemoveEvents(removedIDs);
                                                 setNewEvent(undefined);
                                                 notify.success("נמחק בהצלחה")
                                             },
                                             (err: any) => notify.error(err)
-                                        );
+                                        ).finally(stopUpdateInProgress);
                                     }
                                 }
                             },

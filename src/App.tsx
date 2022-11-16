@@ -218,7 +218,7 @@ function App(props: any) {
       <BrowserRouter>
         <Routes>
           <Route path="/about" element={<About />} />
-          <Route path="/admin" element={
+          {/* <Route path="/admin" element={
             // ---- Loading bar ----
             !connected ? <LinearProgress />
               :
@@ -238,8 +238,8 @@ function App(props: any) {
                     <div style={{ fontSize: 30 }}>טוען הרשאות</div>
                   </div> : <div>אינך מורשה</div>
 
-          } />
-          <Route path="/" element={
+          } /> */}
+          <Route path="/*" element={
             kiosk && !delagatedUser ?
               <Kiosk onSelectUser={(u:string|undefined)=>{
                 console.log("kiosk open: ", u);

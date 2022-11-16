@@ -8,7 +8,7 @@ import { MutableRefObject } from "react";
 export function isDev(): boolean {
     if (window.location.hostname.includes("preview")) return true;
     if (window.location.search.includes("devMode")) return true;
-    
+
     return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";
 }
 export const Collections =
@@ -74,7 +74,7 @@ export interface UserInfo {
 }
 
 export interface ImageInfo extends MediaResource {
-    keywords?:string[]
+    keywords?: string[]
 }
 
 export interface LocationInfo {
@@ -93,11 +93,11 @@ export interface UserDocument {
     phone?: string,
     // notificationOn?: boolean,
     // tokens?: NotificationToken[]
-    type?:UserType;
+    type?: UserType;
 }
 
 export interface AccessibilitySettingsData {
-    imageSize:number,
+    imageSize: number,
     titleSize: number,
     hoursSize: number,
 }
@@ -109,9 +109,9 @@ export interface UserElementProps {
     audioRef?: MutableRefObject<HTMLAudioElement>,
     showingKeyEvent: boolean,
     onSetRead?: () => void,
-    itemHeightPixels?:number,
-    tabMarker?:string,
-    kioskMode:boolean,
+    itemHeightPixels?: number,
+    tabMarker?: string,
+    kioskMode: boolean,
 }
 
 export interface MediaResource {
@@ -125,6 +125,17 @@ export interface MediaResource {
 export interface EditEventArgs {
     event: Event,
     editAllSeries?: boolean
+}
+
+export interface NotificationViewProps {
+    keyEvents:Event[],
+    messages:MessageInfo[],
+    kioskMode:boolean,
+    onMessageSetRead: (msg:MessageInfo)=>void,
+    onKeyEventSetRead: (keyEvt:Event)=>void,
+    accSettings?: AccessibilitySettingsData,
+    audioRef:MutableRefObject<HTMLAudioElement>,
+    refDate:Dayjs,
 }
 
 export interface MessageInfo {
@@ -177,14 +188,23 @@ export interface Notifying {
 
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
-export interface AdminProps extends Connected, Notifying, WithUser { 
-    isCurrentUserAdmin:boolean;
+export interface AdminProps extends Connected, Notifying, WithUser {
+    isCurrentUserAdmin: boolean;
 }
 
 export interface KioskProps {
-    onSelectUser:(user:string | undefined)=>void,
+    onSelectUser: (user: string | undefined) => void,
 }
-export interface EventsProps extends Connected, Notifying, WithMedia, WithUsers { }
+export interface EventsProps extends Notifying, WithMedia, WithUsers {
+    events: any[],
+    beta: boolean,
+    refDate: Dayjs, // normally this is now
+    daysOffset: number, // the offset in days from refDate
+    audioRef: MutableRefObject<HTMLAudioElement>
+    onChangeDaysOffset: (newOffet: number) => void,
+    onRemoveEvents: (id: string[]) => void,
+    onUpsertEvent: (event: Event, event2?:Event) => void,
+}
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
     isAdmin: boolean,
     isGuide: boolean,
@@ -192,11 +212,11 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
-    onGoHome: ()=>void,
+    onGoHome: () => void,
     kioskMode: boolean
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface UsersProps extends Notifying, WithUsers, WithReload { 
+export interface UsersProps extends Notifying, WithUsers, WithReload {
     isAdmin: boolean;
 }
 
@@ -209,21 +229,23 @@ export interface LoginProps {
 
 export interface UserSettingsProps extends WithUser, Notifying {
     onSaveNickName: (newNick: string) => void,
-    onClose:Callback,
+    onClose: Callback,
     nickName: string,
-    onAccessibilitySettings: ()=>void,
+    onAccessibilitySettings: () => void,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
-    onBetaChange: (on: boolean)=> void,
-    beta:boolean,
+    onBetaChange: (on: boolean) => void,
+    onAccessibleCalendar: (on: boolean) => void,
+    beta: boolean,
+    accessibleCalendar:boolean,
 }
 
 export interface AccessibilitySettingsProps {
-    onClose:Callback,
+    onClose: Callback,
     accSettings: AccessibilitySettingsData | undefined,
-    onSettingsChange: (accSettings: AccessibilitySettingsData)=>void,
+    onSettingsChange: (accSettings: AccessibilitySettingsData) => void,
 }
 
 export interface EventsHeaderProps extends WithUser {
@@ -238,9 +260,9 @@ export interface EventsHeaderProps extends WithUser {
     notificationOn: boolean,
     onNotificationClick: Callback,
     showingNotifications: boolean,
-    newNotificationCount:number,
-    kioskMode:boolean,
-    onGoHome:()=>void,
+    newNotificationCount: number,
+    kioskMode: boolean,
+    onGoHome: () => void,
     firstElemRef: any,
 }
 
@@ -253,22 +275,23 @@ export interface MessageProps {
 
 export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     inEvent: EditEventArgs;
-    onSave: (editEvent: EditEventArgs, ref: DocumentReference | undefined) => void;
+    onSave: (editEvent: EditEventArgs, id?: string) => void;
     onCancel: Callback;
-    onDelete?: (editEvent: EditEventArgs, ref: DocumentReference) => void;
-    events:Event[];
+    onDelete?: (editEvent: EditEventArgs, id: string) => void;
+    events: Event[];
+    updateInProgress:boolean;
 }
 
 export interface EditImageProps extends Notifying {
-    imageInfo : ImageInfo
-    onSave: (imageInfo:ImageInfo, file?: File) => void,
-    onDelete: (imageInfo:ImageInfo) =>void,
+    imageInfo: ImageInfo
+    onSave: (imageInfo: ImageInfo, file?: File) => void,
+    onDelete: (imageInfo: ImageInfo) => void,
     onCancel?: Callback,
 }
 
 export interface EditUserProps extends Notifying {
     isAdmin: boolean;
-    userInfo : UserInfo;
+    userInfo: UserInfo;
     afterSaved: () => void;
 }
 
@@ -278,7 +301,7 @@ export interface DatePickerProps {
     setStart: setDateFunc;
     setEnd: setDateFunc;
     style?: any;
-    allDay?:boolean;
+    allDay?: boolean;
 }
 
 export interface RecorderProps {

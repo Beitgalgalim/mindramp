@@ -1,7 +1,12 @@
 import './css/event.css'
+import {Text} from './elem'
 
-const Button = ({ caption, selected, badge, onPress, tabMarker, kiosk }:
-    { caption: string, selected?: boolean, badge: number, onPress: CallableFunction, tabMarker?: string, kiosk?: boolean }) => {
+
+export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMarker, kiosk }:
+    { caption: string, 
+        subCaption?:string,
+        selected?: boolean, 
+        badge: number, onPress: CallableFunction, tabMarker?: string, kiosk?: boolean }) => {
     return <button className={"event-nav-button" + (kiosk ? " kiosk-nav" : "")}
         tab-marker={tabMarker}
         style={{
@@ -16,6 +21,7 @@ const Button = ({ caption, selected, badge, onPress, tabMarker, kiosk }:
             fontSize: "0.8em",
             lineHeight: "2.2em",
             textAlign: "center",
+            margin:5
 
         }}
         onClick={(e) => onPress(e)}>
@@ -35,7 +41,10 @@ const Button = ({ caption, selected, badge, onPress, tabMarker, kiosk }:
             }}
             >{badge}</div>
         }
+        <div className="nav-btn">
         {caption}
+        
+        </div>
     </button>
 }
 
@@ -50,10 +59,11 @@ export default function EventsNavigation(props: any) {
 
     }}>
         {
-            props.buttons.map((btn: any, i: number) => (<Button
+            props.buttons.map((btn: any, i: number) => (<NavButton
                 kiosk={props.kiosk}
                 key={i}
                 caption={btn.caption}
+                subCaption={btn.subCaption}
                 badge={btn.badge}
                 selected={props.currentNavigation === i}
                 onPress={() => props.onNavigate(i)}

@@ -1,12 +1,14 @@
 import { Dayjs } from "dayjs";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { Text, HBox, EventsMain, VBoxC } from "./elem";
 import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, MessageInfo, UserEventsProps } from "./types";
+import { AccessibilitySettingsData, MediaResource, MessageInfo, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import EventsNavigation from "./events-navigation";
+import Events from './events';
+
 
 import "./css/user-events.css";
 
@@ -23,12 +25,17 @@ import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
 import EventElementNew from "./event-element-new";
 import { beep } from "./utils/common";
+import { AccessibleView } from "./accessible-day-view";
+import { CalendarMonth, PeopleAlt, Photo } from "@mui/icons-material";
+import Users from "./users";
+import Media from "./media";
+import NotificationView from "./notification-view";
 
 
 function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
     setFunction((curr: any[]) => {
-        const newItems = srcList.filter(srcItem => !curr?.some(c => Event.equals(srcItem, c)));
-        const relevantExistingItems = curr?.filter(c => srcList.some(srcItem => Event.equals(srcItem, c))) || [];
+        const newItems = srcList.filter(srcItem => !curr?.some(c => equalsFunction(srcItem, c)));
+        const relevantExistingItems = curr?.filter(c => srcList.some(srcItem => equalsFunction(srcItem, c))) || [];
         return [
             ...(relevantExistingItems),
             ...(newItems.map(srcItem => ({ ...srcItem, unread: true })))
@@ -44,23 +51,31 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 export default function UserEvents({ connected, notify, user, isAdmin, isGuide, kioskMode,
     notificationOn, onNotificationOnChange, onNotificationToken,
     onPushNotification, onGoHome }: UserEventsProps) {
-
+    const [rawEvents, setRawEvents] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
     const [etag, setEtag] = useState<string | undefined>();
-    const [daysOffset, setDaysOffset] = useState(0);
     const [reload, setReload] = useState<number>(0);
     const [refresh, setRefresh] = useState<number>(0);
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
+    const [initialized, setInitialized] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
-    const [notificationsPane, setNotificationsPane] = useState<number>(0);
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
     const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
     const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
     const [beta, setBeta, betaMore] = useLocalStorageState<any>("beta");
     const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
     const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
+    const [daysOffset, setDaysOffset] = useState(0);
+    const [manageUsers, setManageUsers] = useState(false);
+    const [manageMedia, setManageMedia] = useState(false);
+    const [accessibleCalendar, setAccessibleCalendar] = useLocalStorageState<boolean>("accessibleCalendar", { defaultValue: true });
+
+    const [media, setMedia] = useState<MediaResource[]>([]);
+    const [users, setUsers] = useState<UserInfo[]>([]);
+    const [reloadMedia, setReloadMedia] = useState<number>(0);
+    const [reloadUsers, setReloadUsers] = useState<number>(0);
 
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
@@ -68,22 +83,17 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
 
     const location = useLocation();
-    let showDateTime: Dayjs;
+    let refDate: Dayjs;
 
     let showDateHash = decodeURIComponent(location.hash && location.hash.substr(1));
     if (showDateHash && dayjs(showDateHash).isValid()) {
-        showDateTime = dayjs(showDateHash);
+        refDate = dayjs(showDateHash);
     } else {
-        showDateTime = dayjs();
+        refDate = dayjs();
     }
 
-    const dateTimeNoOffset = showDateTime;
-    if (daysOffset > 0) {
-        showDateTime = dayjs(showDateTime.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
-    }
-
-    if (startDate !== dateTimeNoOffset.format(DateFormats.DATE)) {
-        setStartDate(dateTimeNoOffset.format(DateFormats.DATE))
+    if (startDate !== refDate.format(DateFormats.DATE)) {
+        setStartDate(refDate.format(DateFormats.DATE))
     }
 
     const [searchParams] = useSearchParams();
@@ -99,108 +109,75 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         setLoadingEvents(true);
         console.log("reloading...")
         api.getPersonalizedEvents(user ? user : undefined, etag).then(eventsResponse => {
+            setInitialized(true);
             if (eventsResponse.noChange) return;
 
             setEtag(eventsResponse.eTag);
-
             const evtsWithId = eventsResponse.events.map((e: any) => ({
-                ...e.event, tag: e.id
+                ...e.event, id: e.id, tag: e.id
             }));
+            setRawEvents(evtsWithId);
+        }).finally(() => setLoadingEvents(false));
+    }, [user, connected, startDate, reload]);
 
-            const sortedEvents = sortEvents(explodeEvents(evtsWithId, 0, 3, startDate));
+    useEffect(() => {
+        if (!isAdmin || !connected)
+            return;
 
-            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= dateTimeNoOffset.format(DateFormats.DATE));
-            const tomorrow = toMidNight(dateTimeNoOffset.add(1, "days")).format(DateFormats.DATE_TIME);
-            const today = toMidNight(dateTimeNoOffset).format(DateFormats.DATE_TIME);
+        api.getMedia().then((m: MediaResource[]) => setMedia(m));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connected, isAdmin, reloadMedia]);
+
+    useEffect(() => {
+        if (!isAdmin || !connected)
+            return;
+        api.getUsers().then((g: UserInfo[]) => setUsers(g));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connected, isAdmin, reloadUsers]);
+
+
+    useEffect(() => {
+        if (initialized) {
+            const sortedEvents = sortEvents(explodeEvents(rawEvents, 30, 30, startDate));
+
+            const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= refDate.format(DateFormats.DATE));
+            const tomorrow = toMidNight(refDate.add(1, "days")).format(DateFormats.DATE_TIME);
+            const today = toMidNight(refDate).format(DateFormats.DATE_TIME);
             const msgs = sortedEvents.filter(ev => ev.allDay).filter(ev => ev.start >= today && ev.end <= tomorrow);
 
-            setEvents(sortedEvents.filter(ev => !ev.allDay));
+            setEvents(sortedEvents);
 
             syncLocalStorage(setKeyEvents, Event.equals, keyEvts);
             syncLocalStorage(setMessages, messageEquals, msgs.map(m => ({
                 title: m.title,
                 body: m.notes
             })));
-
-        }).finally(() => setLoadingEvents(false));
-    }, [user, connected, startDate, reload]);
+        }
+    }, [rawEvents, initialized]);
 
     useEffect(() => {
         let intervalId = setInterval(() => {
-            setRefresh(old => {
-                if ((old + 1) % 15 === 0) {
-                    //every 2.5 min
-                    console.log("set reload")
-                    setReload(reloadOld => reloadOld + 1);
-                }
-                return old + 1
+            // setRefresh(old => {
+            //     if ((old + 1) % 15 === 0) {
+            //         //every 2.5 min
+            //         console.log("set reload")
+            //         setReload(reloadOld => reloadOld + 1);
+            //     }
+            //     return old + 1
 
-            });
+            // });
         }, 10 * 1000)
 
         return (() => {
             clearInterval(intervalId)
         })
     }, [])
-    const days = [];
-    const showingKeyEvents = showNotifications && notificationsPane == 1;
-    const NoEventsMsg = "אין אירועים";
-    let showingEvents = [];
 
-    if (!showNotifications) {
-        showingEvents = events.filter(e => e.start >= showDateTime.format(DateFormats.DATE) &&
-            e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
-
-        days.push({
-            caption: "היום",
-            emptyMsg: NoEventsMsg,
-            eventGroup: organizeEventsForDisplay(showingEvents),
-        });
-
-        if (isTV) {
-            // Also calculate tomorrow and 2 days ahead
-            const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
-                e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
-
-            days.push({
-                caption: "מחר",
-                emptyMsg: NoEventsMsg,
-                eventGroup: organizeEventsForDisplay(tomorrow),
-            })
-
-            const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
-                e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
-
-            days.push({
-                caption: "מחרתיים",
-                emptyMsg: NoEventsMsg,
-                eventGroup: organizeEventsForDisplay(dayAfterTomorrow),
-            })
-        }
-    } else {
-        if (showingKeyEvents) {
-            //const showingEvents = events.filter(e => e.keyEvent);
-
-            days.push({
-                caption: "אירועים מיוחדים",
-                emptyMsg: NoEventsMsg,
-                eventGroup: keyEvents ? organizeEventsForDisplay(keyEvents) : [],
-            });
-        } else if (notificationsPane == 0) {
-            days.push({
-                caption: "הודעות",
-                emptyMsg: "אין הודעות",
-                messages: messages,
-            });
-        }
-    }
-
-
-    const columnWidth = 100 / days.length;
     const newKeyEventsCount = keyEvents?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
     const newMessagesCount = messages?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
 
     const newNotificationCount = newKeyEventsCount + newMessagesCount;
+
     if (showAccessibilitySettings) {
         return <AccessibilitySettings
             accSettings={accSettings}
@@ -208,6 +185,22 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onSettingsChange={(newSettings) => setAccSettings(newSettings)}
         />;
     }
+
+    const removeEvents = (removedIDs: string[]) => {
+        setRawEvents(evts => evts.filter(e => !removedIDs.includes(e.id)));
+    };
+
+    const upsertEvent = (event: Event, event2?: Event) => {
+        setRawEvents(evts => {
+            const uEvents = evts.filter(e => e.id !== event.id && (!event2 || e.id !== event2.id))
+            uEvents.push(event);
+            if (event2) {
+                uEvents.push(event2);
+            }
+            return uEvents;
+        });
+    }
+
 
     if (showUserSettings) {
         return <UserSettings
@@ -232,6 +225,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onNotificationToken={onNotificationToken}
             onPushNotification={onPushNotification}
             onBetaChange={(on) => setBeta(on)}
+            onAccessibleCalendar={((on) => setAccessibleCalendar(on))}
+            accessibleCalendar={accessibleCalendar}
             beta={beta === true}
             notify={notify}
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
@@ -241,7 +236,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     return <div dir={"rtl"} className="userEventsContainer"
         onKeyDown={(e: any) => {
             if (e.key == "Tab" && !e.shiftKey) {
-                if (kioskMode)  beep(200, 50, 40)
+                if (kioskMode) beep(200, 50, 40)
                 if (e.target.getAttribute("tab-marker") === "last") {
                     firstElemRef.current?.focus();
                     e.preventDefault();
@@ -253,7 +248,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         <EventsHeader
             centered={isTV}
             height={"12vh"}
-            showDateTime={dateTimeNoOffset}
+            showDateTime={refDate}
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
             isAdmin={isAdmin}
             isGuide={isGuide}
@@ -269,123 +264,100 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             firstElemRef={firstElemRef}
         />
 
-        <HBox style={{ justifyContent: "space-evenly" }}>
-            {days.map((day, dayIndex) =>
-                <EventsMain key={dayIndex} height={"88vh"} width={(columnWidth - 1) + "vw"}
-                >
-                    {!isTV && !showNotifications ? <EventsNavigation
-                        height={"10vh"}
-                        currentNavigation={daysOffset}
-                        onNavigate={(offset: number) => setDaysOffset(offset)}
-                        buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
-                        tabMarker={day.eventGroup && day.eventGroup.length > 0?"":"last"}
-                        kiosk={kioskMode}
-                    /> :
-                        showNotifications && <EventsNavigation
-                            height={"10vh"}
-                            currentNavigation={notificationsPane}
-                            onNavigate={(offset: number) => setNotificationsPane(offset)}
-                            buttons={[{ caption: "הודעות", badge: newMessagesCount }, { caption: "אירועים", badge: newKeyEventsCount }]}
-                            tabMarker={day.eventGroup && day.eventGroup.length > 0?"":"last"}
-                            kiosk={kioskMode}
-                        />}
+        <div style={{ height: isAdmin ? "82vh" : "88vh" }}>
 
-                    {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
+            {isAdmin && manageUsers && !showNotifications && <Users notify={notify} users={users} reload={() => setReloadUsers(old => old + 1)} isAdmin={isAdmin} />}
+            {isAdmin && manageMedia && !showNotifications && <Media notify={notify} media={media} reload={() => setReloadMedia(old => old + 1)} />}
 
-                    <EventsContainer
-                        vhHeight={78}
-                        scrollTop={100}
-                        autoScroll={isTV}
-                    >
-                        {day.eventGroup?.map((evGroup, i) =>
-                            beta ?
-                                evGroup.map((ev, j, ar) => (<EventElementNew
-                                    kioskMode={kioskMode}
-                                    tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
-                                    key={ev.tag}
-                                    itemHeightPixels={Design.singleEventHeight}
-                                    accessibilitySettings={accSettings}
-                                    showingKeyEvent={showingKeyEvents}
-                                    width={columnWidth - 1}
-                                    single={true} firstInGroup={true} event={ev} now={showDateTime}
-                                    audioRef={audioRef}
-                                    onSetRead={showingKeyEvents ?
-                                        () => {
-                                            setKeyEvents(curr =>
-                                            (curr ?
-                                                curr.map(ke => {
-                                                    if (Event.equals(ke, ev)) {
-                                                        return { ...ke, unread: false } as Event;
-                                                    }
-                                                    return ke
-                                                }) :
-                                                undefined));
-                                        }
-                                        : undefined}
-                                />))
-                                :
-
-                                <HBox
-                                    style={{
-                                        width: "100%",
-                                        overflowX: evGroup.length > 1 ? "auto" : "hidden",
-                                        flexWrap: "nowrap",
-                                    }}
-                                    key={evGroup.length > 0 ? evGroup[0].tag : i}
-                                    itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
-                                >
-                                    {
-                                        evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
-                                            kioskMode={kioskMode}
-                                            tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
-                                            accessibilitySettings={accSettings}
-                                            showingKeyEvent={showingKeyEvents}
-                                            width={columnWidth - 1}
-                                            single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
-                                            audioRef={audioRef}
-                                            onSetRead={showingKeyEvents ?
-                                                () => {
-                                                    setKeyEvents(curr =>
-                                                    (curr ?
-                                                        curr.map(ke => {
-                                                            if (Event.equals(ke, ev)) {
-                                                                return { ...ke, unread: false } as Event;
-                                                            }
-                                                            return ke
-                                                        }) :
-                                                        undefined));
-                                                }
-                                                : undefined}
-                                        />))
-                                    }
-                                </HBox>)
+            {showNotifications && <NotificationView
+                kioskMode={kioskMode}
+                messages={messages || []}
+                keyEvents={keyEvents || []}
+                accSettings={accSettings}
+                onMessageSetRead={(msg) => setMessages(curr => (curr &&
+                    curr.map(m => {
+                        if (messageEquals(m, msg)) {
+                            return { ...m, unread: false } as MessageInfo;
                         }
-                        {day.messages?.map((msg, i) =>
-                            <Message
-                                msg={msg}
-                                onSetRead={
-                                    () => setMessages(curr =>
-                                    (curr ?
-                                        curr.map(m => {
-                                            if (messageEquals(m, msg)) {
-                                                return { ...m, unread: false } as MessageInfo;
-                                            }
-                                            return m
-                                        }) :
-                                        undefined))
-                                }
-                            />)
+                        return m;
+                    })))
+                }
+                onKeyEventSetRead={(keyEvt) => setKeyEvents(curr => (curr &&
+                    curr.map(ke => {
+                        if (Event.equals(ke, keyEvt)) {
+                            return { ...ke, unread: false } as Event;
                         }
-                        {(!day.messages || day.messages.length === 0) && (!day.eventGroup || day.eventGroup.length == 0) &&
-                            <VBoxC style={{ height: "50vh" }}>
-                                <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : day.emptyMsg}</Text>
-                                {loadingEvents && <CircularProgress size={Design.buttonSize} />}
+                        return ke;
+                    })))
+                }
+                audioRef={audioRef}
+                refDate={refDate}
+            />}
 
-                            </VBoxC>}
-                    </EventsContainer>
-                </EventsMain>
-            )}
-        </HBox>
+            {!manageUsers && !manageMedia && !showNotifications && (accessibleCalendar ?
+                <AccessibleView
+                    events={events}
+                    isTV={isTV}
+                    refDate={refDate}
+                    daysOffset={daysOffset}
+                    kioskMode={kioskMode}
+                    beta={beta}
+                    accSettings={accSettings}
+                    audioRef={audioRef}
+                    onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
+                    loading={loadingEvents}
+                /> :
 
-    </div>
+                <Events
+                    events={events}
+                    refDate={refDate}
+                    daysOffset={daysOffset}
+                    beta={beta}
+                    audioRef={audioRef}
+                    onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
+                    media={media}
+                    users={users}
+                    notify={notify}
+                    onRemoveEvents={removeEvents}
+                    onUpsertEvent={upsertEvent}
+
+                />)
+            }
+        </div>
+
+
+        {/* {(!day.messages || day.messages.length === 0) && (!day.eventGroup || day.eventGroup.length == 0) &&
+            <VBoxC style={{ height: "50vh" }}>
+                <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : day.emptyMsg}</Text>
+                {loadingEvents && <CircularProgress size={Design.buttonSize} />}
+
+            </VBoxC>} */}
+        {isAdmin && <div className="admin-pane-btn-container">
+            <div className={"admin-pane-btn" + (!manageMedia && !manageUsers ? " selected" : "")} onClick={() => {
+                setManageMedia(false);
+                setManageUsers(false);
+                setShowNotifications(false);
+            }} >
+                <CalendarMonth />
+                <text>יומן</text>
+            </div>
+            <div className={"admin-pane-btn" + (manageUsers ? " selected" : "")} onClick={() => {
+                setManageMedia(false);
+                setManageUsers(true)
+                setShowNotifications(false);
+            }} >
+                <PeopleAlt />
+                <text>משתמשים</text>
+            </div>
+            <div className={"admin-pane-btn" + (manageMedia ? " selected" : "")} onClick={() => {
+                setManageMedia(true);
+                setManageUsers(false)
+                setShowNotifications(false);
+            }} >
+                <Photo />
+                <text>מדיה</text>
+            </div>
+        </div>
+        }
+    </div >
 }

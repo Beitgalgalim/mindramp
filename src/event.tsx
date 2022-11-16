@@ -53,6 +53,7 @@ export const ReminderFieldKeyValue = [
 
 
 export class Event {
+    id?:string = "";
     date: string = "";
     title: string = "";
     start: string = "";
@@ -101,6 +102,11 @@ export class Event {
         assignIfExists(evt, "_ref", doc);
         if (ref) {
             evt._ref = ref;
+            evt.id = ref.id;
+        }
+        assignIfExists(evt, "tag", doc);
+        if (evt.tag) {
+            evt.id = evt.tag;
         }
         assignIfExists(evt, "imageUrl", doc);
         assignIfExists(evt, "recurrent", doc);
@@ -203,6 +209,7 @@ export class Event {
         clearFieldIfEmpty("reminderMinutes");
 
         delete eventObj._ref;
+        delete eventObj.id;
         delete eventObj.tag;
         delete eventObj.audioBlob;
         delete eventObj.clearAudio;
