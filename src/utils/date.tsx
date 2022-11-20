@@ -393,6 +393,29 @@ export function getBeforeTimeText(minutes: number): string {
     return "עוד מעל שעתיים";
 }
 
+export function getLengthText(minutes: number): string {
+    if (minutes <= 0)
+        return ""
+
+    if (minutes == 30) {
+        return "חצי שעה"
+    }
+    if (minutes == 60) {
+        return "שעה"
+    }
+
+    if (minutes == 90) {
+        return "שעה וחצי"
+    }
+
+    if (minutes == 120) {
+        return "שעתיים"
+    }
+
+    return minutes + "דק׳";
+}
+
+
 export function organizeEventsForDisplay(events: any[]): any[][] {
     const eventsArray: any[][] = [];
 

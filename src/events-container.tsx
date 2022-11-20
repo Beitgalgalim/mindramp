@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { forwardRef, LegacyRef, useState } from "react";
 
 //props.height is number of vh (vertical window height)
-export function EventsContainer(props: any) {
+export const EventsContainer = forwardRef((props: any, ref:LegacyRef<HTMLDivElement>) => {
     const [animationPhase, setAnimationPhase] = useState<number>(0);
 
     const animationEnd = () => setAnimationPhase(phase => phase + 1);
@@ -40,8 +40,9 @@ export function EventsContainer(props: any) {
 
 
 
-    return <div style={{ overflow: "hidden" }}>
+    return <div style={{ overflow: "hidden", height: props.vhHeight + "vh" }}>
         <div
+            ref={ref}
             style={{
                 width: "100%",
                 height: props.vhHeight + "vh",
@@ -79,4 +80,4 @@ export function EventsContainer(props: any) {
             }
         </div>
     </div>
-}
+});

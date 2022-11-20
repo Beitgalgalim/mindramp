@@ -1,7 +1,7 @@
 import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar, UnRead } from "./elem";
-import { DateFormats, getBeforeTimeText, getNiceDate, timeRange2Text } from "./utils/date";
+import { DateFormats, getBeforeTimeText, getLengthText, getNiceDate, timeRange2Text } from "./utils/date";
 import { Event } from './event';
 import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
@@ -99,7 +99,7 @@ export default function EventElementNew({
 
             <div className="event-time-new">
                 <Text aria-hidden="true" fontSize={hourSize*1.5 + "em"}>{t1}</Text>
-                <Text aria-hidden="true" fontSize={hourSize + "em"}>{meetingLengthMinutes} דק׳</Text>
+                <Text aria-hidden="true" fontSize={hourSize + "em"}>{getLengthText(meetingLengthMinutes)}</Text>
             </div>
             <button
                 tab-marker={tabMarker}

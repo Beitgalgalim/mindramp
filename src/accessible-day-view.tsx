@@ -1,6 +1,6 @@
 import { CircularProgress } from "@mui/material";
 import dayjs, { Dayjs } from "dayjs";
-import { LegacyRef, MutableRefObject, useState } from "react";
+import { LegacyRef, MutableRefObject, useEffect, useRef, useState } from "react";
 import { EventsMain, HBox, Text, VBoxC } from "./elem";
 import { Event } from "./event";
 import EventElement from "./event-element";
@@ -13,11 +13,14 @@ import { AccessibilitySettingsData } from "./types";
 import { DateFormats, organizeEventsForDisplay } from "./utils/date";
 
 
+const scrollInterval = 600;
+const scrollIncrement = 30;
 
 export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, beta, accSettings,
     audioRef,
     onChangeDaysOffset,
-    loading
+    loading,
+    height,
 }:
     {
         events: any[], isTV: boolean,
@@ -27,10 +30,51 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
         accSettings?: AccessibilitySettingsData,
         audioRef: MutableRefObject<HTMLAudioElement>
         onChangeDaysOffset: (newOffet: number) => void,
-        loading:boolean,
+        loading: boolean,
+        height: number
     }) {
 
+    const [scrollingColumn, setScrollingColumn] = useState(0);
+    const [scroll, setScroll] = useState<number>(0);
+    const scrollElem = useRef<HTMLDivElement>(null);
     const days = [];
+
+    useEffect(() => {
+        if (isTV) {
+            console.log("setup interval for scroll")
+            let intervalId = setInterval(() => {
+                // do interval logic
+                if (scrollElem.current) {
+                    const h = scrollElem.current.scrollHeight;
+                    scrollElem.current.scrollBy({ behavior: "smooth", top: scrollIncrement });
+                    setScroll(old => {
+                        console.log(old, scrollElem.current && h - scrollElem.current.clientHeight)
+                        if (scrollElem.current) {
+                            if (old >h- scrollElem?.current?.clientHeight) {
+                                setScrollingColumn(oldCol => {
+                                    console.log("promoteCol", oldCol)
+                                    if(scrollElem.current) scrollElem.current.scrollBy({ behavior: "smooth", top: - old });
+                                    if (oldCol < 2) return oldCol + 1;
+                                    return 0;
+                                })
+                                //reset scroll
+
+                                return 0;
+                            }
+                            return old + scrollIncrement;
+                        }
+                        return old;
+                    })
+                }
+            }, scrollInterval)
+
+            return (() => {
+                clearInterval(intervalId)
+            })
+        }
+    }, [isTV])
+
+
 
     const NoEventsMsg = "אין אירועים";
     let showingEvents = [];
@@ -70,10 +114,10 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
 
     return (<HBox style={{ justifyContent: "space-evenly" }}>
         {days.map((day, dayIndex) =>
-            <EventsMain key={dayIndex} height={"88vh"} width={(columnWidth - 1) + "vw"}
+            <EventsMain key={dayIndex} height={height} width={(columnWidth - 1) + "vw"}
             >
                 {!isTV && <EventsNavigation
-                    height={"10vh"}
+                    height={"8vh"}
                     currentNavigation={daysOffset}
                     onNavigate={(offset: number) => onChangeDaysOffset(offset)}
                     buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
@@ -84,9 +128,9 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
 
                 <EventsContainer
-                    vhHeight={78}
-                    scrollTop={100}
-                    autoScroll={isTV}
+                    ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}
+                    vhHeight={height - 8}
+
                 >
                     {day.eventGroup?.map((evGroup, i) =>
                         beta ?
@@ -100,7 +144,6 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                                 width={columnWidth - 1}
                                 single={true} firstInGroup={true} event={ev} now={showDateTime}
                                 audioRef={audioRef}
-
                             />))
                             :
 
@@ -127,7 +170,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                                 }
                             </HBox>)
                     }
-                    {<VBoxC style={{ height: "50vh" }}>
+                    {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
                         <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
                         {loading && <CircularProgress size={Design.buttonSize} />}
 

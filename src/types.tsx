@@ -6,7 +6,7 @@ import { MessagePayload } from "@firebase/messaging";
 import { MutableRefObject } from "react";
 
 export function isDev(): boolean {
-    if (window.location.hostname.includes("preview")) return true;
+    //if (window.location.hostname.includes("preview")) return true;
     if (window.location.search.includes("devMode")) return true;
 
     return process.env.NODE_ENV === 'development' && (process.env as any).REACT_APP_PRODDATA !== "true";

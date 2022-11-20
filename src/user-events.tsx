@@ -1,36 +1,47 @@
 import { Dayjs } from "dayjs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {  useEffect, useRef, useState } from "react";
 import * as api from './api'
-import { Text, HBox, EventsMain, VBoxC } from "./elem";
-import { DateFormats, explodeEvents, organizeEventsForDisplay, sortEvents, toMidNight } from "./utils/date";
+import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { AccessibilitySettingsData, MediaResource, MessageInfo, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
-import EventsNavigation from "./events-navigation";
 import Events from './events';
 
 
 import "./css/user-events.css";
-
-import { Design } from "./theme";
-import { CircularProgress } from "@material-ui/core";
-
 import dayjs from './localDayJs'
 import UserSettings from "./user-settings";
-import EventElement from "./event-element";
-import { EventsContainer } from "./events-container";
-import Message from "./message";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
-import EventElementNew from "./event-element-new";
 import { beep } from "./utils/common";
 import { AccessibleView } from "./accessible-day-view";
-import { CalendarMonth, PeopleAlt, Photo } from "@mui/icons-material";
+import { CalendarMonth, FilterAlt, FilterAltOff, PeopleAlt, Photo } from "@mui/icons-material";
 import Users from "./users";
 import Media from "./media";
 import NotificationView from "./notification-view";
 
+
+const FilterEvents = ({
+    onSelect,
+    on
+}:any)=>(
+    <div onClick={()=>onSelect (!on)}
+    style={{position:"absolute", right:5, bottom:5, fontSize:35, width:35, outline: on?"2px solid black":""}}>
+         <FilterAlt /> 
+    </div>);
+
+
+const AdminBtn = ({
+    selected,
+    onPress,
+    caption,
+    icon }: any) => (<div 
+        className={"admin-pane-btn" + (selected ? " selected" : "")} 
+        onClick={() => onPress()} >
+        {icon}
+        <text>{caption}</text>
+    </div>);
 
 function syncLocalStorage(setFunction: any, equalsFunction: any, srcList: any[]) {
     setFunction((curr: any[]) => {
@@ -70,7 +81,8 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const [daysOffset, setDaysOffset] = useState(0);
     const [manageUsers, setManageUsers] = useState(false);
     const [manageMedia, setManageMedia] = useState(false);
-    const [accessibleCalendar, setAccessibleCalendar] = useLocalStorageState<boolean>("accessibleCalendar", { defaultValue: true });
+    const [filter, setFilter] = useState(false);
+    const [accessibleCalendar, setAccessibleCalendar] = useLocalStorageState<boolean | undefined>("accessibleCalendar", { defaultValue: undefined });
 
     const [media, setMedia] = useState<MediaResource[]>([]);
     const [users, setUsers] = useState<UserInfo[]>([]);
@@ -80,7 +92,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
-
+    const accessibleCalendarAct = accessibleCalendar || !isAdmin;
 
     const location = useLocation();
     let refDate: Dayjs;
@@ -98,9 +110,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
     const [searchParams] = useSearchParams();
     const isTV = searchParams.get("isTv") === "true";
-
+    isTV && console.log("TV mode")
     useEffect(() => {
         setEtag(undefined);
+        setReload(old=>old+1);
     }, [user]);
 
     useEffect(() => {
@@ -118,7 +131,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             }));
             setRawEvents(evtsWithId);
         }).finally(() => setLoadingEvents(false));
-    }, [user, connected, startDate, reload]);
+    }, [ connected, startDate, reload]);
 
     useEffect(() => {
         if (!isAdmin || !connected)
@@ -138,7 +151,14 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
     useEffect(() => {
         if (initialized) {
-            const sortedEvents = sortEvents(explodeEvents(rawEvents, 30, 30, startDate));
+            const participantKey = Event.getParticipantKey(user || undefined);
+            const evts = filter ? rawEvents.filter(re=>
+                !re.participants || 
+                Object.entries(re.participants).length  == 0 ||
+                re.participants[participantKey] ||
+                re.guide?.email === user
+                ) : rawEvents;
+            const sortedEvents = sortEvents(explodeEvents(evts, 30, 30, startDate));
 
             const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= refDate.format(DateFormats.DATE));
             const tomorrow = toMidNight(refDate.add(1, "days")).format(DateFormats.DATE_TIME);
@@ -153,19 +173,19 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                 body: m.notes
             })));
         }
-    }, [rawEvents, initialized]);
+    }, [rawEvents, initialized, filter, user]);
 
     useEffect(() => {
         let intervalId = setInterval(() => {
-            // setRefresh(old => {
-            //     if ((old + 1) % 15 === 0) {
-            //         //every 2.5 min
-            //         console.log("set reload")
-            //         setReload(reloadOld => reloadOld + 1);
-            //     }
-            //     return old + 1
+            setRefresh(old => {
+                if ((old + 1) % 15 === 0) {
+                    //every 2.5 min
+                    console.log("set reload")
+                    setReload(reloadOld => reloadOld + 1);
+                }
+                return old + 1
 
-            // });
+            });
         }, 10 * 1000)
 
         return (() => {
@@ -226,7 +246,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             onPushNotification={onPushNotification}
             onBetaChange={(on) => setBeta(on)}
             onAccessibleCalendar={((on) => setAccessibleCalendar(on))}
-            accessibleCalendar={accessibleCalendar}
+            accessibleCalendar={accessibleCalendarAct}
             beta={beta === true}
             notify={notify}
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
@@ -243,7 +263,6 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                 }
             }
         }}
-
     >
         <EventsHeader
             centered={isTV}
@@ -294,7 +313,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                 refDate={refDate}
             />}
 
-            {!manageUsers && !manageMedia && !showNotifications && (accessibleCalendar ?
+            {!manageUsers && !manageMedia && !showNotifications && (accessibleCalendarAct ?
                 <AccessibleView
                     events={events}
                     isTV={isTV}
@@ -306,6 +325,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                     audioRef={audioRef}
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
                     loading={loadingEvents}
+                    height={isAdmin ? 82 : 88}
                 /> :
 
                 <Events
@@ -333,30 +353,39 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
             </VBoxC>} */}
         {isAdmin && <div className="admin-pane-btn-container">
-            <div className={"admin-pane-btn" + (!manageMedia && !manageUsers ? " selected" : "")} onClick={() => {
-                setManageMedia(false);
-                setManageUsers(false);
-                setShowNotifications(false);
-            }} >
-                <CalendarMonth />
-                <text>יומן</text>
-            </div>
-            <div className={"admin-pane-btn" + (manageUsers ? " selected" : "")} onClick={() => {
-                setManageMedia(false);
-                setManageUsers(true)
-                setShowNotifications(false);
-            }} >
-                <PeopleAlt />
-                <text>משתמשים</text>
-            </div>
-            <div className={"admin-pane-btn" + (manageMedia ? " selected" : "")} onClick={() => {
-                setManageMedia(true);
-                setManageUsers(false)
-                setShowNotifications(false);
-            }} >
-                <Photo />
-                <text>מדיה</text>
-            </div>
+
+            <FilterEvents onSelect={(on:boolean)=>setFilter(on)} on={filter} />
+
+            <AdminBtn
+                onPress={() => {
+                    setManageMedia(false);
+                    setManageUsers(false);
+                    setShowNotifications(false);
+                }}
+                icon={<CalendarMonth />}
+                selected={!manageMedia && !manageUsers}
+                caption="יומן"
+            />
+            <AdminBtn
+                onPress={() => {
+                    setManageMedia(false);
+                    setManageUsers(true)
+                    setShowNotifications(false);
+                }}
+                icon={<PeopleAlt />}
+                selected={manageUsers}
+                caption="משתמשים"
+            />
+            <AdminBtn
+                onPress={() => {
+                    setManageMedia(true);
+                    setManageUsers(false)
+                    setShowNotifications(false);
+                }}
+                icon={<Photo />}
+                selected={manageMedia}
+                caption="מדיה"
+            />
         </div>
         }
     </div >

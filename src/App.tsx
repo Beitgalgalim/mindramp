@@ -12,9 +12,6 @@ import { Button, LinearProgress } from '@mui/material';
 
 import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, UserType } from './types';
 import UserEvents from './user-events';
-import Admin from './admin';
-import { User } from '@firebase/auth';
-import Login from './login';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
 import About from './about';
@@ -124,6 +121,7 @@ function App(props: any) {
           })
         } else {
           setUser(null);
+          setAdmin(false);
           setDesiredNotificationOn(false);
           setActualNotificationOn(false);
           setServerPersistedNotificationTokens([]);

@@ -29,6 +29,10 @@
 }
 
 .admin-pane-btn-container {
+  position: fixed;
+  bottom:0;
+  height: 6vh;
+  padding-bottom: 2px;
   display: flex;
   width:100vw;
   flex-direction: row;

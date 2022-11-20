@@ -726,6 +726,12 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
     const eTag = data.eTag;
     let admin = false;
 
+    const cachedEvents = await getEventsViaCache(isDev);
+    if (cachedEvents.eTag === eTag) {
+        // No Change
+        return { noChange: true };
+    }
+
     if (impersonateUser && impersonateUser !== email) {
         if (!email) {
             throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied");
@@ -751,14 +757,6 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
     }
     const effectiveEmail = impersonateUser || email;
     const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
-
-
-    const cachedEvents = await getEventsViaCache(isDev);
-
-    if (cachedEvents.eTag === eTag) {
-        // No Change
-        return { noChange: true };
-    }
 
     const returnEvents = cachedEvents.events.filter(entry =>
         admin || // admin loads all

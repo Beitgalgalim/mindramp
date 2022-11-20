@@ -242,56 +242,56 @@ export function getPersonalizedEvents(user: string | undefined, eTag: string | u
     };
     return getEventsFunc(payload).then(res => res.data);
 }
-export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
-    if (!filter) {
-        return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
-    }
+// export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
+//     if (!filter) {
+//         return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
+//     }
 
-    const waitFor = [
-        _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants", "==", {}),
-    ];
-    // concat three lists: all public events + private events where user is participant + events where user is guide
-    let participantKey = Event.getParticipantKey(user);
+//     const waitFor = [
+//         _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants", "==", {}),
+//     ];
+//     // concat three lists: all public events + private events where user is participant + events where user is guide
+//     let participantKey = Event.getParticipantKey(user);
 
-    if (participantKey?.length > 0) {
-        waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey, "!=", null)
-        );
-        waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
-        );
-    }
+//     if (participantKey?.length > 0) {
+//         waitFor.push(
+//             _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey, "!=", null)
+//         );
+//         waitFor.push(
+//             _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
+//         );
+//     }
 
-    return Promise.all(waitFor).then(
-        (res: DocumentData[][]) => {
-            let events = res[0].map((doc: any) => Event.fromDbObj(doc));
+//     return Promise.all(waitFor).then(
+//         (res: DocumentData[][]) => {
+//             let events = res[0].map((doc: any) => Event.fromDbObj(doc));
 
-            if (participantKey?.length > 0) {
-                events = events.concat(
-                    res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
-                );
+//             if (participantKey?.length > 0) {
+//                 events = events.concat(
+//                     res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
+//                 );
 
-                // result with user as guide may be a duplicate with previous lists, merge them:
-                res[2].forEach(doc => {
-                    const ev = events.find(e => e._ref?.id == doc._ref?.id);
-                    if (ev) {
-                        ev.isPersonal = true;
-                    } else {
-                        events.push(Event.fromDbObj(doc, doc.ref, true));
-                    }
-                });
-            }
+//                 // result with user as guide may be a duplicate with previous lists, merge them:
+//                 res[2].forEach(doc => {
+//                     const ev = events.find(e => e._ref?.id == doc._ref?.id);
+//                     if (ev) {
+//                         ev.isPersonal = true;
+//                     } else {
+//                         events.push(Event.fromDbObj(doc, doc.ref, true));
+//                     }
+//                 });
+//             }
 
-            // Sort by start
-            return sortEvents(events);
-        },
+//             // Sort by start
+//             return sortEvents(events);
+//         },
 
-        (err) => {
-            console.log(err);
-            return [] as Event[];
-        });
+//         (err) => {
+//             console.log(err);
+//             return [] as Event[];
+//         });
 
-}
+// }
 
 
 export function getUsers(): Promise<UserInfo[]> {

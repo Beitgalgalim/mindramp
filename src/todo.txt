@@ -15,7 +15,7 @@ Backlog:
 - Edit Event UI refactor:
   - Open in view mode, and add "edit mode"
   - regular/special/message - make one field (mutally exclusive)
-- Archive old events
+- Archive old events - V
 - TV mode:
   - scroll side-ways, key events?
 - Improve media management UI - V
