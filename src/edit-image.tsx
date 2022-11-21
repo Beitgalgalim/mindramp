@@ -132,9 +132,9 @@ export default function EditImage(
     }
 
     return <div className="edit-image-container">
-        <h1>{imageInfo._ref ? "עדכון תמונה" : "הוספת תמונה"}</h1>
 
         <input className="custom-file-input" type="file" ref={inputEl} style={{ visibility: "hidden" }} onChange={onSelectedFile} />
+        <h1>{imageInfo._ref ? "עדכון תמונה" : "הוספת תמונה"}</h1>
         <div className="edit-image-fields-container">
             <div>שם</div>
             <input type="text" value={name} onChange={(e) => { setName(e.target.value) }} />

@@ -130,3 +130,53 @@
     left: 95px;
     font-size: 90px;
 }
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    margin:0;
+}
+
+.fc-one-event-container-high {
+    display: flex;
+    direction: rtl;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.fc-one-event-container {
+    direction: rtl;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.fc-one-event-time {
+    display: flex;
+    flex-direction: row;
+    margin-left: 5px;
+    margin-right: 5px;
+    align-items: center;
+}
+
+.fc-one-event-title {
+    margin-left: 5px;
+    margin-right: 5px;
+    text-align: start;
+}
+.event-svg-icon {
+    display: block;
+    margin: 2px;
+}
+
+.fc-one-event-markers {
+    position: absolute;
+    left:0;
+    height:25px;
+    display: flex;
+    flex-direction: row;
+}
+
+.fc-one-event-markers > img {
+    height:25;
+    width:25px
+}

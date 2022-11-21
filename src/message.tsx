@@ -15,17 +15,17 @@ export default function Message({ msg, onSetRead }: MessageProps) {
         borderRadius: 10,
         marginRight: 24,
         marginLeft: 24,
-        marginBottom: 30,
-        marginTop: 1,
+        marginBottom: 13,
+        marginTop: 13,
         boxShadow: Design.boxShadow,
-    }}         onClick={onSetRead}
+    }} onClick={onSetRead}
     >
         {/**unread */
-            msg.unread && <UnRead/>
+            msg.unread && <UnRead />
         }
 
         <Text fontSize="1em" textAlign={"center"}>{msg.title}</Text>
-        <Spacer Height={10}/>
+        <Spacer Height={10} />
         <Text fontSize="0.7em" textAlign={"center"}>{msg.body}</Text>
     </div>;
 }

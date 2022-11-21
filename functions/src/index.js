@@ -724,6 +724,13 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
     const email = context?.auth?.token?.email;
     const impersonateUser = data.impersonateUser;
     const eTag = data.eTag;
+    let admin = false;
+
+    const cachedEvents = await getEventsViaCache(isDev);
+    if (cachedEvents.eTag === eTag) {
+        // No Change
+        return { noChange: true };
+    }
 
     if (impersonateUser && impersonateUser !== email) {
         if (!email) {
@@ -739,24 +746,24 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
                 throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
             }
         });
+    } else {
+        // load if admin
+        // todo cache?
+        await isAdmin(isDev, context).then(() => {
+            admin = true;
+        }).catch((e) => { 
+            // ignore - allow non-admin only get own or public events
+        });
     }
     const effectiveEmail = impersonateUser || email;
     const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
 
-
-    const cachedEvents = await getEventsViaCache(isDev);
-
-    if (cachedEvents.eTag === eTag) {
-        // No Change
-        return { noChange: true };
-    }
-
     const returnEvents = cachedEvents.events.filter(entry =>
+        admin || // admin loads all
         entry.event.participants === undefined || // public event
         Object.entries(entry.event.participants).length === 0 ||
         (participantKey && entry.event.participants && entry.event.participants[participantKey]) || // The user is a participant
         entry.event.guide && entry.event.guide.email === effectiveEmail); // the user is a guide
-
     return {
         eTag: cachedEvents.eTag,
         events: returnEvents,

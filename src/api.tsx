@@ -242,56 +242,56 @@ export function getPersonalizedEvents(user: string | undefined, eTag: string | u
     };
     return getEventsFunc(payload).then(res => res.data);
 }
-export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
-    if (!filter) {
-        return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
-    }
+// export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
+//     if (!filter) {
+//         return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
+//     }
 
-    const waitFor = [
-        _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants", "==", {}),
-    ];
-    // concat three lists: all public events + private events where user is participant + events where user is guide
-    let participantKey = Event.getParticipantKey(user);
+//     const waitFor = [
+//         _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants", "==", {}),
+//     ];
+//     // concat three lists: all public events + private events where user is participant + events where user is guide
+//     let participantKey = Event.getParticipantKey(user);
 
-    if (participantKey?.length > 0) {
-        waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey, "!=", null)
-        );
-        waitFor.push(
-            _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
-        );
-    }
+//     if (participantKey?.length > 0) {
+//         waitFor.push(
+//             _getCollectionWithCond(Collections.EVENT_COLLECTION, "participants." + participantKey, "!=", null)
+//         );
+//         waitFor.push(
+//             _getCollectionWithCond(Collections.EVENT_COLLECTION, "guide.email", "==", user)
+//         );
+//     }
 
-    return Promise.all(waitFor).then(
-        (res: DocumentData[][]) => {
-            let events = res[0].map((doc: any) => Event.fromDbObj(doc));
+//     return Promise.all(waitFor).then(
+//         (res: DocumentData[][]) => {
+//             let events = res[0].map((doc: any) => Event.fromDbObj(doc));
 
-            if (participantKey?.length > 0) {
-                events = events.concat(
-                    res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
-                );
+//             if (participantKey?.length > 0) {
+//                 events = events.concat(
+//                     res[1].map((doc: any) => Event.fromDbObj(doc, doc.ref, true))
+//                 );
 
-                // result with user as guide may be a duplicate with previous lists, merge them:
-                res[2].forEach(doc => {
-                    const ev = events.find(e => e._ref?.id == doc._ref?.id);
-                    if (ev) {
-                        ev.isPersonal = true;
-                    } else {
-                        events.push(Event.fromDbObj(doc, doc.ref, true));
-                    }
-                });
-            }
+//                 // result with user as guide may be a duplicate with previous lists, merge them:
+//                 res[2].forEach(doc => {
+//                     const ev = events.find(e => e._ref?.id == doc._ref?.id);
+//                     if (ev) {
+//                         ev.isPersonal = true;
+//                     } else {
+//                         events.push(Event.fromDbObj(doc, doc.ref, true));
+//                     }
+//                 });
+//             }
 
-            // Sort by start
-            return sortEvents(events);
-        },
+//             // Sort by start
+//             return sortEvents(events);
+//         },
 
-        (err) => {
-            console.log(err);
-            return [] as Event[];
-        });
+//         (err) => {
+//             console.log(err);
+//             return [] as Event[];
+//         });
 
-}
+// }
 
 
 export function getUsers(): Promise<UserInfo[]> {
@@ -339,14 +339,14 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: Event | EventApi, ref: DocumentReference | undefined): Promise<Event> {
-    const eventObj = Event.fromEventAny(event);
-    const dbEventObj = eventObj.toDbObj(ref === undefined);
+export async function upsertEvent(event: Event , id?:string): Promise<Event> {
+    
+    const dbEventObj = event.toDbObj(id === undefined || id === "");
 
     const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
     const payload: any = {
         isDev: isDev(),
-        id: ref?.id,
+        id,
         event: dbEventObj,
     };
 
@@ -359,16 +359,15 @@ export async function upsertEvent(event: Event | EventApi, ref: DocumentReferenc
 }
 
 
-export async function createEventInstance(evt: Event | EventApi, ref: DocumentReference | undefined):
+export async function createEventInstance(event: Event, id:string):
     Promise<{ instance: Event, series: Event }> {
 
-    const eventObj = Event.fromEventAny(evt);
-    const dbEventObj = eventObj.toDbObj();
+    const dbEventObj = event.toDbObj();
 
     const createEventInstanceFunc = httpsCallable(functions, 'createEventInstance');
     const payload: any = {
         isDev: isDev(),
-        id: ref?.id,
+        id,
         event: dbEventObj,
     };
 
@@ -382,15 +381,15 @@ export async function createEventInstance(evt: Event | EventApi, ref: DocumentRe
     });
 }
 
-export async function createEventInstanceAsDeleted(excludeDate: string, ref: DocumentReference) {
-    if (!ref) {
-        throw ("Ref must be valid");
+export async function createEventInstanceAsDeleted(excludeDate: string, id: string) {
+    if (!id) {
+        throw ("ID must be valid");
     }
 
     const createEventInstanceAsDeletedFunc = httpsCallable(functions, 'createEventInstanceAsDeleted');
     const payload: any = {
         isDev: isDev(),
-        id: ref?.id,
+        id,
         excludeDate,
     };
 
@@ -401,15 +400,15 @@ export async function createEventInstanceAsDeleted(excludeDate: string, ref: Doc
 }
 
 
-export async function deleteEvent(ref: DocumentReference, deleteModifiedInstance: boolean = false): Promise<string[]> {
+export async function deleteEvent(id: string, deleteModifiedInstance: boolean = false): Promise<string[]> {
     const deleteEventFunc = httpsCallable(functions, 'deleteEvent');
     const payload: any = {
         isDev: isDev(),
-        id: ref.id,
+        id,
         deleteModifiedInstance,
     };
 
-    if (ref) {
+    if (id) {
         return deleteEventFunc(payload).then((res: any) => res.data);
     }
     return [];

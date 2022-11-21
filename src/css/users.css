@@ -1,9 +1,11 @@
 .users-container {
     direction: rtl;
     width: 100%;
-    max-height: 80vh;
     overflow-x: scroll;
-    padding-top: 30px;
+    height:100%;
+    font-size: 24px;
+    font-family: Assistant;
+    font-weight: 700;  
 }
 
 .edit-user-container {

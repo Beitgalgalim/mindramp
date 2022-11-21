@@ -11,7 +11,7 @@ export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMa
         tab-marker={tabMarker}
         style={{
             position: "relative",
-            backgroundColor: selected ? "#337F5B" : "#DEE6EA",
+            backgroundColor: selected ? "#4EB5D6" : "#DEE6EA",
             borderRadius: 40,
             width: "25vw",
             height: 46,
@@ -48,15 +48,18 @@ export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMa
     </button>
 }
 
-export default function EventsNavigation(props: any) {
+export default function EventsNavigationNew(props: any) {
     return <div style={{
         height: props.height,
+        backgroundColor: props.backgroundColor || "white",
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-evenly",
         alignItems: "center",
         width: "100%",
-
+        borderBottom:3,
+        borderBottomColor:"lightgray",
+        borderBottomStyle:"solid",
     }}>
         {
             props.buttons.map((btn: any, i: number) => (<NavButton

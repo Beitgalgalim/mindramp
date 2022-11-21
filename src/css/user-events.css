@@ -16,7 +16,8 @@
 }
 
 .userEventsContainer {
-  background-color: #0078C3;
+  background-color: #0078C3; 
+  
   font-size: 24px;
   font-family: Assistant;
   font-weight: 700;
@@ -26,4 +27,45 @@
 
 .mainBG {
   background-color: #EBF0F2;
+}
+
+.admin-pane-btn-container {
+  position: fixed;
+  bottom:0;
+  height: 6vh;
+  padding-bottom: 2px;
+  display: flex;
+  width:100vw;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  background-color: white;
+  padding-top:5px;
+  border-top: lightgrey;
+  border-top-width: 5;
+  border-top-style: solid;
+}
+
+.admin-pane-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2px;
+  padding-left:10px;
+  padding-right:10px;
+  height: 6vh;
+  
+}
+.selected {
+  background-color: lightgrey;
+  border-radius: 10px;
+}
+
+.admin-pane-btn > text {
+  font-size: 15px;
+  color: black;
+}
+.admin-pane-btn > svg {
+  font-size: 20 px;
+  color: black;
 }

@@ -1,30 +1,37 @@
 Backlog:
 -------
-- Optimize: (~650k reads per day, ~ 2 NIS per day...)
-  - cache & eTag queries - V
-  - remove old records of event - move to Archive - V
+- Performance Optimizeation: 
+  - Cache Admins in functions? 
 
-- UI Improvments in User Events
-  - pending approval...
+- UI Improvments in User Events (pending approval)
+  - adjust text size, and acc-settings
 
 - Add nickname to users:
   - editing UI
   - migrate from localstorage?
   - use in UserEvents
   - Remove green circle for login
+
+- Send message to the system to create an event (guide send it, or even users) - idea - use WhatsApp
+- Add long-press on logo to open settings
+- Bank of audio recordings
+- Bank of Icons
+- Media: 
+  - make tags work
+  - search-by-tag
+  - imrpove editing UI
+
 - Edit Event UI refactor:
   - Open in view mode, and add "edit mode"
   - regular/special/message - make one field (mutally exclusive)
-- Archive old events
 - TV mode:
-  - scroll side-ways, key events?
-- Improve media management UI - V
+  - key events?
 
 
 Bugs Medium
 -----------
 - Kiosk: Handle state saved in localstorage per delagated user
-  - nick-name - done
+  - nick-name - V done
   - Events and notifications view status
 - An end time after or at midnight - result in wrong message
 
@@ -32,5 +39,5 @@ Bugs Medium
 Bugs Low
 --------
 - In admin
-  - close list on second click on down arrow
+  - close combobox list on second click on down arrow
 

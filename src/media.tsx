@@ -62,13 +62,21 @@ export default function Media({ media, notify, reload }: MediaProps) {
             onCancel={() => setEditedImage(undefined)}
             notify={notify} />;
 
-    return (<div dir="rtl" >
+    return (<div style={{
+        display: "flex",
+        flexDirection: "column",
+        flexWrap: "nowrap",
+        overflowY: "scroll",
+        height: "100%",
+        backgroundColor:"white"
+
+    }}>
         <Fab
             color="primary" aria-label="הוסף"
             variant="circular"
             style={{
                 position: "fixed",
-                bottom: 50,
+                bottom: 60,
                 right: 50,
                 zIndex: 1000,
                 borderRadius: '50%'
@@ -76,23 +84,15 @@ export default function Media({ media, notify, reload }: MediaProps) {
         >
             <Add onClick={() => { setEditedImage(getNewImageInfo()) }} />
         </Fab>
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            overflowY: "scroll",
-            height: "75vh"
-        }}>
 
-            {media.map((m, i) => (
-                <div className="media-entry" key={i} onClick={() => setEditedImage(m)}>
-                    <Spacer />
-                    <img src={m.url} alt={m.name} />
-                    <Spacer />
-                    <Text width={"50vw"} textAlign="right">{m.name}</Text>
-                </div>
-            ))}
-        </div>
 
+        {media.map((m, i) => (
+            <div className="media-entry" key={i} onClick={() => setEditedImage(m)}>
+                <Spacer />
+                <img src={m.url} alt={m.name} />
+                <Spacer />
+                <Text width={"50vw"} textAlign="right">{m.name}</Text>
+            </div>
+        ))}
     </div>);
 }

@@ -1,22 +1,27 @@
 import { Dayjs } from "dayjs";
 import { MutableRefObject, useEffect, useRef, useState } from "react";
 import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar, UnRead } from "./elem";
-import { DateFormats, getBeforeTimeText, getNiceDate, timeRange2Text } from "./utils/date";
+import { DateFormats, getBeforeTimeText, getLengthText, getNiceDate, timeRange2Text } from "./utils/date";
 import { Event } from './event';
 import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 import './css/event-new.css'
-
-
-import { AccessTime, MicOutlined } from "@mui/icons-material";
-//const myEvent = require('./icons/myEvent.svg');
+import { AccessTime, MicOutlined, PeopleAlt, VolumeUp } from "@mui/icons-material";
 import myEvent from './icons/myEvent.png'
 import { AccessibilitySettingsData, UserElementProps } from "./types";
+import { ENETDOWN } from "constants";
+
+const hourColors = [
+    "#6EBEAB", "#6EB0BE", "#6E85BE", "#7E6EBE", "#B36EBE", "#BE6EA3", "#BE6E6E", "#BEA36E", "#9BBE6E"
+];
+
+const selectedBtnColor = "#4EB5D6";
+
 export default function EventElementNew({
     accessibilitySettings,
     event, single, firstInGroup,
-    now, width, audioRef, showingKeyEvent, onSetRead, tabMarker, kioskMode }: UserElementProps
+    now, width, audioRef, showingKeyEvent, onSetRead, tabMarker, kioskMode , groupIndex}: UserElementProps
 
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
@@ -95,116 +100,133 @@ export default function EventElementNew({
     const isSingle = !!single;
     const widthPixels = window.innerWidth * (width / 100);
     return (
-        <div className="event-container-outer">
+        <button
+            tab-marker={tabMarker}
+            className={"event-container-outer" + (kioskMode ? " kiosk-nav" : "")}
+            aria-label={getAccessibleEventText(event)}
+            style={{
 
-            <div className="event-time-new">
-                <Text aria-hidden="true" fontSize={hourSize*1.5 + "em"}>{t1}</Text>
-                <Text aria-hidden="true" fontSize={hourSize + "em"}>{meetingLengthMinutes} דק׳</Text>
-            </div>
-            <button
-                tab-marker={tabMarker}
-                className={ "event-container2" + (kioskMode ? " kiosk-nav" : "")}
-                aria-label={getAccessibleEventText(event)}
-                style={{
+                // width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
+                height: single ? Design.singleEventHeight : Design.multiEventHeight,
+                background: playProgress >= 0 ?
+                    `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
+                    "white",
+                //marginRight: firstInGroup ? 24 : 0,
+            }}
+            onClick={() => {
+                if (event.unread === true && onSetRead) {
+                    onSetRead();
+                }
 
-                    width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
-                    height: single ? Design.singleEventHeight : Design.multiEventHeight,
-                    background: playProgress >= 0 ?
-                        `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
-                        "white",
-                    //marginRight: firstInGroup ? 24 : 0,
-                }}
-                onClick={() => {
-                    if (event.unread === true && onSetRead) {
-                        onSetRead();
-                    }
-
-                    // plays the audio if exists
-                    if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
-                        // console.log(e.detail)
-                        if (audioRef.current.src === event.audioUrl) {
-                            // avoid multiple clicks
-                            if (eventAudioLoading) {
-                                console.log("audio is still loading - ignore click")
-                                return;
-                            }
-
-                            if (audioRef.current.paused) {
-                                audioRef.current.play().then(() => startTimer());
-                            } else {
-                                audioRef.current.pause();
-                                stopTimer();
-                                setEventAudioLoading(false);
-                                console.log("audio loading off 2")
-                            }
-
+                // plays the audio if exists
+                if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
+                    // console.log(e.detail)
+                    if (audioRef.current.src === event.audioUrl) {
+                        // avoid multiple clicks
+                        if (eventAudioLoading) {
+                            console.log("audio is still loading - ignore click")
                             return;
                         }
 
-                        setEventAudioLoading(true);
-                        console.log("audio start loading")
-                        audioRef.current.src = event.audioUrl;
-                        audioRef.current.onended = () => {
+                        if (audioRef.current.paused) {
+                            audioRef.current.play().then(() => startTimer());
+                        } else {
+                            audioRef.current.pause();
                             stopTimer();
-                            console.log("ended")
                             setEventAudioLoading(false);
-                            setPlayProgress(-1);
+                            console.log("audio loading off 2")
                         }
-                        audioRef.current.play().then(() => startTimer());
+
+                        return;
                     }
-                }}
 
-            >
-                {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
+                    setEventAudioLoading(true);
+                    console.log("audio start loading")
+                    audioRef.current.src = event.audioUrl;
+                    audioRef.current.onended = () => {
+                        stopTimer();
+                        console.log("ended")
+                        setEventAudioLoading(false);
+                        setPlayProgress(-1);
+                    }
+                    audioRef.current.play().then(() => startTimer());
+                }
+            }}
+
+        >
+            {/* <div className="event-container-outer"> */}
+
+            <div className="event-time-new" style={{backgroundColor:hourColors[groupIndex % hourColors.length]}}>
+                <div className="event-time-inner">
+                    <Text aria-hidden="true" fontSize={hourSize * 1.5 + "em"}>{t1}</Text>
+                    <Text aria-hidden="true" fontSize={hourSize + "em"}>{getLengthText(meetingLengthMinutes)}</Text>
+                </div>
+            </div>
+
+            {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
 
 
-                {/** pin for personal events */
-                    event.isPersonal === true &&
-                    <div className="event-personal-pin">
-                        {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
-                        <img src={myEvent} style={{ width: 45, height: 45 }} />
+            {/** pin for personal events */
+                event.isPersonal === true &&
+                <div className="event-personal-pin">
+                    {/* <PushPin style={{ color: Colors.EventIcons, fontSize:30 , textShadow: "0 0 10px blue"}} /> */}
+                    <img src={myEvent} style={{ width: 45, height: 45 }} />
+                </div>
+            }
+            <div className="event-title">
+                {
+                    event.imageUrl && <img src={event.imageUrl} style={{
+                        maxWidth: Design.eventImageSize * imageSize,
+                        maxHeight: Design.eventImageSize * imageSize,
+                        borderRadius: 10,
+                        objectFit: "cover",
+                    }} alt="תמונה"
+                    />
+                }
+                {titleAndLocation}
+            </div>
+            <div className="event-footer-right" style={{ lineHeight: hourSize + "em" }}>
+
+                <div className="event-progress">
+                    {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
+                </div>
+            </div>
+
+            {event.audioUrl && <div className="event-indicator-audio">
+                <VolumeUp />
+                {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
+            </div>}
+
+            {event.participants && Object.entries(event.participants).length > 0 && 
+                <div className="event-indicator-participants">
+                <PeopleAlt />
+            </div>}
+
+            {event.guide && <div className="event-indicator-guide">
+                <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />
+            </div>}
+
+            {/* <div className="event-footer-left">
+                {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
+                {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
+                {
+                    event.audioUrl &&
+                    <div style={{
+                        height: Design.buttonSize, minWidth: Design.buttonSize,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        color: "white",
+                        backgroundColor: Colors.EventIcons,
+                        borderRadius: Design.buttonSize / 2,
+                    }}>
+                        <MicOutlined style={{
+                            fontSize: Design.buttonSize * .7,
+                        }} />
                     </div>
                 }
-                <div className="event-title">
-                    {
-                        event.imageUrl && <img src={event.imageUrl} style={{
-                            maxWidth: Design.eventImageSize * imageSize,
-                            maxHeight: Design.eventImageSize * imageSize,
-                            borderRadius: 10,
-                            objectFit: "cover",
-                        }} alt="תמונה"
-                        />
-                    }
-                    {titleAndLocation}
-                </div>
-                <div className="event-footer-right" style={{ lineHeight: hourSize + "em" }}>
-
-                    <div className="event-progress">
-                        {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
-                    </div>
-                </div>
-
-                <div className="event-footer-left">
-                    {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
-                    {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
-                    {
-                        event.audioUrl &&
-                        <div style={{
-                            height: Design.buttonSize, minWidth: Design.buttonSize,
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            color: "white",
-                            backgroundColor: Colors.EventIcons,
-                            borderRadius: Design.buttonSize / 2,
-                        }}>
-                            <MicOutlined style={{
-                                fontSize: Design.buttonSize * .7,
-                            }} />
-                        </div>
-                    }
-                </div>
-                {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
+            </div> */}
+            {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
                 <VBox style={{ width: "75%" }}>
                     <HBox style={{ alignItems: "center", width: "100%" }}>
                         <AccessTime style={{ color: Colors.EventIcons }} />
@@ -241,14 +263,12 @@ export default function EventElementNew({
                 </HBox>
             </HBoxSB> */}
 
-                {
-                    minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
-                        <Text>{getBeforeTimeText(minutesBefore)}</Text>
-                    </div>
-                }
-            </button >
-        </div>
-
+            {
+                minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
+                    <Text>{getBeforeTimeText(minutesBefore)}</Text>
+                </div>
+            }
+        </button >
     );
 }
 

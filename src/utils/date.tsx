@@ -75,10 +75,10 @@ export const toMidNight = (d: Dayjs) => dayjs(d.format(DateFormats.DATE));
 
 export const removeTime = (d: Dayjs | string) => dayjs(d).format(DateFormats.DATE);
 
-export function getDayDesc(date: Dayjs): string {
+export function getDayDesc(date: Dayjs, inDiff?: number): string {
 
     const now = toMidNight(dayjs());
-    const diff = date.diff(toMidNight(now), "days");
+    const diff = inDiff !== undefined ? inDiff : date.diff(toMidNight(now), "days");
 
     switch (diff) {
         case 0: return "היום";
@@ -291,7 +291,7 @@ export function time2Text(timeStr: string, omitAmPmIfSame: string | undefined = 
         } else if (d.minute() % 10 === 0) {
             result += " ו" + number2Text(d.minute(), false, true);
         } else if (d.minute() < 20) {
-            result += " ו" +  number2Text(d.minute(), false);
+            result += " ו" + number2Text(d.minute(), false);
         } else {
             result += " " + number2Text(Math.floor(d.minute() / 10) * 10, false) + " ו" + number2Text(d.minute() % 10, false, true);
         }
@@ -340,9 +340,9 @@ function number2Text(num: number, isHour: boolean, isMusculer?: boolean): string
         case 14:
             return "ארבע עשרה";
         case 15:
-            return isHour?
-            "חמש עשרה":
-            "רבע";
+            return isHour ?
+                "חמש עשרה" :
+                "רבע";
         case 20:
             return "עשרים";
         case 30:
@@ -393,6 +393,29 @@ export function getBeforeTimeText(minutes: number): string {
     return "עוד מעל שעתיים";
 }
 
+export function getLengthText(minutes: number): string {
+    if (minutes <= 0)
+        return ""
+
+    if (minutes == 30) {
+        return "חצי שעה"
+    }
+    if (minutes == 60) {
+        return "שעה"
+    }
+
+    if (minutes == 90) {
+        return "שעה וחצי"
+    }
+
+    if (minutes == 120) {
+        return "שעתיים"
+    }
+
+    return minutes + "דק׳";
+}
+
+
 export function organizeEventsForDisplay(events: any[]): any[][] {
     const eventsArray: any[][] = [];
 
@@ -427,7 +450,7 @@ export function organizeEventsForDisplay(events: any[]): any[][] {
 }
 
 
-export function getNiceDate(d: string, withDay: boolean = false) {
+export function getNiceDate(d: string | Dayjs, withDay: boolean = false) {
     const djs = dayjs(d);
     let res = withDay ? "יום א׳ " : "";
     res += MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
