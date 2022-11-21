@@ -112,6 +112,7 @@ export interface UserElementProps {
     itemHeightPixels?: number,
     tabMarker?: string,
     kioskMode: boolean,
+    groupIndex: number,
 }
 
 export interface MediaResource {

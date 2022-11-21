@@ -99,45 +99,47 @@ export default function AccessibilitySettings({
             </div>
         </div>
         <div className="preview-events">
-        <EventElement
-            kioskMode={false}
-            event={Event.fromDbObj({
-                guide:{icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg"},
-                audioUrl: "https://noaudio.com",
-                title: "אירוע לדוגמא",
-                location: "אולם ראשי",
-                start: "2022-10-10T10:30",
-                end: "2022-10-10T11:30",
-                imageUrl: "https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Fphotos%2F%D7%90%D7%A8%D7%95%D7%97%D7%AA%20%D7%91%D7%95%D7%A7%D7%A8.jpg?alt=media&token=581e8182-d5d2-4941-88b6-d4b6971f4266",
-            })
-            }
-            single={true}
-            firstInGroup={true}
-            now={dayjs()}
-            width={100}
-            showingKeyEvent={false}
-            accessibilitySettings={accSettings}
-        />
+            <EventElement
+                groupIndex={1}
+                kioskMode={false}
+                event={Event.fromDbObj({
+                    guide: { icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg" },
+                    audioUrl: "https://noaudio.com",
+                    title: "אירוע לדוגמא",
+                    location: "אולם ראשי",
+                    start: "2022-10-10T10:30",
+                    end: "2022-10-10T11:30",
+                    imageUrl: "https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Fphotos%2F%D7%90%D7%A8%D7%95%D7%97%D7%AA%20%D7%91%D7%95%D7%A7%D7%A8.jpg?alt=media&token=581e8182-d5d2-4941-88b6-d4b6971f4266",
+                })
+                }
+                single={true}
+                firstInGroup={true}
+                now={dayjs()}
+                width={100}
+                showingKeyEvent={false}
+                accessibilitySettings={accSettings}
+            />
 
-        <EventElement
-            kioskMode={false}
-            event={Event.fromDbObj({
-                guide:{icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg"},
-                audioUrl: "https://noaudio.com",
-                title: "אירוע לדוגמא",
-                location: "אולם ראשי",
-                start: "2022-10-10T10:30",
-                end: "2022-10-10T11:30",
-                imageUrl: "https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Fphotos%2F%D7%90%D7%A8%D7%95%D7%97%D7%AA%20%D7%91%D7%95%D7%A7%D7%A8.jpg?alt=media&token=581e8182-d5d2-4941-88b6-d4b6971f4266",
-            })
-            }
-            single={false}
-            firstInGroup={true}
-            now={dayjs()}
-            width={100}
-            showingKeyEvent={false}
-            accessibilitySettings={accSettings}
-        />
+            <EventElement
+                groupIndex={1}
+                kioskMode={false}
+                event={Event.fromDbObj({
+                    guide: { icon: "https://www.gov.il/BlobFolder/news/ben_gurion_gallery2/he/benGur2.jpg" },
+                    audioUrl: "https://noaudio.com",
+                    title: "אירוע לדוגמא",
+                    location: "אולם ראשי",
+                    start: "2022-10-10T10:30",
+                    end: "2022-10-10T11:30",
+                    imageUrl: "https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Fphotos%2F%D7%90%D7%A8%D7%95%D7%97%D7%AA%20%D7%91%D7%95%D7%A7%D7%A8.jpg?alt=media&token=581e8182-d5d2-4941-88b6-d4b6971f4266",
+                })
+                }
+                single={false}
+                firstInGroup={true}
+                now={dayjs()}
+                width={100}
+                showingKeyEvent={false}
+                accessibilitySettings={accSettings}
+            />
         </div>
     </div >
 }

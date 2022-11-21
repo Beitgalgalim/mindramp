@@ -16,7 +16,8 @@
 }
 
 .userEventsContainer {
-  background-color: #0078C3;
+  background-color: #0078C3; 
+  
   font-size: 24px;
   font-family: Assistant;
   font-weight: 700;
@@ -38,7 +39,11 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-evenly;
-  background-color: lightgray;
+  background-color: white;
+  padding-top:5px;
+  border-top: lightgrey;
+  border-top-width: 5;
+  border-top-style: solid;
 }
 
 .admin-pane-btn {
@@ -48,11 +53,11 @@
   margin-top: 2px;
   padding-left:10px;
   padding-right:10px;
-
+  height: 6vh;
   
 }
 .selected {
-  background-color: white;
+  background-color: lightgrey;
   border-radius: 10px;
 }
 

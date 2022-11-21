@@ -7,6 +7,7 @@ import EventElement from "./event-element";
 import EventElementNew from "./event-element-new";
 import { EventsContainer } from "./events-container";
 import EventsNavigation from "./events-navigation";
+import EventsNavigationNew from "./events-navigation-new";
 import Message from "./message";
 import { Design } from "./theme";
 import { AccessibilitySettingsData } from "./types";
@@ -114,20 +115,30 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
 
     return (<HBox style={{ justifyContent: "space-evenly" }}>
         {days.map((day, dayIndex) =>
-            <EventsMain key={dayIndex} height={height} width={(columnWidth - 1) + "vw"}
+            <EventsMain key={dayIndex} height={height} width={(columnWidth) + "vw"}
             >
-                {!isTV && <EventsNavigation
+                {!isTV && (beta ? <EventsNavigationNew
                     height={"8vh"}
                     currentNavigation={daysOffset}
                     onNavigate={(offset: number) => onChangeDaysOffset(offset)}
                     buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
                     tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
                     kiosk={kioskMode}
-                />}
+                /> : 
+                <EventsNavigation
+                    height={"8vh"}
+                    currentNavigation={daysOffset}
+                    onNavigate={(offset: number) => onChangeDaysOffset(offset)}
+                    buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
+                    tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
+                    kiosk={kioskMode}
+                />
+                )}
 
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
 
                 <EventsContainer
+                    backgroundColor={beta?"white": "#EBF0F2"}
                     ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}
                     vhHeight={height - 8}
 
@@ -135,6 +146,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                     {day.eventGroup?.map((evGroup, i) =>
                         beta ?
                             evGroup.map((ev, j, ar) => (<EventElementNew
+                                groupIndex={i}
                                 kioskMode={kioskMode}
                                 tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
                                 key={ev.tag}
@@ -158,6 +170,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                             >
                                 {
                                     evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                        groupIndex={i}
                                         kioskMode={kioskMode}
                                         tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
                                         accessibilitySettings={accSettings}

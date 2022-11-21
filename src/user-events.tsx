@@ -78,7 +78,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const [beta, setBeta, betaMore] = useLocalStorageState<any>("beta");
     const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
     const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
-    const [daysOffset, setDaysOffset] = useState(0);
+    const [daysOffset, setDaysOffset] = useState<number>(0);
     const [manageUsers, setManageUsers] = useState(false);
     const [manageMedia, setManageMedia] = useState(false);
     const [filter, setFilter] = useState(false);
@@ -95,14 +95,12 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const accessibleCalendarAct = accessibleCalendar || !isAdmin;
 
     const location = useLocation();
-    let refDate: Dayjs;
+    let refDate: Dayjs = dayjs();
 
-    let showDateHash = decodeURIComponent(location.hash && location.hash.substr(1));
-    if (showDateHash && dayjs(showDateHash).isValid()) {
-        refDate = dayjs(showDateHash);
-    } else {
-        refDate = dayjs();
-    }
+    // let showDateHash = decodeURIComponent(location.hash && location.hash.substr(1));
+    // if (showDateHash && dayjs(showDateHash).isValid()) {
+    //     refDate = dayjs(showDateHash);
+    // } 
 
     if (startDate !== refDate.format(DateFormats.DATE)) {
         setStartDate(refDate.format(DateFormats.DATE))
@@ -254,6 +252,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     }
 
     return <div dir={"rtl"} className="userEventsContainer"
+        style={beta ? {backgroundColor: "#0CA1D0"}:{}}
         onKeyDown={(e: any) => {
             if (e.key == "Tab" && !e.shiftKey) {
                 if (kioskMode) beep(200, 50, 40)
@@ -346,12 +345,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
         </div>
 
 
-        {/* {(!day.messages || day.messages.length === 0) && (!day.eventGroup || day.eventGroup.length == 0) &&
-            <VBoxC style={{ height: "50vh" }}>
-                <Text textAlign={"center"} fontSize={"2em"}>{loadingEvents ? "טוען..." : day.emptyMsg}</Text>
-                {loadingEvents && <CircularProgress size={Design.buttonSize} />}
-
-            </VBoxC>} */}
+        
         {isAdmin && <div className="admin-pane-btn-container">
 
             <FilterEvents onSelect={(on:boolean)=>setFilter(on)} on={filter} />

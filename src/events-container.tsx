@@ -46,7 +46,7 @@ export const EventsContainer = forwardRef((props: any, ref:LegacyRef<HTMLDivElem
             style={{
                 width: "100%",
                 height: props.vhHeight + "vh",
-                backgroundColor: "#EBF0F2",
+                backgroundColor:props.backgroundColor || "#EBF0F2",
                 overflowY: "auto",
                 flexWrap: "nowrap",
                 ...props.style,

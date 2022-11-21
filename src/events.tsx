@@ -243,9 +243,15 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         <EventsNavigation
             height={"5vh"}
             currentNavigation={-1}
-            onNavigate={(offset: number) => onChangeDaysOffset(daysOffset + (offset === 0 ? -7 : 7))}
+            onNavigate={(offset: number) => {
+                if (offset == 2) {
+                    onChangeDaysOffset(0);
+                    return;
+                }
+                onChangeDaysOffset(daysOffset + (offset === 0 ? -7 : 7))
+            }}
             kiosk={false}
-            buttons={[{ caption: "<" }, { caption: ">" }]}
+            buttons={[{ caption: "<" }, { caption: ">" }, {caption:"היום"}]}
         />
         <Text textAlign="center">{getNiceDate(currDate) + ", " + getDayDesc(currDate, daysOffset)}</Text>
         {updateInProgress && <div className="event-center-progress">
