@@ -27,7 +27,7 @@ Backlog:
 - TV mode:
   - key events?
 
-
+- User management - avoid removing admin of yourself, avoid remove last admin?
 Bugs Medium
 -----------
 - Kiosk: Handle state saved in localstorage per delagated user

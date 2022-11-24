@@ -97,10 +97,11 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     const location = useLocation();
     let refDate: Dayjs = dayjs();
 
-    // let showDateHash = decodeURIComponent(location.hash && location.hash.substr(1));
-    // if (showDateHash && dayjs(showDateHash).isValid()) {
-    //     refDate = dayjs(showDateHash);
-    // } 
+    let showDateHash = decodeURIComponent(location.hash && location.hash.substr(1));
+    // #2022-11-11 20:00
+    if (showDateHash && showDateHash.length > 15 && dayjs(showDateHash).isValid()) {
+        refDate = dayjs(showDateHash);
+    } 
 
     if (startDate !== refDate.format(DateFormats.DATE)) {
         setStartDate(refDate.format(DateFormats.DATE))
@@ -339,6 +340,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                     notify={notify}
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}
+                    isAdmin={isAdmin}
 
                 />)
             }

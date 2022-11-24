@@ -12,6 +12,7 @@ import Message from "./message";
 import { Design } from "./theme";
 import { AccessibilitySettingsData } from "./types";
 import { DateFormats, organizeEventsForDisplay } from "./utils/date";
+import * as api from './api'
 
 
 const scrollInterval = 600;
@@ -120,7 +121,12 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 {!isTV && (beta ? <EventsNavigationNew
                     height={"8vh"}
                     currentNavigation={daysOffset}
-                    onNavigate={(offset: number) => onChangeDaysOffset(offset)}
+                    onNavigate={(offset: number) => {
+                        if (offset > 0) {
+                            api.logAnalyticEvent("NavButton", {offset});
+                        }
+                        onChangeDaysOffset(offset)
+                    }}
                     buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
                     tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
                     kiosk={kioskMode}
@@ -128,7 +134,12 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 <EventsNavigation
                     height={"8vh"}
                     currentNavigation={daysOffset}
-                    onNavigate={(offset: number) => onChangeDaysOffset(offset)}
+                    onNavigate={(offset: number) => {
+                        if (offset > 0) {
+                            api.logAnalyticEvent("NavButton", {offset});
+                        }
+                        onChangeDaysOffset(offset);
+                    }}
                     buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
                     tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
                     kiosk={kioskMode}

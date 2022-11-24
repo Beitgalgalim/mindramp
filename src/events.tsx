@@ -6,7 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
 import { CircularProgress, Fab } from '@mui/material'
-import { Add, VolumeUp } from '@mui/icons-material';
+import { Add, NavigateBefore, NavigateNext, Today, VolumeUp } from '@mui/icons-material';
 import { Event } from './event';
 
 import EditEvent from './edit-event';
@@ -73,7 +73,7 @@ function renderOneEvent(event: any): any {
     </div>;
 }
 
-export default function Events({ notify, media, users, events, refDate, daysOffset,
+export default function Events({ notify, media, users, events, refDate, daysOffset, isAdmin,
     onChangeDaysOffset,
     onRemoveEvents,
     onUpsertEvent,
@@ -227,38 +227,42 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     const currDate = refDate.add(daysOffset, "day");
     const dayInWeek = currDate.day();
 
+
+    const days = ["א", "ב", "ג", "ד", "ה", "ו", "ש",];
+
     console.log("render", daysOffset, dayInWeek)
     return (<div className="events-container">
-        <EventsNavigation
-            height={"10vh"}
-            currentNavigation={dayInWeek}
-            onNavigate={(offset: number) => {
-                console.log(offset, daysOffset, dayInWeek)
-                onChangeDaysOffset(offset - dayInWeek + daysOffset);
-            }}
-            kiosk={false}
-            buttons={[{ caption: "א׳", subCaption: "13" }, { caption: "ב" }, { caption: "ג" }, { caption: "ד" }, { caption: "ה" }, { caption: "ו" }, { caption: "ש" }]}
-        />
 
-        <EventsNavigation
-            height={"5vh"}
-            currentNavigation={-1}
-            onNavigate={(offset: number) => {
-                if (offset == 2) {
-                    onChangeDaysOffset(0);
-                    return;
-                }
-                onChangeDaysOffset(daysOffset + (offset === 0 ? -7 : 7))
-            }}
-            kiosk={false}
-            buttons={[{ caption: "<" }, { caption: ">" }, {caption:"היום"}]}
-        />
-        <Text textAlign="center">{getNiceDate(currDate) + ", " + getDayDesc(currDate, daysOffset)}</Text>
+        <div className="events-days-header">
+            {days.map((d, i) => <div className="day-header" key={i}>{d + "׳"}</div>)}
+        </div>
+
+        <div className="events-days-buttons">
+            {
+                days.map((d, i) => {
+                    const diffThisWeek = i - dayInWeek;
+                    const dayDate = currDate.add(diffThisWeek, "days");
+                    const today = dayDate.diff(refDate, "days") === 0;
+                    return <div className={"day-button" + (!diffThisWeek ? " selected-date" : (today ? " day-today" : ""))} key={i}
+                        onClick={() => onChangeDaysOffset(daysOffset + diffThisWeek)}
+                    >{dayDate.format("D")}</div>
+                })
+            }
+        </div>
+
+        <div className="events-nav-buttons">
+            <div className="date-title">{getNiceDate(currDate) + ", " + getDayDesc(currDate, daysOffset)}</div>
+            <div className="events-nav-btn" onClick={() => onChangeDaysOffset(daysOffset + 7)}><NavigateNext /></div>
+            <div className="events-nav-btn" onClick={() => onChangeDaysOffset(daysOffset - 7)}><NavigateBefore /></div>
+            <div className="events-nav-btn" onClick={() => onChangeDaysOffset(0)}><Today /></div>
+        </div>
+
+
+
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!newEvent && //<div style={{ position: 'absolute', bottom: 50, right: 50, zIndex: 1000 }} >
-            <Fab
+        {!newEvent && isAdmin && <Fab
                 color="primary" aria-label="הוסף"
                 variant="circular"
                 style={{
@@ -266,12 +270,12 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                     bottom: 60,
                     right: 50,
                     zIndex: 1000,
-                    borderRadius: '50%'
+                    borderRadius: '50%',
+                    backgroundColor:'#0CA1D0'
                 }}
             >
                 <Add onClick={() => { setNewEvent({ event: getNewEvent() }) }} />
             </Fab>
-            //</div>
         }
 
         <FullCalendar
