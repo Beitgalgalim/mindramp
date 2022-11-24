@@ -1,4 +1,5 @@
 .users-container {
+    
     direction: rtl;
     width: 100%;
     overflow-x: scroll;
@@ -9,7 +10,7 @@
 }
 
 .edit-user-container {
-    position: 'absolute';
+    position: absolute;
     top: 10vh;
     margin-right: 2vw;
     margin-left: 2vw;

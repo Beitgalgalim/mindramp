@@ -28,6 +28,7 @@ Backlog:
   - key events?
 
 - User management - avoid removing admin of yourself, avoid remove last admin?
+- Security: Media is editable for any authenticated - should be only content-editor
 Bugs Medium
 -----------
 - Kiosk: Handle state saved in localstorage per delagated user

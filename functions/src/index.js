@@ -950,11 +950,12 @@ const backupCollections = [
     { name: "rooms" },
     {
         name: "users",
-        subCollections: [
-            { name: "system" },
-            { name: "personal" },
-        ],
+        // subCollections: [
+        //     { name: "system" },
+        //     { name: "personal" },
+        // ],
     },
+    { name: "role" },
 ];
 
 exports.BackupDB = functions.region("europe-west1").pubsub
