@@ -62,6 +62,18 @@ export enum UserType {
     KIOSK = 3,
 }
 
+export interface Role {
+    id: string,
+    implicit: boolean, // is this role directly assigned or implicitly as a result of another role asigned
+}
+
+export const Roles = {
+    Admin: "admin",
+    UserAdmin: "user-admin",
+    ContentAdmin: "content-admin",
+    Editor: "editor",
+};
+
 export interface UserInfo {
     fname: string,
     lname: string,
@@ -197,6 +209,7 @@ export interface KioskProps {
     onSelectUser: (user: string | undefined) => void,
 }
 export interface EventsProps extends Notifying, WithMedia, WithUsers {
+    isAdmin: boolean,
     events: any[],
     beta: boolean,
     refDate: Dayjs, // normally this is now

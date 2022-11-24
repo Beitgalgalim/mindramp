@@ -17,18 +17,20 @@ import {
 } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebase/analytics";
 
 
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo, Role, Roles } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 import { sortEvents } from './utils/date';
 
 let app: FirebaseApp;
 let db: Firestore;
+let analytics: Analytics;
 let auth: Auth;
 let functions: any = undefined;
 
@@ -43,6 +45,7 @@ export function initAPI(
         db = getFirestore(app);
         auth = getAuth(app);
         functions = getFunctions(app, 'europe-west1');
+        analytics = getAnalytics();
     }
 
     onAuthStateChanged(auth, (user) => {
@@ -178,6 +181,11 @@ export function initAPI(
 //     // }
 //     // return undefined;
 // };
+
+export function logAnalyticEvent(evtName: string, payload: any) {
+    const param: AnalyticsCallOptions = { global: false };
+    logEvent(analytics, evtName, payload, param);
+}
 
 export async function updateUserNotification(notificationOn: boolean | null, newNotificationToken?: string | null, isSafari?: boolean) {
     const updateNotification = httpsCallable(functions, 'updateNotification');
@@ -339,8 +347,8 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: Event , id?:string): Promise<Event> {
-    
+export async function upsertEvent(event: Event, id?: string): Promise<Event> {
+
     const dbEventObj = event.toDbObj(id === undefined || id === "");
 
     const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
@@ -359,7 +367,7 @@ export async function upsertEvent(event: Event , id?:string): Promise<Event> {
 }
 
 
-export async function createEventInstance(event: Event, id:string):
+export async function createEventInstance(event: Event, id: string):
     Promise<{ instance: Event, series: Event }> {
 
     const dbEventObj = event.toDbObj();
@@ -485,24 +493,32 @@ export async function isCurrentUserAdmin() {
     );
 }
 
-export async function isUserAdmin(user: UserInfo): Promise<boolean> {
-    if (!user._ref)
-        return false;
-
-    const docRef = doc(db, Collections.USERS_COLLECTION, user._ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
-    return getDoc(docRef).then(systemDoc => { return (systemDoc.exists() && systemDoc.data().admin) });
-}
-
-function UpdateUserAdminState(_ref: DocumentReference, isAdmin: boolean) {
-    const docRef = doc(db, Collections.USERS_COLLECTION, _ref.id, Collections.USER_SYSTEM_SUBCOLLECTION, "Default");
-    return getDoc(docRef).then(adminDoc => {
-        if (adminDoc.exists() && adminDoc.data().admin !== isAdmin) {
-            return updateDoc(docRef, { admin: isAdmin });
-        } else if (!adminDoc.exists && isAdmin) {
-            return setDoc(docRef, { admin: true });
-        }
+export async function getUserRoles(email: string) {
+    const getUserRolesFunc = httpsCallable(functions, 'getUserRoles');
+    const payload: any = {
+        isDev: isDev(),
+        email,
+    }
+    return getUserRolesFunc(payload).then((res: any) => {
+        return res.data.map((r: any) => ({
+            id: r.id,
+            implicit: r.implicit,
+        } as Role))
     });
 }
+
+
+function updateUser(email: string, userInfo: any, isAdmin: boolean) {
+    const updateUserFunc = httpsCallable(functions, 'updateUser');
+    const payload: any = {
+        isDev: isDev(),
+        email,
+        info: userInfo,
+        roles: isAdmin ? [Roles.Admin] : [],
+    };
+    return updateUserFunc(payload);
+}
+
 
 export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, isAdmin: boolean) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
@@ -557,9 +573,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
                             }
 
-                            return updateDoc(_ref, existing_info).then(() => {
-                                return UpdateUserAdminState(_ref, isAdmin);
-                            });
+                            return updateUser(_ref.id, existing_info, isAdmin);
                         });
                     });
                 });
@@ -570,9 +584,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
             }
 
-            return updateDoc(_ref, existing_info).then(() => {
-                return UpdateUserAdminState(_ref, isAdmin);
-            });
+            return updateUser(_ref.id, existing_info, isAdmin);
         }
     });
 
@@ -594,7 +606,7 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
         email,
         phone: userInfo.phone,
         password: pwd,
-        isAdmin
+        roles: isAdmin ? ['admin']:[],
     };
 
 
@@ -618,12 +630,25 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
                     return uploadTask.then(val => {
                         return getDownloadURL(val.ref).then(url => {
                             const update = { avatar: { path: val.ref.fullPath, url: url } };
-                            const docRef = doc(collection(db, Collections.USERS_COLLECTION), email);
-                            return updateDoc(docRef, update);
+                            return updateUser(email, update, isAdmin);
                         });
                     });
 
                 });
+        }
+    });
+}
+
+export async function deleteUser(email:string, userInfo:UserInfo) {
+    const deleteUserFunc = httpsCallable(functions, 'deleteUser');
+    const payload: any = {
+        isDev: isDev(),
+        email,
+    };
+
+    return deleteUserFunc(payload).then(() => {
+        if (userInfo.avatar?.path) {
+            return deleteFile(userInfo.avatar?.path);
         }
     });
 }

@@ -43,6 +43,13 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+const Roles = {
+    Admin: "admin",
+    UserAdmin: "user-admin",
+    ContentAdmin: "content-admin",
+    Editor: "editor",
+};
+
 // exports.houseKeeping = functions.region("europe-west1").pubsub
 //     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
 //     .schedule("00 10 * * *")
@@ -215,7 +222,7 @@ exports.notifications = functions.region("europe-west1").pubsub
                 const notifiedChange = { notified: now.format("YYYY-MM-DD HH:mm:ss") };
                 notifyEvents.forEach(ev => {
                     const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
-                    if (ev.guide && !notifyList.find(nl => nl === ev.guide.email)) {
+                    if (ev.guide && !notifyList.includes(ev.guide.email)) {
                         notifyList.push(ev.guide.email);
                     }
 
@@ -391,22 +398,84 @@ function handleParticipantAdded(isDev, change, context) {
     return batch.commit();
 }
 
-const isAdmin = (isDev, context) => {
-    return new Promise((resolve, reject) => {
-        if (!context.auth) {
-            reject(new Error("NotAuthenticated"));
-            return;
-        }
+/* ----- Users/Role Management --------*/
 
-        db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("system").doc("Default").get().then(doc => {
-            if (doc.exists && doc.data().admin === true) {
-                resolve();
+// array 0 - dev, 1 - prod
+const gRoles = [undefined, undefined];
+const gRolesEtag = [undefined, undefined];
+
+async function getRoleViaCach(isDev) {
+    const index = isDev ? 0 : 1;
+    let cachedEtag = gRolesEtag[index];
+    const latestTag = await getTag(isDev);
+
+    if (gRoles[index]) {
+        if (cachedEtag !== latestTag) {
+            gRoles[index] = undefined;
+            cachedEtag = latestTag;
+        }
+    }
+
+    if (!gRoles[index]) {
+        const collection = isDev ? db.collection("role_dev") : db.collection("role");
+        const res = await collection.get();
+        gRoles[index] = res.docs.map(role => ({ id: role.id, ...role.data() }));
+        gRolesEtag[index] = latestTag;
+    }
+
+    return gRoles[index];
+}
+
+
+async function getUserRoles(isDev, context) {
+    if (!context.auth) {
+        return [];
+    }
+    const user = context.auth.token.email;
+    return getUserRolesInternal(isDev, user, true);
+}
+
+async function getUserRolesInternal(isDev, user, recursive) {
+    const roles = await getRoleViaCach(isDev);
+
+    // recursive resolve roles
+    const userRoles = [];
+    roles.forEach(role => {
+        if (!userRoles.includes(role.id) && role.members.includes(user)) {
+            if (recursive) {
+                recursiveAssignRole(userRoles, roles, role);
             } else {
-                reject(new Error("NotAnAdmin"));
+                userRoles.push(role.id);
             }
-        });
+        }
     });
-};
+
+    return userRoles;
+}
+
+function recursiveAssignRole(userRoles, roles, role) {
+    userRoles.push(role.id);
+    role.assignRoles?.forEach(ar => {
+        if (!userRoles.includes(ar)) {
+            const assignedRole = roles.find(r => r.id === ar);
+            if (assignedRole) {
+                recursiveAssignRole(userRoles, roles, assignedRole);
+            }
+        }
+    });
+}
+
+async function isAdmin(isDev, context) {
+    if (!context.auth) {
+        throw new Error("NotAuthenticated");
+    }
+
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.Admin)) {
+            throw new Error("NotAnAdmin");
+        }
+    });
+}
 
 exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) => {
     const isDev = data.isDev;
@@ -416,21 +485,15 @@ exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) 
     });
 });
 
+function throwNoUserAdmin() {
+    throw new functions.https.HttpsError("failed-precondition", "notUserAdmin", "User Admin role is missing");
+}
 
-/**
- * Expects:
- * data= {
- *      info: { <whatever to go into users collection>}
- *      email: <email>,
- *      password: {password}
- *      displayName: <a display name for Firebase>
- *      isAdmin: bool
- * }
- */
-exports.registerUser = functions.region("europe-west1").https.onCall((data, context) => {
-    functions.logger.info("register new user", data);
+exports.registerUser = functions.region("europe-west1").https.onCall(async (data, context) => {
     const isDev = data.isDev;
     const info = data.info;
+    const roles = data.roles;
+
     if (info.phone) {
         let phone = info.phone.replace(/[^\d]+/g, "");
         if (phone.startsWith("972")) {
@@ -439,38 +502,147 @@ exports.registerUser = functions.region("europe-west1").https.onCall((data, cont
         info.phone = phone;
     }
 
+    const userRoles = await getUserRoles(isDev, context);
 
-    return isAdmin(isDev, context).then(
-        () => {
-            return admin.auth()
-                .createUser({
-                    uid: data.email,
-                    email: data.email,
-                    emailVerified: false,
-                    password: data.password,
-                    displayName: data.displayName,
-                    disabled: false,
-                })
-                .then(
-                    () => {
-                        return db.collection(isDev ? "users_dev" : "users").doc(data.email).set({
-                            ...info
-                        }).then(
-                            () => {
-                                if (data.isAdmin) {
-                                    return db.collection(isDev ? "users_dev" : "users").doc(data.email).collection("system").doc("Default").set(
-                                        { admin: true }
-                                    );
-                                }
+    if (userRoles.includes(Roles.UserAdmin)) {
+        return admin.auth()
+            .createUser({
+                uid: data.email,
+                email: data.email,
+                emailVerified: false,
+                password: data.password,
+                displayName: data.displayName,
+                disabled: false,
+            }).then(
+                () => {
+                    const batch = db.batch();
+                    const docRef = db.collection(isDev ? "users_dev" : "users").doc(data.email);
+                    batch.set(docRef, info);
+                    if (roles) {
+                        // Calculate the difference
+
+                        roles.forEach(role => {
+                            // only assign roles that the current user has (cannot elevate roles)
+                            if (userRoles.includes(role)) {
+                                const docRoleRef = db.collection(isDev ? "role_dev" : "role").doc(role);
+                                batch.update(docRoleRef, { members: FieldValue.arrayUnion(data.email) });
                             }
-                        );
-                    },
-                    (err) => {
-                        throw new functions.https.HttpsError("failed-precondition", err.message, err.details);
-                    });
-        }
-    );
+                        });
+                    }
+                    return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat)));
+                }
+            );
+    } else {
+        throwNoUserAdmin();
+    }
 });
+
+exports.deleteUser = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const isDev = data.isDev;
+    const email = data.email;
+
+    const userRoles = await getUserRoles(isDev, context);
+
+    if (userRoles.includes(Roles.UserAdmin)) {
+        return admin.auth().deleteUser(email).then(() => {
+            const docRef = db.collection(isDev ? "users_dev" : "users").doc(email);
+            return docRef.get().then(async (userDoc) => {
+                if (userDoc.exists) {
+                    const batch = db.batch();
+                    const path = userDoc.data().avatar?.path;
+                    if (path && path.length > 0) {
+                        const storageRef = admin.storage().bucket();
+                        const docToDeleteRef = storageRef.file(path);
+                        await docToDeleteRef.delete();
+                    }
+                    batch.delete(userDoc.ref);
+
+                    const userRoles = await getUserRolesInternal(isDev, email, false);
+                    userRoles.forEach(roleToRemove => {
+                        const roleDocRef = db.collection(isDev ? "role_dev" : "role").doc(roleToRemove);
+                        batch.update(roleDocRef, { members: FieldValue.arrayRemove(email) });
+                    });
+                    return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat)));
+                }
+            });
+        });
+    } else throwNoUserAdmin();
+});
+
+exports.getUserRoles = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const isDev = data.isDev;
+    const email = data.email;
+
+    const currentUserRoles = await getUserRoles(isDev, context);
+    const isUserAdmin = (currentUserRoles.includes(Roles.UserAdmin));
+
+    if (isUserAdmin) {
+        const userRolesRecursive = await getUserRolesInternal(isDev, email, true);
+        const userRoles = await getUserRolesInternal(isDev, email, false);
+        return userRolesRecursive.map(urr => {
+            const explicit = (userRoles.includes(urr));
+            return {
+                id: urr,
+                implicit: !explicit,
+            };
+        });
+    } else throwNoUserAdmin();
+});
+exports.updateUser = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const currentUser = context.auth.token.email;
+    const isDev = data.isDev;
+    const roles = data.roles;
+    const email = data.email;
+    const info = data.info;
+
+    functions.logger.info("updateUser", data);
+
+
+    if (info.phone) {
+        let phone = info.phone.replace(/[^\d]+/g, "");
+        if (phone.startsWith("972")) {
+            phone = phone.replace("972", "0");
+        }
+        info.phone = phone;
+    }
+    // Who can modify users:
+    // - UserAdmin role (change roles as long as he/she himself has them)
+    // - the User himself (but cannot change any role)
+
+    const userRoles = await getUserRoles(isDev, context);
+    const isUserAdmin = (userRoles.includes(Roles.UserAdmin));
+    if (email === currentUser || isUserAdmin) {
+        const batch = db.batch();
+        const docRef = db.collection(isDev ? "users_dev" : "users").doc(email);
+        batch.update(docRef, info);
+        let rolesChanged = false;
+        if (isUserAdmin && roles) {
+            const userRolesBefore = await getUserRolesInternal(isDev, email, false);
+            functions.logger.info("updateUser-update roles", roles, userRolesBefore);
+
+            const newRoles = roles.filter(r => !userRolesBefore.includes(r));
+            const removedRoles = userRolesBefore.filter(ur => !roles.includes(ur));
+            const roleColl = db.collection(isDev ? "role_dev" : "role");
+
+            removedRoles.forEach(removeRole => {
+                batch.update(roleColl.doc(removeRole), { members: FieldValue.arrayRemove(email) });
+            });
+
+            newRoles.forEach(newRole => {
+                batch.update(roleColl.doc(newRole), { members: FieldValue.arrayUnion(email) });
+            });
+
+            rolesChanged = removedRoles.length > 0 || newRoles.length > 0;
+        }
+        return batch.commit().then(() => {
+            if (rolesChanged) {
+                // promote the tag only if roles have been changed
+                promoteTag(isDev, dayjs().format(tagFormat));
+            }
+        });
+    } else throwNoUserAdmin();
+});
+
 
 /**
  * Events Management
@@ -751,7 +923,7 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
         // todo cache?
         await isAdmin(isDev, context).then(() => {
             admin = true;
-        }).catch((e) => { 
+        }).catch((e) => {
             // ignore - allow non-admin only get own or public events
         });
     }
@@ -1144,7 +1316,7 @@ exports.notificationAdded = functions.region("europe-west1").firestore
 
             if (to.length > 0 && to[0] === "all" || to[0] === "all-exclude") {
                 users.docs.forEach(user => {
-                    if (to[0] === "all" || !to.find(t => t === user.ref.id)) {
+                    if (to[0] === "all" || !to.includes(user.ref.id)) {
                         // Send Message
                         if (user && user.data().phone && user.data().phone.length > 0) {
                             phoneNumbers.push(user.data().phone);

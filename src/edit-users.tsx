@@ -1,11 +1,12 @@
 import { Colors, Design } from './theme';
 import { Button, TextField, Checkbox, FormControlLabel, Grid, Badge } from '@mui/material';
 import { Avatar, ComboBox, HBox, HBoxSB, Spacer, } from './elem';
-import { EditUserProps } from './types';
+import { EditUserProps, Role, Roles } from './types';
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
 import * as api from "./api";
 import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
+import { CircularProgress } from '@material-ui/core';
 
 export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: EditUserProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
@@ -20,13 +21,16 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
     const [showInKiosk, setShowInKiosk] = useState<boolean>(userInfo.showInKiosk === true);
     const [type, setType] = useState<UserType>(userInfo.type);
     const [dirty, setDirty] = useState<boolean>(false);
-    const [adminInDB, setadminInDB] = useState<boolean>(false);
+    const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
+    const stopUpdateInProgress = () => setUpdateInProgress(false);
 
     useEffect(() => {
-        api.isUserAdmin(userInfo).then(res => {
-            setAdmin(res);
-            setadminInDB(res);
-        });
+        if (userInfo._ref?.id) {
+            api.getUserRoles(userInfo._ref.id).then(roles => {
+                const isAdminInServer = roles.some((r: Role) => r.id === Roles.Admin);
+                setAdmin(isAdminInServer);
+            });
+        }
 
         setEmail(userInfo._ref?.id || "");
     }, [userInfo, userInfo._ref]);
@@ -88,7 +92,11 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 caption: "מחק",
                 callback: () => {
                     if (userInfo._ref) {
-                        api.deleteDocWithMedia(userInfo?.avatar?.path, userInfo._ref).finally(() => afterSaved());
+                        setUpdateInProgress(true);
+                        api.deleteUser(userInfo._ref.id, userInfo).finally(() => {
+                            setUpdateInProgress(false);
+                            afterSaved();
+                        });
                     }
                 }
             },
@@ -116,12 +124,13 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
 
         // exist guide
         if (userInfo._ref) {
+            setUpdateInProgress(true);
             api.editUser(userInfo._ref, (files && files.length) ? files[0] : null, preview, updatedUserInfo, admin).then(() => {
                 notify.success("נשמר בהצלחה")
                 afterSaved();
             },
                 (err) => notify.error(err.message, "שמירה נכשלה")
-            );
+            ).finally(stopUpdateInProgress);
         } else {
             if (email.trim().length == 0) {
                 notify.error("חסר אימייל");
@@ -137,7 +146,7 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 notify.error("סיסמא לא תואמת בשני השדות");
                 return;
             }
-
+            setUpdateInProgress(true);
             api.addUser(updatedUserInfo, admin, email, pwd1, pic).then(
                 () => {
                     notify.success("נשמר בהצלחה")
@@ -146,11 +155,15 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 (err) => {
                     notify.error(err.message, "שמירה נכשלה");
                 }
-            );
+            ).finally(stopUpdateInProgress);
         }
     }
 
     return (<div className="edit-user-container">
+        {updateInProgress && <div className="event-center-progress">
+            <CircularProgress />
+        </div>}
+
         <Grid container spacing={1} style={{
         }}>
             <Grid item xs={12}>
@@ -229,7 +242,7 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                     <PersonOutlined />
                 </Grid>
                 <Grid item xs={2} style={{ alignItems: "center" }}>
-                    {preview? <Avatar imageSrc={preview} size={48} />: <PersonOff style={{fontSize:48}} />}
+                    {preview ? <Avatar imageSrc={preview} size={48} /> : <PersonOff style={{ fontSize: 48 }} />}
                 </Grid>
                 <Grid item xs={3} style={{ alignItems: "center" }}>
                     <HBox>
@@ -254,24 +267,24 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 </Grid>
                 <Grid item xs={6} style={{ alignItems: "right" }}>
                     <ComboBox
-                                style={{
-                                    width: 150,
-                                    textAlign: "right",
-                                }}
-                                itemHeight={35}
-                                listWidth={150}
-                                hideExpandButton={false}
-                                placeholder={"תפקיד"}
-                                items={[
-                                    {value: "משתתף.ת", key:UserType.PARTICIPANT.toString()},
-                                    {value: "מדריך.ה", key:UserType.GUIDE.toString()},
-                                    {value: "עמדה משותפת", key:UserType.KIOSK.toString()}
-                                ]}
-                                value={type.toString()}
-                                onSelect={handleTypeChange}
-                                readOnly={true}
-                                //onChange={(locationKey: string) => setSelectedLocation(locationKey)}
-                            />
+                        style={{
+                            width: 150,
+                            textAlign: "right",
+                        }}
+                        itemHeight={35}
+                        listWidth={150}
+                        hideExpandButton={false}
+                        placeholder={"תפקיד"}
+                        items={[
+                            { value: "משתתף.ת", key: UserType.PARTICIPANT.toString() },
+                            { value: "מדריך.ה", key: UserType.GUIDE.toString() },
+                            { value: "עמדה משותפת", key: UserType.KIOSK.toString() }
+                        ]}
+                        value={type.toString()}
+                        onSelect={handleTypeChange}
+                        readOnly={true}
+                    //onChange={(locationKey: string) => setSelectedLocation(locationKey)}
+                    />
                 </Grid>
             </Grid>
             <Spacer height={10} />
@@ -297,8 +310,8 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
 
 
             <Grid item xs={12}>
-                <Button variant="contained" onClick={onSave} disabled={!dirty || !isAdmin}>שמור</Button>
-                {userInfo._ref && <Button variant="contained" disabled={!isAdmin} onClick={onDelete}>מחיקה</Button>}
+                <Button variant="contained" onClick={onSave} disabled={!dirty || !isAdmin || updateInProgress}>שמור</Button>
+                {userInfo._ref && <Button variant="contained" disabled={!isAdmin || updateInProgress} onClick={onDelete}>מחיקה</Button>}
 
                 <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </Grid>
