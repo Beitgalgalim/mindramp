@@ -39,7 +39,7 @@ export default function EventsHeader({ user,
     onLogoDoubleClicked,
     onLogoTripleClicked,
     nickName, showDateTime, height, centered,
-    isAdmin,
+    roles,
     isGuide,
     kioskMode,
     onGoHome,
@@ -139,14 +139,6 @@ export default function EventsHeader({ user,
 
         <Text marginTop={17} textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
 
-        {/* {(isAdmin || isGuide) &&
-            <div className="manageButtonContainer">
-                <Button classes={{ containedPrimary: "btnText" }} variant={"contained"} color="primary"
-                    onClick={() => {
-                        console.log("ניהול")
-                        navigate("/admin")
-                    }}>ניהול</Button>
-            </div>} */}
         {kioskMode && <button
             ref={kioskMode && firstElemRef}
             className={"event-home-btn kiosk-nav"}

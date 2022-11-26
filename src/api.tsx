@@ -23,7 +23,7 @@ import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebas
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo, Role, Roles } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo, Role, Roles, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 import { sortEvents } from './utils/date';
@@ -480,17 +480,19 @@ function GetResourceRefOfUsersPhoto(pic: File): StorageReference {
 }
 
 
-export async function isCurrentUserAdmin() {
-    const isAdmin = httpsCallable(functions, 'isAdmin');
+export async function getRoles() {
+    const getRolesFunc = httpsCallable(functions, 'getRoles');
     const payload: any = {
         isDev: isDev(),
-    };
-    return isAdmin(payload).then(
-        () => {
-            return true;
-        },
-        (err) => false
-    );
+    }
+    return getRolesFunc(payload).then((res: any) => {
+        return res.data.map((r: any) => ({
+            id: r.id,
+            members: r.members,
+            assignRoles: r.assignRoles,
+            displayName: r.displayName || r.id,
+        } as RoleRecord))
+    });
 }
 
 export async function getUserRoles(email: string) {
@@ -508,19 +510,19 @@ export async function getUserRoles(email: string) {
 }
 
 
-function updateUser(email: string, userInfo: any, isAdmin: boolean) {
+function updateUser(email: string, userInfo: any, roles:string[]) {
     const updateUserFunc = httpsCallable(functions, 'updateUser');
     const payload: any = {
         isDev: isDev(),
         email,
         info: userInfo,
-        roles: isAdmin ? [Roles.Admin] : [],
+        roles,
     };
     return updateUserFunc(payload);
 }
 
 
-export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, isAdmin: boolean) {
+export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles:string[]) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g) => {
@@ -573,7 +575,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
                             }
 
-                            return updateUser(_ref.id, existing_info, isAdmin);
+                            return updateUser(_ref.id, existing_info, roles);
                         });
                     });
                 });
@@ -584,13 +586,13 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
             }
 
-            return updateUser(_ref.id, existing_info, isAdmin);
+            return updateUser(_ref.id, existing_info, roles);
         }
     });
 
 }
 
-export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: string, pwd: string, pic?: File) {
+export async function addUser(userInfo: UserInfo, roles:string[], email: string, pwd: string, pic?: File) {
 
     const registerUser = httpsCallable(functions, 'registerUser');
 
@@ -606,7 +608,7 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
         email,
         phone: userInfo.phone,
         password: pwd,
-        roles: isAdmin ? ['admin']:[],
+        roles,
     };
 
 
@@ -630,7 +632,7 @@ export async function addUser(userInfo: UserInfo, isAdmin: boolean, email: strin
                     return uploadTask.then(val => {
                         return getDownloadURL(val.ref).then(url => {
                             const update = { avatar: { path: val.ref.fullPath, url: url } };
-                            return updateUser(email, update, isAdmin);
+                            return updateUser(email, update, roles);
                         });
                     });
 

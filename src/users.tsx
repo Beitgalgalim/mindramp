@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { UsersProps, UserInfo, UserType } from './types';
+import { useEffect, useState } from 'react';
+import { UsersProps, UserInfo, UserType, RoleRecord } from './types';
+import * as api from "./api";
+
 import { Text, HBox, Spacer } from './elem';
 import { Fab, Grid } from '@mui/material';
 import { Add } from '@mui/icons-material';
@@ -14,8 +16,18 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
 
 
-export default function Users({ users, notify, reload, isAdmin }: UsersProps) {
+export default function Users({ user, users, notify, reload, roles }: UsersProps) {
     const [editedUser, setEditedUser] = useState<UserInfo | undefined>(undefined);
+    const [roleRecords, setRoleRecords] = useState<RoleRecord[]>([]);
+    const [reloadRoles, setReloadRoles] = useState<number>(0);
+    const [filter, setFilter] = useState<string>("");
+
+    useEffect(() => {
+        api.getRoles().then(roleRecs => {
+            setRoleRecords(roleRecs);
+        });
+    }, [user, reloadRoles]);
+
 
     function getNewUserInfo(): UserInfo {
         return {
@@ -31,12 +43,13 @@ export default function Users({ users, notify, reload, isAdmin }: UsersProps) {
         if (reload) {
             reload();
         }
+        setReloadRoles(prev=>prev+1);
     }
 
     return (
 
         <div className="users-container">
-            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} isAdmin={isAdmin} />}
+            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} roles={roles} roleRecords={roleRecords}  />}
             {!editedUser &&
                 <Fab
                     color="primary" aria-label="הוסף"
@@ -52,9 +65,14 @@ export default function Users({ users, notify, reload, isAdmin }: UsersProps) {
                     <Add onClick={() => { setEditedUser(getNewUserInfo()) }} />
                 </Fab>
             }
+            <div className="users-search">
+                <div>חיפוש</div>
+                <input type="search" onChange={(e)=>setFilter(e.target.value)}/>
+            </div>
             <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
                 {users &&
-                    users.sort(
+                    users.filter(u=>filter.length == 0 || u.displayName.includes(filter)).
+                    sort(
                         (u1, u2) => u1.displayName.localeCompare(u2.displayName)
                     ).map((m, i) => (
                         <ListItem key={i} onClick={() => setEditedUser(m)} alignItems="flex-start" divider={true} >

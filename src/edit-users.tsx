@@ -1,14 +1,15 @@
 import { Colors, Design } from './theme';
 import { Button, TextField, Checkbox, FormControlLabel, Grid, Badge } from '@mui/material';
-import { Avatar, ComboBox, HBox, HBoxSB, Spacer, } from './elem';
-import { EditUserProps, Role, Roles } from './types';
+import { Avatar, ComboBox, HBox, HBoxSB, Spacer, Text, } from './elem';
+import { EditUserProps, Role, RoleRecord, Roles } from './types';
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
 import * as api from "./api";
 import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
 import { CircularProgress } from '@material-ui/core';
+import { hasRole } from './utils/common';
 
-export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: EditUserProps) {
+export default function EditUser({ userInfo, afterSaved, notify, roles, roleRecords }: EditUserProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
     const [preview, setPreview] = useState<string | undefined>(userInfo.avatar?.url);
     const [fname, setFName] = useState<string>(userInfo.fname);
@@ -17,32 +18,62 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
     const [email, setEmail] = useState<string>(userInfo._ref?.id || "");
     const [pwd1, setPwd1] = useState<string>("");
     const [pwd2, setPwd2] = useState<string>("");
-    const [admin, setAdmin] = useState<boolean>(false);
     const [showInKiosk, setShowInKiosk] = useState<boolean>(userInfo.showInKiosk === true);
     const [type, setType] = useState<UserType>(userInfo.type);
     const [dirty, setDirty] = useState<boolean>(false);
     const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
     const stopUpdateInProgress = () => setUpdateInProgress(false);
+    const [localRoles, setLocalRoles] = useState<string[]>([]);
+    const [implicitRoles, setImplicitRoles] = useState<string[]>([]);
 
     useEffect(() => {
-        if (userInfo._ref?.id) {
-            api.getUserRoles(userInfo._ref.id).then(roles => {
-                const isAdminInServer = roles.some((r: Role) => r.id === Roles.Admin);
-                setAdmin(isAdminInServer);
-            });
-        }
-
         setEmail(userInfo._ref?.id || "");
     }, [userInfo, userInfo._ref]);
 
-    function handleAdminChange(e: any) {
-        let res: boolean = (e.target.checked);
-        setAdmin(res);
+    useEffect(() => {
+        setLocalRoles(roleRecords.filter(rr => rr.members.includes(email)).map(rr => rr.id));
+    }, [email]);
+
+    useEffect(() => {
+        const impRoles: string[] = [];
+        const recursiveAssignRole = (role: string) => {
+            impRoles.push(role);
+            const roleRec = roleRecords.find(rr => rr.id === role);
+            roleRec?.assignRoles?.forEach(ar => {
+                if (!impRoles.includes(ar)) {
+                    recursiveAssignRole(ar);
+                }
+            });
+        }
+
+        localRoles.forEach(role => {
+            if (!impRoles.includes(role)) {
+                recursiveAssignRole(role);
+            }
+        });
+        setImplicitRoles(impRoles)
+    }, [localRoles, roleRecords]);
+
+    function handleRoleChange(role: string, hasRole: boolean) {
+        if (hasRole) {
+            setLocalRoles(prev => !prev?.includes(role) ? [...prev, role] : prev);
+        } else {
+            setLocalRoles(prev => prev?.filter(r => r !== role));
+        }
+    }
+
+    function handleRoleChangeEvent(e: any, role: string) {
+        let hasRole: boolean = (e.target.checked);
+        handleRoleChange(role, hasRole);
         setDirty(true);
     }
 
     function handleTypeChange(key: string) {
         setType(parseInt(key));
+
+        // if this is a technical user to be a kiosk user, assigns the role kiosk to it.
+        handleRoleChange(Roles.Kiosk, parseInt(key) === UserType.KIOSK);
+
         setDirty(true);
     }
 
@@ -125,7 +156,7 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
         // exist guide
         if (userInfo._ref) {
             setUpdateInProgress(true);
-            api.editUser(userInfo._ref, (files && files.length) ? files[0] : null, preview, updatedUserInfo, admin).then(() => {
+            api.editUser(userInfo._ref, (files && files.length) ? files[0] : null, preview, updatedUserInfo, localRoles).then(() => {
                 notify.success("נשמר בהצלחה")
                 afterSaved();
             },
@@ -147,7 +178,7 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                 return;
             }
             setUpdateInProgress(true);
-            api.addUser(updatedUserInfo, admin, email, pwd1, pic).then(
+            api.addUser(updatedUserInfo, localRoles, email, pwd1, pic).then(
                 () => {
                     notify.success("נשמר בהצלחה")
                     afterSaved();
@@ -287,15 +318,25 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
                     />
                 </Grid>
             </Grid>
-            <Spacer height={10} />
+            <Spacer height={25} />
+            <div className="permission-container">
+                <div >הרשאות</div>
+            {
+                roleRecords.filter(rr => rr.id !== Roles.Kiosk).map(rr => {
+                    let checked = localRoles.includes(rr.id) || implicitRoles.includes(rr.id);
+                    let disabled = implicitRoles.includes(rr.id) && !localRoles.includes(rr.id);
 
-            <Grid container spacing={2} style={{ textAlign: "right" }}>
-                <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
-                </Grid>
-                <Grid item xs={6} style={{ alignItems: "right" }}>
-                    <FormControlLabel control={<Checkbox checked={admin} onChange={handleAdminChange} />} label="מנהל\ת תוכן(אדמין)" />
-                </Grid>
-            </Grid>
+                    return (<Grid container spacing={2} style={{ textAlign: "right" }}>
+                        <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
+                        </Grid>
+                        <Grid item xs={6} style={{ alignItems: "right" }}>
+                            <FormControlLabel control={<Checkbox disabled={disabled} checked={checked} onChange={(e) => handleRoleChangeEvent(e, rr.id)} />} label={rr.displayName} />
+                        </Grid>
+                    </Grid>)
+                })
+            }
+            </div>
+
             <Grid container spacing={2} style={{ textAlign: "right" }}>
                 <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                 </Grid>
@@ -310,8 +351,8 @@ export default function EditUser({ userInfo, afterSaved, notify, isAdmin }: Edit
 
 
             <Grid item xs={12}>
-                <Button variant="contained" onClick={onSave} disabled={!dirty || !isAdmin || updateInProgress}>שמור</Button>
-                {userInfo._ref && <Button variant="contained" disabled={!isAdmin || updateInProgress} onClick={onDelete}>מחיקה</Button>}
+                <Button variant="contained" onClick={onSave} disabled={!dirty || !hasRole(roles, Roles.UserAdmin) || updateInProgress}>שמור</Button>
+                {userInfo._ref && <Button variant="contained" disabled={!hasRole(roles, Roles.UserAdmin) || updateInProgress} onClick={onDelete}>מחיקה</Button>}
 
                 <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </Grid>

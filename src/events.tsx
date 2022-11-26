@@ -12,10 +12,11 @@ import { Event } from './event';
 import EditEvent from './edit-event';
 import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEventArgs, EventsProps } from './types';
+import { EditEventArgs, EventsProps, Roles } from './types';
 import { Text } from './elem';
 import EventsNavigation from './events-navigation';
 import './css/events.css';
+import { hasRole } from './utils/common';
 
 /*
 "title":"סדנת ציור",
@@ -73,7 +74,7 @@ function renderOneEvent(event: any): any {
     </div>;
 }
 
-export default function Events({ notify, media, users, events, refDate, daysOffset, isAdmin,
+export default function Events({ notify, media, users, events, refDate, daysOffset, roles,
     onChangeDaysOffset,
     onRemoveEvents,
     onUpsertEvent,
@@ -262,7 +263,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!newEvent && isAdmin && <Fab
+        {!newEvent && hasRole(roles, Roles.Editor) && <Fab
                 color="primary" aria-label="הוסף"
                 variant="circular"
                 style={{

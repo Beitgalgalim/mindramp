@@ -1,5 +1,5 @@
 .users-container {
-    
+    background-color:white;
     direction: rtl;
     width: 100%;
     overflow-x: scroll;
@@ -24,4 +24,28 @@
     z-index: 500;
     border-radius: 15px;
     box-shadow: var(--pop-up-boxshadow);
+}
+
+.users-search {
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border-bottom: lightgrey 2px solid;
+    margin-bottom: 2px;
+}
+
+.users-search > input {
+    border-radius: 10px;
+    font-size: 0.7em;
+    margin-right: 10px;
+    margin-left: 10px;
+    
+}
+
+.permission-container {
+    width: 80%;
+    margin:10px;
+    border: gray 2px solid;
+    text-align: right;
 }

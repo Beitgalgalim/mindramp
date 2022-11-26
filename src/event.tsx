@@ -85,6 +85,7 @@ export class Event {
         let eventApi = evt as EventApi;
         if ("toPlainObject" in eventApi) {
             const res = Event.fromAny(eventApi.toPlainObject({ collapseExtendedProps: true }));
+            res.id = eventApi.id;
             res.allDay = eventApi.allDay;
             return res;
         }

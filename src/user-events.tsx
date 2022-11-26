@@ -1,9 +1,9 @@
 import { Dayjs } from "dayjs";
-import {  useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, MediaResource, MessageInfo, UserEventsProps, UserInfo } from "./types";
+import { AccessibilitySettingsData, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import Events from './events';
 
@@ -14,7 +14,7 @@ import UserSettings from "./user-settings";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
-import { beep } from "./utils/common";
+import { beep, hasRole } from "./utils/common";
 import { AccessibleView } from "./accessible-day-view";
 import { CalendarMonth, FilterAlt, FilterAltOff, PeopleAlt, Photo } from "@mui/icons-material";
 import Users from "./users";
@@ -25,10 +25,10 @@ import NotificationView from "./notification-view";
 const FilterEvents = ({
     onSelect,
     on
-}:any)=>(
-    <div onClick={()=>onSelect (!on)}
-    style={{position:"absolute", right:5, bottom:5, fontSize:35, width:35, outline: on?"2px solid black":""}}>
-         <FilterAlt /> 
+}: any) => (
+    <div onClick={() => onSelect(!on)}
+        style={{ position: "absolute", right: 5, bottom: 5, fontSize: 35, width: 35, outline: on ? "2px solid black" : "" }}>
+        <FilterAlt />
     </div>);
 
 
@@ -36,8 +36,8 @@ const AdminBtn = ({
     selected,
     onPress,
     caption,
-    icon }: any) => (<div 
-        className={"admin-pane-btn" + (selected ? " selected" : "")} 
+    icon }: any) => (<div
+        className={"admin-pane-btn" + (selected ? " selected" : "")}
         onClick={() => onPress()} >
         {icon}
         <text>{caption}</text>
@@ -59,7 +59,7 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 }
 
 
-export default function UserEvents({ connected, notify, user, isAdmin, isGuide, kioskMode,
+export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode,
     notificationOn, onNotificationOnChange, onNotificationToken,
     onPushNotification, onGoHome }: UserEventsProps) {
     const [rawEvents, setRawEvents] = useState<any[]>([]);
@@ -92,7 +92,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
-    const accessibleCalendarAct = accessibleCalendar || !isAdmin;
+    const accessibleCalendarAct = accessibleCalendar || !roles.length;
 
     const location = useLocation();
     let refDate: Dayjs = dayjs();
@@ -101,7 +101,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     // #2022-11-11 20:00
     if (showDateHash && showDateHash.length > 15 && dayjs(showDateHash).isValid()) {
         refDate = dayjs(showDateHash);
-    } 
+    }
 
     if (startDate !== refDate.format(DateFormats.DATE)) {
         setStartDate(refDate.format(DateFormats.DATE))
@@ -112,7 +112,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
     isTV && console.log("TV mode")
     useEffect(() => {
         setEtag(undefined);
-        setReload(old=>old+1);
+        setReload(old => old + 1);
     }, [user]);
 
     useEffect(() => {
@@ -130,33 +130,34 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             }));
             setRawEvents(evtsWithId);
         }).finally(() => setLoadingEvents(false));
-    }, [ connected, startDate, reload]);
+    }, [connected, startDate, reload]);
 
     useEffect(() => {
-        if (!isAdmin || !connected)
+        if (!hasRole(roles, Roles.ContentAdmin) || !connected)
             return;
 
         api.getMedia().then((m: MediaResource[]) => setMedia(m));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [connected, isAdmin, reloadMedia]);
+    }, [connected, roles, reloadMedia]);
 
     useEffect(() => {
-        if (!isAdmin || !connected)
+        if (!roles.length || !connected)
             return;
+
         api.getUsers().then((g: UserInfo[]) => setUsers(g));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [connected, isAdmin, reloadUsers]);
+    }, [connected, roles, reloadUsers]);
 
 
     useEffect(() => {
         if (initialized) {
             const participantKey = Event.getParticipantKey(user || undefined);
-            const evts = filter ? rawEvents.filter(re=>
-                !re.participants || 
-                Object.entries(re.participants).length  == 0 ||
+            const evts = filter ? rawEvents.filter(re =>
+                !re.participants ||
+                Object.entries(re.participants).length == 0 ||
                 re.participants[participantKey] ||
                 re.guide?.email === user
-                ) : rawEvents;
+            ) : rawEvents;
             const sortedEvents = sortEvents(explodeEvents(evts, 30, 30, startDate));
 
             const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= refDate.format(DateFormats.DATE));
@@ -251,9 +252,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
         />
     }
+    const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
 
     return <div dir={"rtl"} className="userEventsContainer"
-        style={beta ? {backgroundColor: "#0CA1D0"}:{}}
+        style={beta ? { backgroundColor: "#0CA1D0" } : {}}
         onKeyDown={(e: any) => {
             if (e.key == "Tab" && !e.shiftKey) {
                 if (kioskMode) beep(200, 50, 40)
@@ -269,7 +271,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             height={"12vh"}
             showDateTime={refDate}
             nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
-            isAdmin={isAdmin}
+            roles={roles}
             isGuide={isGuide}
             onLogoDoubleClicked={() => setShowUserSettings(true)}
             onLogoTripleClicked={() => setShowAccessibilitySettings(true)}
@@ -283,10 +285,10 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
             firstElemRef={firstElemRef}
         />
 
-        <div style={{ height: isAdmin ? "82vh" : "88vh" }}>
+        <div style={{ height: admin ? "82vh" : "88vh" }}>
 
-            {isAdmin && manageUsers && !showNotifications && <Users notify={notify} users={users} reload={() => setReloadUsers(old => old + 1)} isAdmin={isAdmin} />}
-            {isAdmin && manageMedia && !showNotifications && <Media notify={notify} media={media} reload={() => setReloadMedia(old => old + 1)} />}
+            {hasRole(roles, Roles.UserAdmin) && manageUsers && !showNotifications && <Users user={user} notify={notify} users={users} reload={() => setReloadUsers(old => old + 1)} roles={roles} />}
+            {hasRole(roles, Roles.ContentAdmin) && manageMedia && !showNotifications && <Media notify={notify} media={media} reload={() => setReloadMedia(old => old + 1)} />}
 
             {showNotifications && <NotificationView
                 kioskMode={kioskMode}
@@ -325,7 +327,7 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                     audioRef={audioRef}
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
                     loading={loadingEvents}
-                    height={isAdmin ? 82 : 88}
+                    height={admin ? 82 : 88}
                 /> :
 
                 <Events
@@ -340,17 +342,17 @@ export default function UserEvents({ connected, notify, user, isAdmin, isGuide, 
                     notify={notify}
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}
-                    isAdmin={isAdmin}
+                    roles={roles}
 
                 />)
             }
         </div>
 
 
-        
-        {isAdmin && <div className="admin-pane-btn-container">
 
-            <FilterEvents onSelect={(on:boolean)=>setFilter(on)} on={filter} />
+        {admin && <div className="admin-pane-btn-container">
+
+            <FilterEvents onSelect={(on: boolean) => setFilter(on)} on={filter} />
 
             <AdminBtn
                 onPress={() => {

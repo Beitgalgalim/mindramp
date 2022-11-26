@@ -1,3 +1,4 @@
+import { Role } from "../types";
 
 let actx: AudioContext | undefined = undefined;
 
@@ -15,4 +16,8 @@ export function beep(vol: number, freq: number, duration: number) {
     } catch {
         // ignore
     }
+}
+
+export function hasRole(roles:Role[], role:string) {
+    return roles?.some(r=>r.id === role);
 }

@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
-import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, UserType } from './types';
+import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, Role, UserType } from './types';
 import UserEvents from './user-events';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
@@ -22,12 +22,10 @@ let gNotificationTimeout: any = undefined;
 function App(props: any) {
 
   const [user, setUser] = useState<string | null | undefined>(undefined);
-  const [admin, setAdmin] = useState<boolean>(false);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [guide, setGuide] = useState<boolean>(false);
   const [kiosk, setKiosk] = useState<boolean>(false);
   const [delagatedUser, setDelegatedUser] = useState<string | undefined>(undefined);
-
-  const [gettingAdminStatus, setGettingAdminStatus] = useState<boolean>(false);
 
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
 
@@ -112,16 +110,14 @@ function App(props: any) {
           // setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
           // setActualNotificationOn(userPersonalInfo.notificationOn === true)
           // setServerPersistedNotificationTokens(userPersonalInfo.tokens);
-          setGettingAdminStatus(true);
           setGuide(userDocument.type == UserType.GUIDE);
           setKiosk(userDocument.type == UserType.KIOSK)
-          api.isCurrentUserAdmin().then((isAdmin) => {
-            setAdmin(isAdmin);
-            setGettingAdminStatus(false);
+          api.getUserRoles(userDocument.email).then((roles) => {
+            setRoles(roles);
           })
         } else {
           setUser(null);
-          setAdmin(false);
+          setRoles([]);
           setDesiredNotificationOn(false);
           setActualNotificationOn(false);
           setServerPersistedNotificationTokens([]);
@@ -216,27 +212,7 @@ function App(props: any) {
       <BrowserRouter>
         <Routes>
           <Route path="/about" element={<About />} />
-          {/* <Route path="/admin" element={
-            // ---- Loading bar ----
-            !connected ? <LinearProgress />
-              :
-              // ---- Login -----
-              !user ? <Login
-                onLogin={(u: User) => { console.log("logged?") }}
-                onError={(err: Error) => notify.error(err.toString())}
-                onForgotPwd={() => {
-                  console.log("החלפת סיסמא")
-                  notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ. דוגמא: 'סיסמא new123' להחלפה לסיסמא new123");
-                }}
-              />
-                :
-                (guide || admin) ? <Admin connected={connected} notify={notify} user={user} isCurrentUserAdmin={admin} /> :
-                  gettingAdminStatus ? <div>
-                    <LinearProgress />
-                    <div style={{ fontSize: 30 }}>טוען הרשאות</div>
-                  </div> : <div>אינך מורשה</div>
 
-          } /> */}
           <Route path="/*" element={
             kiosk && !delagatedUser ?
               <Kiosk onSelectUser={(u:string|undefined)=>{
@@ -246,7 +222,7 @@ function App(props: any) {
               }} />:
 
           <UserEvents
-            isAdmin={admin}
+            roles={roles}
             isGuide={guide}
             notificationOn={actualtNotificationOn === true}
             onNotificationToken={(notifToken) => {

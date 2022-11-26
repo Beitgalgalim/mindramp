@@ -67,11 +67,19 @@ export interface Role {
     implicit: boolean, // is this role directly assigned or implicitly as a result of another role asigned
 }
 
+export interface RoleRecord {
+    id: string,
+    members: string[],
+    assignRoles: string[],
+    displayName: string,
+}
+
 export const Roles = {
     Admin: "admin",
     UserAdmin: "user-admin",
     ContentAdmin: "content-admin",
     Editor: "editor",
+    Kiosk: "kiosk",
 };
 
 export interface UserInfo {
@@ -163,6 +171,10 @@ export interface WithUser {
     user: string | null | undefined;
 };
 
+export interface WithRoles {
+    roles: Role[];
+};
+
 export interface Connected {
     connected: boolean;
 };
@@ -201,15 +213,10 @@ export interface Notifying {
 
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
-export interface AdminProps extends Connected, Notifying, WithUser {
-    isCurrentUserAdmin: boolean;
-}
-
 export interface KioskProps {
     onSelectUser: (user: string | undefined) => void,
 }
-export interface EventsProps extends Notifying, WithMedia, WithUsers {
-    isAdmin: boolean,
+export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles {
     events: any[],
     beta: boolean,
     refDate: Dayjs, // normally this is now
@@ -219,8 +226,7 @@ export interface EventsProps extends Notifying, WithMedia, WithUsers {
     onRemoveEvents: (id: string[]) => void,
     onUpsertEvent: (event: Event, event2?:Event) => void,
 }
-export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying {
-    isAdmin: boolean,
+export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying, WithRoles {
     isGuide: boolean,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
@@ -230,8 +236,7 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     kioskMode: boolean
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
-export interface UsersProps extends Notifying, WithUsers, WithReload {
-    isAdmin: boolean;
+export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
 }
 
 export interface LoginProps {
@@ -262,11 +267,10 @@ export interface AccessibilitySettingsProps {
     onSettingsChange: (accSettings: AccessibilitySettingsData) => void,
 }
 
-export interface EventsHeaderProps extends WithUser {
+export interface EventsHeaderProps extends WithUser, WithRoles {
     onLogoDoubleClicked: Callback,
     onLogoTripleClicked?: Callback,
     nickName: string,
-    isAdmin: boolean,
     isGuide: boolean,
     height: number | string,
     showDateTime: Dayjs,
@@ -303,10 +307,10 @@ export interface EditImageProps extends Notifying {
     onCancel?: Callback,
 }
 
-export interface EditUserProps extends Notifying {
-    isAdmin: boolean;
+export interface EditUserProps extends Notifying, WithRoles {
     userInfo: UserInfo;
     afterSaved: () => void;
+    roleRecords: RoleRecord[];
 }
 
 export interface DatePickerProps {

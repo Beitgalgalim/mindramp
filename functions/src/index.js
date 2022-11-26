@@ -48,6 +48,7 @@ const Roles = {
     UserAdmin: "user-admin",
     ContentAdmin: "content-admin",
     Editor: "editor",
+    Kiosk: "kiosk",
 };
 
 // exports.houseKeeping = functions.region("europe-west1").pubsub
@@ -74,6 +75,9 @@ const Roles = {
 //                 return batch.commit();
 //             });
 //     });
+
+const getParticipantKey = (email) => (email?.replace(/\./g, "")?.replace("@", ""));
+
 
 exports.updateNotification = functions.region("europe-west1").https.onCall((data, context) => {
     if (!context.auth) {
@@ -427,6 +431,18 @@ async function getRoleViaCach(isDev) {
 }
 
 
+exports.getRoles = functions.region("europe-west1").https.onCall((data, context) => {
+    const isDev = data.isDev;
+
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.UserAdmin)) {
+            throwNoUserAdmin();
+        }
+        return getRoleViaCach(isDev);
+    });
+});
+
+
 async function getUserRoles(isDev, context) {
     if (!context.auth) {
         return [];
@@ -464,26 +480,6 @@ function recursiveAssignRole(userRoles, roles, role) {
         }
     });
 }
-
-async function isAdmin(isDev, context) {
-    if (!context.auth) {
-        throw new Error("NotAuthenticated");
-    }
-
-    return getUserRoles(isDev, context).then(roles => {
-        if (!roles.includes(Roles.Admin)) {
-            throw new Error("NotAnAdmin");
-        }
-    });
-}
-
-exports.isAdmin = functions.region("europe-west1").https.onCall((data, context) => {
-    const isDev = data.isDev;
-
-    return isAdmin(isDev, context).catch((err) => {
-        throw new functions.https.HttpsError("permission-denied", "AdminRequired", err.message);
-    });
-});
 
 function throwNoUserAdmin() {
     throw new functions.https.HttpsError("failed-precondition", "notUserAdmin", "User Admin role is missing");
@@ -576,7 +572,7 @@ exports.getUserRoles = functions.region("europe-west1").https.onCall(async (data
     const currentUserRoles = await getUserRoles(isDev, context);
     const isUserAdmin = (currentUserRoles.includes(Roles.UserAdmin));
 
-    if (isUserAdmin) {
+    if (isUserAdmin || email === context.auth.token.email) {
         const userRolesRecursive = await getUserRolesInternal(isDev, email, true);
         const userRoles = await getUserRolesInternal(isDev, email, false);
         return userRolesRecursive.map(urr => {
@@ -696,9 +692,15 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall((data, conte
     const isDev = data.isDev;
     const eventObj = data.event;
     const id = data.id;
+    const email = context.auth.token.email;
 
-    // Verify user is admin
-    return isAdmin(isDev, context).then(() => {
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.ContentAdmin)) {
+            if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
+                throw new Error("NoEditPermission");
+            }
+        }
+
         const collection = getEventCollection(isDev);
         const returnEvent = {};
 
@@ -712,7 +714,6 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall((data, conte
                 returnEvent[key] = value;
             }
         });
-
 
         if (id) {
             const docRef = collection.doc(id);
@@ -744,8 +745,13 @@ exports.createEventInstance = functions.region("europe-west1").https.onCall((dat
     const eventObj = data.event;
     const id = data.id;
 
-    return isAdmin(isDev, context).then(() => {
-        eventObj.instanceStatus = true;
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.ContentAdmin)) {
+            // todo read doc and verify participants
+            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
+            throw new Error("NoEditPermission");
+            //}
+        } eventObj.instanceStatus = true;
         eventObj.recurrent = { gid: id };
         eventObj.modifiedAt = dayjs().format(tagFormat);
 
@@ -788,8 +794,13 @@ exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.on
     const excludeDate = data.excludeDate;
 
     // Verify user is admin
-    return isAdmin(isDev, context).then(() => {
-        const collection = getEventCollection(isDev);
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.ContentAdmin)) {
+            // todo read doc and verify participants
+            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
+            throw new Error("NoEditPermission");
+            //}
+        } const collection = getEventCollection(isDev);
         const seriesRef = collection.doc(id);
         return seriesRef.get().then((seriesDoc) => {
             const seriesDocObj = seriesDoc.data();
@@ -821,7 +832,13 @@ exports.deleteEvent = functions.region("europe-west1").https.onCall((data, conte
     const deleteModifiedInstance = data.deleteModifiedInstance;
 
     // Verify user is admin
-    return isAdmin(isDev, context).then(() => {
+    return getUserRoles(isDev, context).then(roles => {
+        if (!roles.includes(Roles.ContentAdmin)) {
+            // todo read doc and verify participants
+            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
+            throw new Error("NoEditPermission");
+            //}
+        }
         const collection = getEventCollection(isDev);
 
         if (id) {
@@ -896,7 +913,6 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
     const email = context?.auth?.token?.email;
     const impersonateUser = data.impersonateUser;
     const eTag = data.eTag;
-    let admin = false;
 
     const cachedEvents = await getEventsViaCache(isDev);
     if (cachedEvents.eTag === eTag) {
@@ -904,34 +920,23 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
         return { noChange: true };
     }
 
+    const roles = await getUserRoles(isDev, context);
+
+
     if (impersonateUser && impersonateUser !== email) {
         if (!email) {
             throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied");
         }
-        await db.collection(isDev ? "users_dev" : "users").where(FieldPath.documentId(), "in", [email, impersonateUser]).get().then(res => {
-            const uDoc = res.docs.find(doc => doc.id === email);
-            if (!uDoc || uDoc.data().type !== 3) {
-                throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "User is not a Kiosk User");
-            }
-            const impDoc = res.docs.find(doc => doc.id === impersonateUser);
-            if (!impDoc || impDoc.data().showInKiosk !== true) {
-                throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
-            }
-        });
-    } else {
-        // load if admin
-        // todo cache?
-        await isAdmin(isDev, context).then(() => {
-            admin = true;
-        }).catch((e) => {
-            // ignore - allow non-admin only get own or public events
-        });
+        if (!roles.includes(Roles.Kiosk)) {
+            throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
+        }
     }
+
     const effectiveEmail = impersonateUser || email;
     const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
 
     const returnEvents = cachedEvents.events.filter(entry =>
-        admin || // admin loads all
+        roles.includes(Roles.ContentAdmin) || // content-admin loads all
         entry.event.participants === undefined || // public event
         Object.entries(entry.event.participants).length === 0 ||
         (participantKey && entry.event.participants && entry.event.participants[participantKey]) || // The user is a participant
