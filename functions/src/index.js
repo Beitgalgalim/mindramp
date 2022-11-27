@@ -3,7 +3,6 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const {
     FieldValue,
-    FieldPath,
 } = require("@google-cloud/firestore");
 
 const axios = require("axios");
@@ -485,6 +484,10 @@ function throwNoUserAdmin() {
     throw new functions.https.HttpsError("failed-precondition", "notUserAdmin", "User Admin role is missing");
 }
 
+function throwNoEditPermission() {
+    throw new functions.https.HttpsError("failed-precondition", "noEditPermission", "Editing permission is missing");
+}
+
 exports.registerUser = functions.region("europe-west1").https.onCall(async (data, context) => {
     const isDev = data.isDev;
     const info = data.info;
@@ -688,178 +691,205 @@ function getEventCollection(isDev) {
     return isDev ? db.collection("event_dev") : db.collection("event");
 }
 
-exports.upsertEvent = functions.region("europe-west1").https.onCall((data, context) => {
-    const isDev = data.isDev;
-    const eventObj = data.event;
-    const id = data.id;
-    const email = context.auth.token.email;
 
-    return getUserRoles(isDev, context).then(roles => {
-        if (!roles.includes(Roles.ContentAdmin)) {
-            if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
-                throw new Error("NoEditPermission");
-            }
-        }
+async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing) {
+    const roles = await getUserRoles(isDev, context);
 
-        const collection = getEventCollection(isDev);
-        const returnEvent = {};
-
-        eventObj.modifiedAt = dayjs().format(tagFormat);
-
-        // Translate deleteField() from client into FieldValue.delete()
-        Object.entries(eventObj).forEach(([key, value]) => {
-            if (value && value._methodName === "deleteField") {
-                eventObj[key] = FieldValue.delete();
-            } else if (value !== undefined) {
-                returnEvent[key] = value;
-            }
-        });
-
-        if (id) {
-            const docRef = collection.doc(id);
-            if (returnEvent.recurrent && returnEvent.recurrent.gid === undefined) {
-                eventObj.recurrent.gid = id;
-                returnEvent.recurrent.gid = id;
-            }
-
-            return docRef.update(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
-                event: returnEvent,
-                id: docRef.id,
-            })));
+    if (!roles.includes(Roles.ContentAdmin)) {
+        if (!roles.includes(Roles.Editor)) {
+            throwNoEditPermission();
         } else {
-            const docRef = collection.doc();
-            if (returnEvent.recurrent && returnEvent.recurrent.gid === undefined) {
-                eventObj.recurrent.gid = docRef.id;
-                returnEvent.recurrent.gid = id;
-            }
-            return docRef.set(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
-                event: returnEvent,
-                id: docRef.id,
-            })));
-        }
-    });
-});
+            const email = context.auth.token.email;
+            functions.logger.info("Editor only", email);
+            const participantKey = getParticipantKey(email);
+            if (!eventObj.participants[participantKey]) {
+                if (!addIfMissing) {
+                    throwNoEditPermission();
+                }
+                // Since the user is only "editor", we add him/her as participant
+                const user = await db.collection(isDev ? "users_dev" : "users").doc(email).get();
+                if (!user.exists) {
+                    functions.logger.info("Editor only - cannot find user info", email);
+                    throwNoEditPermission();
+                }
+                eventObj.participants[participantKey] = {
+                    email,
+                    displayName: user.data().fname + " " + user.data().lname,
+                };
 
-exports.createEventInstance = functions.region("europe-west1").https.onCall((data, context) => {
+                if (user.data().avatar) {
+                    eventObj.participants[participantKey].icon = user.data().avatar.url;
+                }
+            }
+        }
+    }
+}
+
+async function verifyDeleteEventPermission(isDev, context, eventID) {
+    const roles = await getUserRoles(isDev, context);
+
+    if (!roles.includes(Roles.ContentAdmin)) {
+        if (!roles.includes(Roles.Editor)) {
+            throwNoEditPermission();
+        }
+        const email = context.auth.token.email;
+        const event = await getEventCollection(isDev).doc(eventID).get();
+        if (!event.exists || !event.data().participants[getParticipantKey(email)]) {
+            throwNoEditPermission();
+        }
+    }
+}
+
+exports.upsertEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
     const isDev = data.isDev;
     const eventObj = data.event;
     const id = data.id;
 
-    return getUserRoles(isDev, context).then(roles => {
-        if (!roles.includes(Roles.ContentAdmin)) {
-            // todo read doc and verify participants
-            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
-            throw new Error("NoEditPermission");
-            //}
-        } eventObj.instanceStatus = true;
-        eventObj.recurrent = { gid: id };
-        eventObj.modifiedAt = dayjs().format(tagFormat);
+    await verifyEditEventPermission(isDev, context, eventObj, true);
 
-        const collection = getEventCollection(isDev);
+    const collection = getEventCollection(isDev);
+    const returnEvent = {};
 
-        const batch = db.batch();
-        const seriesRef = collection.doc(id);
+    eventObj.modifiedAt = dayjs().format(tagFormat);
 
-        return seriesRef.get().then((seriesDoc) => {
-            const seriesDocObj = seriesDoc.data();
+    // Translate deleteField() from client into FieldValue.delete()
+    Object.entries(eventObj).forEach(([key, value]) => {
+        if (value && value._methodName === "deleteField") {
+            eventObj[key] = FieldValue.delete();
+        } else if (value !== undefined) {
+            returnEvent[key] = value;
+        }
+    });
 
-            if (!seriesDocObj || !seriesDocObj.recurrent) {
-                // not expected
-                throw new Error("Unexpected missing recurrent info on series event");
-            }
+    if (id) {
+        const docRef = collection.doc(id);
+        if (returnEvent.recurrent && (returnEvent.recurrent.gid === undefined || returnEvent.recurrent.gid.length === 0)) {
+            eventObj.recurrent.gid = id;
+            returnEvent.recurrent.gid = id;
+        }
 
-            if (!seriesDocObj.recurrent.exclude) {
-                seriesDocObj.recurrent.exclude = [eventObj.date];
-            } else {
-                seriesDocObj.recurrent.exclude.push(eventObj.date);
-            }
+        return docRef.update(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
+            event: returnEvent,
+            id: docRef.id,
+        })));
+    } else {
+        const docRef = collection.doc();
+        if (returnEvent.recurrent && (returnEvent.recurrent.gid === undefined || returnEvent.recurrent.gid.length === 0)) {
+            eventObj.recurrent.gid = docRef.id;
+            returnEvent.recurrent.gid = docRef.id;
+        }
+        return docRef.set(eventObj).then(() => promoteTag(isDev, eventObj.modifiedAt).then(() => ({
+            event: returnEvent,
+            id: docRef.id,
+        })));
+    }
+});
 
-            const instanceRef = collection.doc();
-            batch.update(seriesRef, { recurrent: seriesDocObj.recurrent, modifiedAt: eventObj.modifiedAt });
-            batch.set(instanceRef, eventObj);
-            return batch.commit().then(() => promoteTag(isDev, eventObj.modifiedAt).then(
-                () => ({
-                    seriesId: seriesRef.id,
-                    instanceId: instanceRef.id,
-                    instanceEvent: eventObj,
-                    seriesEvent: seriesDocObj,
-                })));
-        });
+exports.createEventInstance = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const isDev = data.isDev;
+    const eventObj = data.event;
+    const id = data.id;
+
+    await verifyEditEventPermission(isDev, context, eventObj, false); // editor cannot make instance of an event he/she is not part of
+
+    eventObj.instanceStatus = true;
+    eventObj.recurrent = { gid: id };
+    eventObj.modifiedAt = dayjs().format(tagFormat);
+
+    const collection = getEventCollection(isDev);
+
+    const batch = db.batch();
+    const seriesRef = collection.doc(id);
+
+    return seriesRef.get().then((seriesDoc) => {
+        const seriesDocObj = seriesDoc.data();
+
+        if (!seriesDocObj || !seriesDocObj.recurrent) {
+            // not expected
+            throw new Error("Unexpected missing recurrent info on series event");
+        }
+
+        if (!seriesDocObj.recurrent.exclude) {
+            seriesDocObj.recurrent.exclude = [eventObj.date];
+        } else {
+            seriesDocObj.recurrent.exclude.push(eventObj.date);
+        }
+
+        const instanceRef = collection.doc();
+        batch.update(seriesRef, { recurrent: seriesDocObj.recurrent, modifiedAt: eventObj.modifiedAt });
+        batch.set(instanceRef, eventObj);
+        return batch.commit().then(() => promoteTag(isDev, eventObj.modifiedAt).then(
+            () => ({
+                seriesId: seriesRef.id,
+                instanceId: instanceRef.id,
+                instanceEvent: eventObj,
+                seriesEvent: seriesDocObj,
+            })));
     });
 });
 
-exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.onCall((data, context) => {
+exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.onCall(async (data, context) => {
     const isDev = data.isDev;
     const id = data.id;
     const excludeDate = data.excludeDate;
 
     // Verify user is admin
-    return getUserRoles(isDev, context).then(roles => {
-        if (!roles.includes(Roles.ContentAdmin)) {
-            // todo read doc and verify participants
-            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
-            throw new Error("NoEditPermission");
-            //}
-        } const collection = getEventCollection(isDev);
-        const seriesRef = collection.doc(id);
-        return seriesRef.get().then((seriesDoc) => {
-            const seriesDocObj = seriesDoc.data();
-            seriesDocObj.modifiedAt = dayjs().format(tagFormat);
+    // Editor cannt delete instance if he/she is not a participant
+    await verifyDeleteEventPermission(isDev, context, id, false);
+
+    const collection = getEventCollection(isDev);
+    const seriesRef = collection.doc(id);
+    return seriesRef.get().then((seriesDoc) => {
+        const seriesDocObj = seriesDoc.data();
+        seriesDocObj.modifiedAt = dayjs().format(tagFormat);
 
 
-            if (!seriesDocObj || !seriesDocObj.recurrent) {
-                // not expected
-                throw new Error("Unexpected missing recurrent info on series event");
-            }
-            if (!seriesDocObj.recurrent.exclude) {
-                seriesDocObj.recurrent.exclude = [excludeDate];
-            } else {
-                seriesDocObj.recurrent.exclude.push(excludeDate);
-            }
+        if (!seriesDocObj || !seriesDocObj.recurrent) {
+            // not expected
+            throw new Error("Unexpected missing recurrent info on series event");
+        }
+        if (!seriesDocObj.recurrent.exclude) {
+            seriesDocObj.recurrent.exclude = [excludeDate];
+        } else {
+            seriesDocObj.recurrent.exclude.push(excludeDate);
+        }
 
-            return seriesRef.update(seriesDocObj).then(() => promoteTag(isDev, seriesDocObj.modifiedAt).then(
-                () => ({
-                    seriesId: seriesRef.id,
-                    seriesEvent: seriesDocObj
-                })));
-        });
+        return seriesRef.update(seriesDocObj).then(() => promoteTag(isDev, seriesDocObj.modifiedAt).then(
+            () => ({
+                seriesId: seriesRef.id,
+                seriesEvent: seriesDocObj
+            })));
     });
 });
 
-exports.deleteEvent = functions.region("europe-west1").https.onCall((data, context) => {
+exports.deleteEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
     const isDev = data.isDev;
     const id = data.id;
     const deleteModifiedInstance = data.deleteModifiedInstance;
 
     // Verify user is admin
-    return getUserRoles(isDev, context).then(roles => {
-        if (!roles.includes(Roles.ContentAdmin)) {
-            // todo read doc and verify participants
-            //if (!roles.includes(Roles.Editor) || !getParticipantsAsArray(eventObj.participants).includes(getParticipantKey(email))) {
-            throw new Error("NoEditPermission");
-            //}
-        }
-        const collection = getEventCollection(isDev);
+    await verifyDeleteEventPermission(isDev, context, id);
 
-        if (id) {
-            const docRef = collection.doc(id);
-            if (deleteModifiedInstance) {
-                return collection.where("recurrent.gid", "==", id).get().then(instances => {
-                    const batch = db.batch();
-                    const removedIDs = [];
-                    instances.docs.forEach(doc => {
-                        batch.delete(doc.ref);
-                        removedIDs.push(doc.ref.id);
-                    });
-                    batch.delete(docRef);
-                    removedIDs.push(id);
-                    return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => removedIDs);
+    const collection = getEventCollection(isDev);
+
+    if (id) {
+        const docRef = collection.doc(id);
+        if (deleteModifiedInstance) {
+            return collection.where("recurrent.gid", "==", id).get().then(instances => {
+                const batch = db.batch();
+                const removedIDs = [];
+                instances.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                    removedIDs.push(doc.ref.id);
                 });
-            }
-
-            return docRef.delete().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => [id]);
+                batch.delete(docRef);
+                removedIDs.push(id);
+                return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => removedIDs);
+            });
         }
-    });
+
+        return docRef.delete().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => [id]);
+    }
 });
 
 
