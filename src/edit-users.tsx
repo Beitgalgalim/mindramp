@@ -9,7 +9,7 @@ import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, Perso
 import { CircularProgress } from '@material-ui/core';
 import { hasRole } from './utils/common';
 
-export default function EditUser({ userInfo, afterSaved, notify, roles, roleRecords }: EditUserProps) {
+export default function EditUser({ user, userInfo, afterSaved, notify, roles, roleRecords }: EditUserProps) {
     const inputEl = useRef<HTMLInputElement | null>(null);
     const [preview, setPreview] = useState<string | undefined>(userInfo.avatar?.url);
     const [fname, setFName] = useState<string>(userInfo.fname);
@@ -206,7 +206,7 @@ export default function EditUser({ userInfo, afterSaved, notify, roles, roleReco
                 <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                     <ContactMailOutlined />
                 </Grid>
-                <Grid container item xs={9} spacing={2} style={{direction:"ltr"}}>
+                <Grid container item xs={9} spacing={2} style={{ direction: "ltr" }}>
                     <TextField variant="standard" helperText="אימייל"
                         type="email"
                         value={email}
@@ -321,21 +321,25 @@ export default function EditUser({ userInfo, afterSaved, notify, roles, roleReco
             <Spacer height={25} />
             <div className="permission-container">
                 <div >הרשאות</div>
-            {
-                roleRecords.filter(rr => rr.id !== Roles.Kiosk).map(rr => {
-                    let checked = localRoles.includes(rr.id) || implicitRoles.includes(rr.id);
-                    let disabled = implicitRoles.includes(rr.id) && !localRoles.includes(rr.id);
+                {
+                    roleRecords.filter(rr => rr.id !== Roles.Kiosk).map(rr => {
+                        let checked = localRoles.includes(rr.id) || implicitRoles.includes(rr.id);
+                        let disabled = implicitRoles.includes(rr.id) && !localRoles.includes(rr.id);
 
-                    return (<Grid container spacing={2} style={{ textAlign: "right" }}>
-                        <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
-                        </Grid>
-                        <Grid item xs={6} style={{ alignItems: "right" }}>
-                            <FormControlLabel control={<Checkbox disabled={disabled} checked={checked} onChange={(e) => handleRoleChangeEvent(e, rr.id)} />} label={rr.displayName} />
-                        </Grid>
-                    </Grid>)
-                })
-            }
-            </div>
+                        // Prevent a user admin to provide any permission he/she does not have
+                        let disabledPreventPermissionElevation = !roles.some(role => role.id == rr.id);
+
+                        // Prevent admin to lose its admin permission
+                        let disableAdminForHimself = (user === email && rr.id === Roles.Admin && roles.some(role => role.id == Roles.Admin));
+
+                        return (<div className="permission-item">
+                            <FormControlLabel control={<Checkbox disabled={disabled || disabledPreventPermissionElevation || disableAdminForHimself}
+                                checked={checked} onChange={(e) => handleRoleChangeEvent(e, rr.id)} />} label={rr.displayName} />
+                            <div className="permission-desc">{rr.description}</div>
+                        </div>)
+                    })
+                }
+            </div >
 
             <Grid container spacing={2} style={{ textAlign: "right" }}>
                 <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
@@ -356,6 +360,6 @@ export default function EditUser({ userInfo, afterSaved, notify, roles, roleReco
 
                 <Button variant="contained" onClick={afterSaved}>ביטול</Button>
             </Grid>
-        </Grid>
-    </div>);
+        </Grid >
+    </div >);
 }

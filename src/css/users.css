@@ -48,4 +48,16 @@
     margin:10px;
     border: gray 2px solid;
     text-align: right;
+    font-size: 0.8em;
+}
+
+.permission-item {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.permission-desc {
+    font-size: 0.7em;
+    margin-right: 50px;
 }

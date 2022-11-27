@@ -491,6 +491,7 @@ export async function getRoles() {
             members: r.members,
             assignRoles: r.assignRoles,
             displayName: r.displayName || r.id,
+            description: r.description || "",
         } as RoleRecord))
     });
 }

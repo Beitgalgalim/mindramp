@@ -72,6 +72,7 @@ export interface RoleRecord {
     members: string[],
     assignRoles: string[],
     displayName: string,
+    description: string,
 }
 
 export const Roles = {
@@ -307,7 +308,7 @@ export interface EditImageProps extends Notifying {
     onCancel?: Callback,
 }
 
-export interface EditUserProps extends Notifying, WithRoles {
+export interface EditUserProps extends WithUser, Notifying, WithRoles {
     userInfo: UserInfo;
     afterSaved: () => void;
     roleRecords: RoleRecord[];

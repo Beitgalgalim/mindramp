@@ -49,7 +49,7 @@ export default function Users({ user, users, notify, reload, roles }: UsersProps
     return (
 
         <div className="users-container">
-            {editedUser && <EditUser userInfo={editedUser} afterSaved={afterEdit} notify={notify} roles={roles} roleRecords={roleRecords}  />}
+            {editedUser && <EditUser user={user} userInfo={editedUser} afterSaved={afterEdit} notify={notify} roles={roles} roleRecords={roleRecords}  />}
             {!editedUser &&
                 <Fab
                     color="primary" aria-label="הוסף"
