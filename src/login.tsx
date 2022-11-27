@@ -63,7 +63,7 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel }:
                         label="אימייל"
                         autoComplete="email"
                         autoFocus
-                        onChange={(e) => setUser(e.currentTarget.value)}
+                        onChange={(e) => setUser(e.currentTarget.value.toLowerCase())}
                     />
                 </div>
                 <TextField

@@ -92,7 +92,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
-    const accessibleCalendarAct = accessibleCalendar || !roles.length;
+    const accessibleCalendarAct = accessibleCalendar || !roles.length || (roles.length == 1 && roles[0].id == Roles.Kiosk);
 
     const location = useLocation();
     let refDate: Dayjs = dayjs();

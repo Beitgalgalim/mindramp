@@ -89,7 +89,7 @@ export default function EditUser({ userInfo, afterSaved, notify, roles, roleReco
     }
 
     function onEmailChange(n: any) {
-        setEmail(n.currentTarget.value);
+        setEmail(n.currentTarget.value.toLowerCase());
         setDirty(true);
 
     }
@@ -206,7 +206,7 @@ export default function EditUser({ userInfo, afterSaved, notify, roles, roleReco
                 <Grid container item xs={2} spacing={2} style={{ alignItems: "center" }} >
                     <ContactMailOutlined />
                 </Grid>
-                <Grid container item xs={9} spacing={2} >
+                <Grid container item xs={9} spacing={2} style={{direction:"ltr"}}>
                     <TextField variant="standard" helperText="אימייל"
                         type="email"
                         value={email}

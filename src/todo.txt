@@ -4,18 +4,29 @@ Backlog:
   - Cache Admins in functions? 
 
 - UI Improvments in User Events (pending approval)
-  - adjust text size, and acc-settings
+  *- adjust text size, and acc-settings
+  - new view without parallel meetings
 
 - Add nickname to users:
-  - editing UI
-  - migrate from localstorage?
-  - use in UserEvents
-  - Remove green circle for login
+  - 
 
 - Send message to the system to create an event (guide send it, or even users) - idea - use WhatsApp
+- Permission
+  - add description and show in UI
+  - User management - avoid removing admin of yourself, avoid remove last admin?
+  - Avoid permission elevation
+
+
+- "Editor" Permission:
+  - add user to the meeting he/she is creating
+
+
 - Add long-press on logo to open settings
+
 - Bank of audio recordings
+
 - Bank of Icons
+
 - Media: 
   - make tags work
   - search-by-tag
@@ -27,8 +38,8 @@ Backlog:
 - TV mode:
   - key events?
 
-- User management - avoid removing admin of yourself, avoid remove last admin?
 - Security: Media is editable for any authenticated - should be only content-editor
+
 Bugs Medium
 -----------
 - Kiosk: Handle state saved in localstorage per delagated user
@@ -42,3 +53,6 @@ Bugs Low
 - In admin
   - close combobox list on second click on down arrow
 
+Ideas:
+- Add DL concept
+- Screen readers viability
