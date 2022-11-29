@@ -171,6 +171,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
         <Spacer width={20} />
         {
             !user && <Login
+                notify={notify}
                 onLogin={(u: User) => { }}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {

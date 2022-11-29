@@ -184,6 +184,21 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
     // });
 });
 
+exports.forgotUser = functions.region("europe-west1").https.onCall((data, context) => {
+    const { isDev, phone } = data;
+    const phoneNumber = phone.replace(/[^\d]+/g, "");
+
+    return db.collection(isDev ? "users_dev" : "users").where("phone", "==", phoneNumber).get().then(res => {
+        if (res.docs && res.docs.length > 0) {
+            const email = res.docs[0].id;
+
+            return addNotification(undefined, "send_user_info", [email], [], [email], isDev);
+        } else {
+            throw new functions.https.HttpsError("failed-precondition", "UnknownPhone", `Phone number '${phoneNumber}' not found`);
+        }
+    });
+});
+
 exports.notifications = functions.region("europe-west1").pubsub
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
     .schedule("every 1 minutes")
@@ -341,7 +356,8 @@ function handleParticipantAdded(isDev, change, context) {
     if (change.after.exists) {
         if (eventsUtil.inThePast(change.after.data().end)) {
             // if the event ends in the past
-            return;
+            functions.logger.info("change event in the past")
+            return false;
         }
 
         title = change.after.data().title;
@@ -1115,7 +1131,7 @@ function archiveData() {
 - To send a whatsApp message, simply insert a record into "notifications" collection. It has to have a template if this is
   business initiated message, so a template must be prepared and approved in facebook
 - free text (not template based), are to respond to users messages. One the business responds, it is allowed to send anything.
-
+ 
 - Message we plan to send/recieve:
   - you are invited to a meeting (done)
     - approval of meeting invite (todo)

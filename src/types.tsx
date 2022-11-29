@@ -240,7 +240,7 @@ export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
 }
 
-export interface LoginProps {
+export interface LoginProps extends Notifying {
     onForgotPwd: () => void,
     onLogin: (u: User) => void,
     onError: (e: Error) => void,

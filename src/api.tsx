@@ -220,6 +220,15 @@ export function testNotif() {
     return sendNotificationTest(payload);
 }
 
+export function forgotUser(phone:string) {
+    const forgotUserFunc = httpsCallable(functions, 'forgotUser');
+    const payload: any = {
+        isDev: isDev(),
+        phone
+    };
+    return forgotUserFunc(payload);
+}
+
 export async function getUserInfo(user: string, pwd: string) {
     return signInWithEmailAndPassword(auth, user, pwd)
         .then((userCredential) => {
