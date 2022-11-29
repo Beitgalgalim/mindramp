@@ -59,7 +59,7 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 }
 
 
-export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode,
+export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode, avatarUrl, 
     notificationOn, onNotificationOnChange, onNotificationToken,
     onPushNotification, onGoHome }: UserEventsProps) {
     const [rawEvents, setRawEvents] = useState<any[]>([]);
@@ -281,6 +281,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             newNotificationCount={newNotificationCount}
             user={user}
             kioskMode={kioskMode}
+            avatarUrl={avatarUrl}
             onGoHome={onGoHome}
             firstElemRef={firstElemRef}
         />

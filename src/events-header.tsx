@@ -1,7 +1,7 @@
 import { Home, NotificationsActive, NotificationsNone } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Text } from './elem';
+import { Spacer, Text } from './elem';
 import { EventsHeaderProps } from './types';
 import { useNavigate } from "react-router-dom";
 import './css/event.css'
@@ -36,6 +36,7 @@ function useSingleAndDoubleClick(onDoubleClick: CallableFunction, onTripleClick?
 }
 
 export default function EventsHeader({ user,
+    avatarUrl,
     onLogoDoubleClicked,
     onLogoTripleClicked,
     nickName, showDateTime, height, centered,
@@ -130,7 +131,7 @@ export default function EventsHeader({ user,
                     width: 36, height: 36,
                     borderRadius: 18,
                     padding: 2,
-                    
+
                     color: "white",
                     //backgroundColor: showingNotifications ? "gray" : "transparent"
                 }} />
@@ -138,25 +139,24 @@ export default function EventsHeader({ user,
         </button>
 
         <Text marginTop={17} textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
-
+        <div className="events-header-left">
         {kioskMode && <button
             ref={kioskMode && firstElemRef}
-            className={"event-home-btn kiosk-nav"}
+            className={"event-home-btn2 kiosk-nav"}
             aria-label="חזרה למסך בחירת משתמשים"
             onClick={() => onGoHome()}>
             <Home
                 style={{ fontSize: "inherit" }}
             /></button>}
+        <Spacer width={10} />
+        {kioskMode && avatarUrl && <img src={avatarUrl} className="events-header-avatar" />}
+        <Spacer width={10} />
         <img
+            className="events-header-logo"
             src={logo}
-            style={{
-                position: 'absolute',
-                left: 15,
-                height: 60, borderRadius: 7
-            }}
             onClick={handleClick}
             alt={"לוגו של בית הגלגלים"}
             aria-hidden="true" />
-
+</div>
     </div>
 }

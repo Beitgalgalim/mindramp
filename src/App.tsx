@@ -26,6 +26,7 @@ function App(props: any) {
   const [guide, setGuide] = useState<boolean>(false);
   const [kiosk, setKiosk] = useState<boolean>(false);
   const [delagatedUser, setDelegatedUser] = useState<string | undefined>(undefined);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
 
@@ -215,9 +216,10 @@ function App(props: any) {
 
           <Route path="/*" element={
             kiosk && !delagatedUser ?
-              <Kiosk onSelectUser={(u:string|undefined)=>{
+              <Kiosk onSelectUser={(u:string|undefined, avatarUrl?:string)=>{
                 console.log("kiosk open: ", u);
                 setDelegatedUser(u);
+                setAvatarUrl(avatarUrl);
 
               }} />:
 
@@ -236,6 +238,7 @@ function App(props: any) {
             windowSize={windowSize}
             connected={connected}
             user={delagatedUser || user}
+            avatarUrl={avatarUrl}
             kioskMode={delagatedUser != undefined}
             onGoHome={()=>setDelegatedUser(undefined)}
             notify={notify} />}

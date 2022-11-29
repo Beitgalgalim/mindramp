@@ -75,7 +75,7 @@ export default function Kiosk({ onSelectUser }:
                 key={i}
                 name={user.fname + " " + user.lname}
                 icon={user.avatar?.url}
-                onPress={() => onSelectUser(user._ref?.id)}
+                onPress={() => onSelectUser(user._ref?.id, user.avatar?.url)}
                 tab-marker={i === users.length-1?"last":""}
             />))}
         </div>

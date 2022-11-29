@@ -112,6 +112,7 @@ export interface NotificationToken {
 export interface UserDocument {
     email: string,
     phone?: string,
+    avatar?: AvatarInfo,
     // notificationOn?: boolean,
     // tokens?: NotificationToken[]
     type?: UserType;
@@ -215,7 +216,7 @@ export interface Notifying {
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
 export interface KioskProps {
-    onSelectUser: (user: string | undefined) => void,
+    onSelectUser: (user: string | undefined, avatarUrl: string | undefined) => void,
 }
 export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles {
     events: any[],
@@ -234,7 +235,8 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onNotificationToken: (token: string) => void,
     onPushNotification: onPushNotificationHandler,
     onGoHome: () => void,
-    kioskMode: boolean
+    kioskMode: boolean,
+    avatarUrl:(string | undefined),
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
@@ -283,6 +285,7 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     kioskMode: boolean,
     onGoHome: () => void,
     firstElemRef: any,
+    avatarUrl: string | undefined,
 }
 
 

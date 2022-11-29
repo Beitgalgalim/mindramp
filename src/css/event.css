@@ -120,21 +120,42 @@
     outline: 10px solid lightsalmon !important;
 }
 
-.event-home-btn {
+.events-header-left {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-items: flex-end;
+    left: 15px;
+    height:90px;
+}
+
+.events-header-logo {
+    height: 60px;
+    border-radius: 7px;
+}
+.events-header-avatar {
+    width: 90px;
+    height: 90px;
+}
+
+.event-home-btn2 {
     font: inherit;
     color: inherit;
     background-color: transparent;
     border: 0;
     display: flex;
-    position: absolute;
-    left: 95px;
     font-size: 90px;
+    height: 90px;
 }
+
+
+
+
 
 .nav-btn {
     display: flex;
     flex-direction: column;
-    margin:0;
+    margin: 0;
 }
 
 .fc-one-event-container-high {
@@ -143,6 +164,7 @@
     flex-direction: column;
     align-items: flex-start;
 }
+
 .fc-one-event-container {
     direction: rtl;
     display: flex;
@@ -163,6 +185,7 @@
     margin-right: 5px;
     text-align: start;
 }
+
 .event-svg-icon {
     display: block;
     margin: 2px;
@@ -170,13 +193,13 @@
 
 .fc-one-event-markers {
     position: absolute;
-    left:0;
-    height:25px;
+    left: 0;
+    height: 25px;
     display: flex;
     flex-direction: row;
 }
 
-.fc-one-event-markers > img {
-    height:25;
-    width:25px
+.fc-one-event-markers>img {
+    height: 25;
+    width: 25px
 }
