@@ -51,31 +51,6 @@ export function initAPI(
     onAuthStateChanged(auth, (user) => {
         const email = user?.email;
         if (email) {
-            // const docRef = doc(db, Collections.USERS_COLLECTION, email, Collections.USER_PERSONAL_SUBCOLLECTION, "Default")
-            // getDoc(docRef).then(
-            //     //Success
-            //     userPersonallDoc => {
-            //         let userAdditionalInfo = {}
-            //         if (userPersonallDoc.exists()) {
-
-            //             if (userPersonallDoc.data().notificationOn === true) {
-            //                 initializeNotification(onPushNotification, onNotificationToken);
-            //             }
-            //             userAdditionalInfo = userPersonallDoc.data();
-            //         }
-            //         onAuth({
-            //             email,
-            //             ...userAdditionalInfo,
-            //         });
-
-            //     },
-            //     // No user record. for compatability - allow it
-            //     (err) => {
-            //         onAuth({
-            //             email
-            //         });
-            //     }
-            // );
             const docRef = doc(db, Collections.USERS_COLLECTION, email);
             getDoc(docRef).then(
                 //Success
@@ -86,7 +61,7 @@ export function initAPI(
                     onAuth({
                         email,
                         ...addInfo,
-                    });
+                    } as UserDocument);
 
                 });
         } else {
@@ -520,7 +495,7 @@ export async function getUserRoles(email: string) {
 }
 
 
-function updateUser(email: string, userInfo: any, roles:string[]) {
+function updateUser(email: string, userInfo: any, roles:string[] | undefined) {
     const updateUserFunc = httpsCallable(functions, 'updateUser');
     const payload: any = {
         isDev: isDev(),
@@ -531,6 +506,9 @@ function updateUser(email: string, userInfo: any, roles:string[]) {
     return updateUserFunc(payload);
 }
 
+export async function updateNickName(email: string, newNickName:string) {
+    return updateUser(email, {nickName:newNickName}, undefined);
+}
 
 export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles:string[]) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);

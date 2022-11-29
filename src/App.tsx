@@ -27,6 +27,7 @@ function App(props: any) {
   const [kiosk, setKiosk] = useState<boolean>(false);
   const [delagatedUser, setDelegatedUser] = useState<string | undefined>(undefined);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [nickName, setNickName] = useState<string | undefined>(undefined);
 
   const [msg, setMsg] = useState<NotificationMessage | undefined>(undefined);
 
@@ -108,6 +109,7 @@ function App(props: any) {
       (userDocument) => {
         if (userDocument) {
           setUser(userDocument.email);
+          setNickName(userDocument.nickName || (userDocument.fname))
           // setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
           // setActualNotificationOn(userPersonalInfo.notificationOn === true)
           // setServerPersistedNotificationTokens(userPersonalInfo.tokens);
@@ -118,6 +120,7 @@ function App(props: any) {
           })
         } else {
           setUser(null);
+          setNickName(undefined);
           setRoles([]);
           setDesiredNotificationOn(false);
           setActualNotificationOn(false);
@@ -239,6 +242,8 @@ function App(props: any) {
             connected={connected}
             user={delagatedUser || user}
             avatarUrl={avatarUrl}
+            nickName={nickName}
+            onNickNameUpdate={(newNick=>setNickName(newNick))}
             kioskMode={delagatedUser != undefined}
             onGoHome={()=>setDelegatedUser(undefined)}
             notify={notify} />}

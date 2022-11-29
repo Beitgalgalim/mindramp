@@ -4,7 +4,7 @@ import { User } from '@firebase/auth';
 import { UserSettingsProps } from "./types";
 import { HBox, HBoxC, HBoxSB, Spacer, Text, VBoxC } from "./elem";
 import { Checkbox, TextField } from '@mui/material';
-import { useState, Fragment, useCallback } from "react";
+import { useState, Fragment, useCallback, useEffect } from "react";
 import { Button, makeStyles } from "@material-ui/core";
 import * as api from './api'
 import { Check, Close, Logout, Notifications, SettingsAccessibility } from "@mui/icons-material";
@@ -25,8 +25,9 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
     onAccessibleCalendar,
     accessibleCalendar,
     beta,
+    isKioskUser
 }: UserSettingsProps) {
-    const [editName, setEditName] = useState<string>(nickName);
+    const [editName, setEditName] = useState<string>(nickName || "");
 
     const handleNotificationOnClick = useCallback(() => {
         notify.ask(`האם ל${notificationOn ? "בטל" : "אפשר"} הודעות בדחיפה?`, undefined, [
@@ -60,6 +61,10 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [notificationOn]);
 
+    useEffect(()=>{
+        setEditName(nickName || "");
+    }, [nickName])
+
 
     // const handleSafariNotifClick = () => {
     // if ('safari' in window && 'pushNotification' in window.safari) {
@@ -90,7 +95,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
         </HBox>
 
         <VBoxC>
-            <HBoxC style={{ width: "100%" }}>
+            {!!user && !isKioskUser && <HBoxC style={{ width: "100%" }}>
                 <TextField
                     autoFocus
                     label="כינוי"
@@ -106,7 +111,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                             onSaveNickName(editName);
                         }} />
                 }
-            </HBoxC>
+            </HBoxC>}
 
             <Spacer height={20} />
             <HBox style={{ alignItems: "center" }}>

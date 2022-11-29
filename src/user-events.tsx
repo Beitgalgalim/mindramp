@@ -61,7 +61,7 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 
 export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode, avatarUrl, 
     notificationOn, onNotificationOnChange, onNotificationToken,
-    onPushNotification, onGoHome }: UserEventsProps) {
+    onPushNotification, onGoHome , nickName, onNickNameUpdate}: UserEventsProps) {
     const [rawEvents, setRawEvents] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
     const [etag, setEtag] = useState<string | undefined>();
@@ -74,7 +74,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
     const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
-    const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
+    //const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
     const [beta, setBeta, betaMore] = useLocalStorageState<any>("beta");
     const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
     const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
@@ -229,15 +229,23 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }}
             user={user}
             onSaveNickName={(newNick) => {
-                setNickName((prev: any) => {
-                    let newValue = { ...prev };
-                    if (kioskMode && user) {
-                        newValue[user] = { name: newNick };
-                    } else {
-                        newValue.name = newNick;
-                    }
-                    return newValue;
-                });
+                user && api.updateNickName(user, newNick).then(
+                    ()=>{
+                        notify.success("כינוי עודכן בהצלחה");
+                        onNickNameUpdate(newNick);
+                    },
+                    (err)=>notify.error(err)
+                )
+                // setNickName((prev: any) => {
+                //     let newValue = { ...prev };
+                //     if (kioskMode && user) {
+                //         newValue[user] = { name: newNick };
+                //     } else {
+                //         newValue.name = newNick;
+                //     }
+                //     return newValue;
+                // });
+                // todo - save to db
             }}
             onClose={() => setShowUserSettings(false)}
             notificationOn={notificationOn}
@@ -249,7 +257,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             accessibleCalendar={accessibleCalendarAct}
             beta={beta === true}
             notify={notify}
-            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
+            nickName={nickName}
+            isKioskUser={kioskMode}
         />
     }
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
@@ -270,7 +279,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             centered={isTV}
             height={"12vh"}
             showDateTime={refDate}
-            nickName={nickName && (kioskMode && user ? nickName[user]?.name : nickName?.name)}
+            nickName={nickName}
             roles={roles}
             isGuide={isGuide}
             onLogoDoubleClicked={() => setShowUserSettings(true)}

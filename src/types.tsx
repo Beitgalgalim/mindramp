@@ -113,8 +113,9 @@ export interface UserDocument {
     email: string,
     phone?: string,
     avatar?: AvatarInfo,
-    // notificationOn?: boolean,
-    // tokens?: NotificationToken[]
+    nickName?:string,
+    fname:string,
+    lname:string,
     type?: UserType;
 }
 
@@ -236,7 +237,9 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onPushNotification: onPushNotificationHandler,
     onGoHome: () => void,
     kioskMode: boolean,
-    avatarUrl:(string | undefined),
+    avatarUrl:string | undefined,
+    nickName:string | undefined,
+    onNickNameUpdate: (newNickName:string)=> void,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
@@ -252,7 +255,7 @@ export interface LoginProps extends Notifying {
 export interface UserSettingsProps extends WithUser, Notifying {
     onSaveNickName: (newNick: string) => void,
     onClose: Callback,
-    nickName: string,
+    nickName: string | undefined,
     onAccessibilitySettings: () => void,
     notificationOn: boolean,
     onNotificationOnChange: (on: boolean) => void,
@@ -262,6 +265,7 @@ export interface UserSettingsProps extends WithUser, Notifying {
     onAccessibleCalendar: (on: boolean) => void,
     beta: boolean,
     accessibleCalendar:boolean,
+    isKioskUser:boolean,
 }
 
 export interface AccessibilitySettingsProps {
@@ -273,7 +277,7 @@ export interface AccessibilitySettingsProps {
 export interface EventsHeaderProps extends WithUser, WithRoles {
     onLogoDoubleClicked: Callback,
     onLogoTripleClicked?: Callback,
-    nickName: string,
+    nickName: string | undefined,
     isGuide: boolean,
     height: number | string,
     showDateTime: Dayjs,

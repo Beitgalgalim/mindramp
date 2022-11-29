@@ -63,7 +63,7 @@ export default function EventsHeader({ user,
         },
         undefined, 350);
 
-    let headerMsg = nickName?.length > 0 ? "הי " + nickName : "";
+    let headerMsg = "הי " + (nickName && nickName.length > 0 ?  nickName : "אורח.ת");
 
     if (showDateTime) {
         const h = showDateTime.hour();
@@ -95,13 +95,13 @@ export default function EventsHeader({ user,
         alignItems: "center",
         marginRight: 15, marginLeft: 15,
     }}>
-        {
+        {/* {
             // Connected sign
             user && <div style={{
                 position: "absolute", left: 3, top: 3, width: 12, height: 12, borderRadius: 7,
                 backgroundColor: "#00FF04",
             }} />
-        }
+        } */}
 
 
         {/** Notifications */}
