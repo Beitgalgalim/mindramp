@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Spacer, Text } from './elem';
 import { EventsHeaderProps } from './types';
 import { useNavigate } from "react-router-dom";
+import { useLongPress } from 'use-long-press';
 import './css/event.css'
 
 const logo = require("./logo-small.png");
@@ -49,6 +50,12 @@ export default function EventsHeader({ user,
     firstElemRef,
 }: EventsHeaderProps) {
     const navigate = useNavigate();
+
+    const handleTripleClick = useLongPress( () =>  {
+        if (onLogoTripleClicked) {
+            onLogoTripleClicked();
+        }
+    });
 
     const handleClick = useSingleAndDoubleClick(
         // Double click
@@ -152,6 +159,7 @@ export default function EventsHeader({ user,
         {kioskMode && avatarUrl && <img src={avatarUrl} className="events-header-avatar" />}
         <Spacer width={10} />
         <img
+            {...handleTripleClick}
             className="events-header-logo"
             src={logo}
             onClick={handleClick}
