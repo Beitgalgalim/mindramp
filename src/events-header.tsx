@@ -51,7 +51,7 @@ export default function EventsHeader({ user,
 }: EventsHeaderProps) {
     const navigate = useNavigate();
 
-    const handleTripleClick = useLongPress( () =>  {
+    const handleLongPress = useLongPress( () =>  {
         onLogoDoubleClicked();
     });
 
@@ -157,7 +157,7 @@ export default function EventsHeader({ user,
         {kioskMode && avatarUrl && <img src={avatarUrl} className="events-header-avatar" />}
         <Spacer width={10} />
         <img
-            {...handleTripleClick}
+            {...handleLongPress}
             className="events-header-logo"
             src={logo}
             onClick={handleClick}
