@@ -52,9 +52,7 @@ export default function EventsHeader({ user,
     const navigate = useNavigate();
 
     const handleTripleClick = useLongPress( () =>  {
-        if (onLogoTripleClicked) {
-            onLogoTripleClicked();
-        }
+        onLogoDoubleClicked();
     });
 
     const handleClick = useSingleAndDoubleClick(
