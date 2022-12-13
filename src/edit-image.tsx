@@ -2,7 +2,7 @@ import { AddPhotoAlternateOutlined } from "@mui/icons-material";
 import { Button, Grid } from "@mui/material";
 import { useRef, useState } from "react";
 import { Text } from "./elem";
-import { EditImageProps, ImageInfo } from "./types";
+import { EditImageProps, MediaResource } from "./types";
 import ReactCrop, {
     centerCrop,
     makeAspectCrop,
@@ -158,7 +158,7 @@ export default function EditImage(
                     onClick={() => inputEl?.current?.click()} />}
             </div>
             <div>מילות חיפוש</div>
-            <input type="text" value={keywords} onChange={(e) => { }} />
+            <input type="text" value={keywords} onChange={(e) => { setKeywords([e.target.value]) }} />
         </div>
 
         <div className="edit-image-buttons">

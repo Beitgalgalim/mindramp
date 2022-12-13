@@ -23,7 +23,7 @@ import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebas
 import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, ImageInfo, Role, Roles, RoleRecord } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, Roles, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 import { sortEvents } from './utils/date';
@@ -327,7 +327,8 @@ export function getMedia(): Promise<MediaResource[]> {
         url: d.url,
         path: d.path || "",
         type: d.type,
-        _ref: d._ref
+        _ref: d._ref,
+        keywords: d.keywords,
     })));
 }
 
@@ -406,16 +407,17 @@ export async function deleteEvent(id: string, deleteModifiedInstance: boolean = 
     return [];
 }
 
-export async function updateMediaInfo(imageInfo: ImageInfo) {
+export async function updateMediaInfo(imageInfo: MediaResource) {
     if (imageInfo._ref) {
+        const keywords = imageInfo.keywords?.toString().split(",");
         return updateDoc(imageInfo._ref, {
             name: imageInfo.name,
-            keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
+            keywords: imageInfo.keywords ? keywords : deleteField(),
         });
     }
 }
 
-export async function addMedia(name: string, type: "icon" | "photo", file: File): Promise<MediaResource> {
+export async function addMedia(name: string, type: "icon" | "photo", keywords: string[] | undefined, file: File): Promise<MediaResource> {
     // First upload to storage
     const storage = getStorage(app);
     const storageRef = ref(storage);
@@ -443,6 +445,7 @@ export async function addMedia(name: string, type: "icon" | "photo", file: File)
                         type,
                         url,
                         path: val.ref.fullPath,
+                        keywords,
                     };
                     const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));

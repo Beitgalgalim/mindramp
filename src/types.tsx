@@ -94,10 +94,6 @@ export interface UserInfo {
     _ref?: DocumentReference
 }
 
-export interface ImageInfo extends MediaResource {
-    keywords?: string[]
-}
-
 export interface LocationInfo {
     name: string,
     _ref?: DocumentReference
@@ -144,6 +140,7 @@ export interface MediaResource {
     type: "icon" | "photo" | "audio",
     path: string,
     _ref?: DocumentReference
+    keywords?: string[]
 }
 
 export interface EditEventArgs {
@@ -309,9 +306,9 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
 }
 
 export interface EditImageProps extends Notifying {
-    imageInfo: ImageInfo
-    onSave: (imageInfo: ImageInfo, file?: File) => void,
-    onDelete: (imageInfo: ImageInfo) => void,
+    imageInfo: MediaResource
+    onSave: (imageInfo: MediaResource, file?: File) => void,
+    onDelete: (imageInfo: MediaResource) => void,
     onCancel?: Callback,
 }
 

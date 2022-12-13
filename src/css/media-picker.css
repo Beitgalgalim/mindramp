@@ -1,0 +1,8 @@
+.media-search {
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border-bottom: lightgrey 2px solid;
+    margin-bottom: 2px;
+}
