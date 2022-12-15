@@ -29,3 +29,5 @@ yarn-error.log*
 *.log
 test.js
 local-utils.js
+
+*.idea

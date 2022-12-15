@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ImageInfo, MediaProps, MediaResource } from './types';
+import { MediaProps, MediaResource } from './types';
 
 import { Text, HBox, HBoxC, Spacer } from './elem';
 import * as api from './api'
@@ -11,10 +11,11 @@ import { Fab } from '@mui/material';
 
 export default function Media({ media, notify, reload }: MediaProps) {
 
-    const [editedImage, setEditedImage] = useState<ImageInfo | undefined>(undefined);
-    const _save = useCallback((imageInfo: ImageInfo, file?: File) => {
+    const [editedImage, setEditedImage] = useState<MediaResource | undefined>(undefined);
+    const _save = useCallback((imageInfo: MediaResource, file?: File) => {
         if (!imageInfo._ref && file) {
-            api.addMedia(imageInfo.name, "photo", file).then(
+            //const keywords = imageInfo.keywords?.map(keyWord => { return keyWord.text} )
+            api.addMedia(imageInfo.name, "photo", imageInfo.keywords, file).then(
                 (m: MediaResource) => {
                     notify.success(`תמונה עלתה בהצלחה`);
                     setEditedImage(undefined)
@@ -33,7 +34,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
         }
     }, []);
 
-    const _delete = useCallback((imageInfo: ImageInfo) => {
+    const _delete = useCallback((imageInfo: MediaResource) => {
         if (imageInfo._ref) {
             api.deleteDocWithMedia(imageInfo.path, imageInfo._ref).then(
                 () => {
@@ -46,7 +47,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
         }
     }, []);
 
-    function getNewImageInfo(): ImageInfo {
+    function getNewImageInfo(): MediaResource {
         return {
             name: "",
             url: "",
@@ -57,8 +58,8 @@ export default function Media({ media, notify, reload }: MediaProps) {
 
     if (editedImage)
         return <EditImage imageInfo={editedImage}
-            onSave={(imageInfo: ImageInfo, file?: File) => _save(imageInfo, file)}
-            onDelete={(imageInfo: ImageInfo) => _delete(imageInfo)}
+            onSave={(imageInfo: MediaResource, file?: File) => _save(imageInfo, file)}
+            onDelete={(imageInfo: MediaResource) => _delete(imageInfo)}
             onCancel={() => setEditedImage(undefined)}
             notify={notify} />;
 
