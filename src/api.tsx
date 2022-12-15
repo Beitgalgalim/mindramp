@@ -9,7 +9,7 @@ import {
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference } from "firebase/storage";
-
+import { Tag } from 'react-tag-input';
 import {
     getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
@@ -409,10 +409,10 @@ export async function deleteEvent(id: string, deleteModifiedInstance: boolean = 
 
 export async function updateMediaInfo(imageInfo: MediaResource) {
     if (imageInfo._ref) {
-        const keywords = imageInfo.keywords?.toString().split(",");
+       // const keywords = imageInfo.keywords?.toString().split(",");
         return updateDoc(imageInfo._ref, {
             name: imageInfo.name,
-            keywords: imageInfo.keywords ? keywords : deleteField(),
+            keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
         });
     }
 }
@@ -439,16 +439,13 @@ export async function addMedia(name: string, type: "icon" | "photo", keywords: s
             // Upload the file and metadata
             const uploadTask = uploadBytes(resourceRef, file, metadata);
             return uploadTask.then(val => {
-                const trimKeywords = keywords?.map(keyword => {
-                    return keyword.trim();
-                });
                 return getDownloadURL(val.ref).then(url => {
                     const res = {
                         name,
                         type,
                         url,
                         path: val.ref.fullPath,
-                        trimKeywords,
+                        keywords,
                     };
                     const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));

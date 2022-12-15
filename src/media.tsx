@@ -14,8 +14,8 @@ export default function Media({ media, notify, reload }: MediaProps) {
     const [editedImage, setEditedImage] = useState<MediaResource | undefined>(undefined);
     const _save = useCallback((imageInfo: MediaResource, file?: File) => {
         if (!imageInfo._ref && file) {
-            const keywords = imageInfo.keywords?.toString().split(" ");
-            api.addMedia(imageInfo.name, "photo", keywords, file).then(
+            //const keywords = imageInfo.keywords?.map(keyWord => { return keyWord.text} )
+            api.addMedia(imageInfo.name, "photo", imageInfo.keywords, file).then(
                 (m: MediaResource) => {
                     notify.success(`תמונה עלתה בהצלחה`);
                     setEditedImage(undefined)

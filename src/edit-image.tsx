@@ -1,8 +1,9 @@
-import { AddPhotoAlternateOutlined } from "@mui/icons-material";
+import { AddPhotoAlternateOutlined, TagFaces } from "@mui/icons-material";
 import { Button, Grid } from "@mui/material";
 import { useRef, useState } from "react";
 import { Text } from "./elem";
 import { EditImageProps, MediaResource } from "./types";
+import { Tag , WithContext as ReactTags } from 'react-tag-input';
 import ReactCrop, {
     centerCrop,
     makeAspectCrop,
@@ -108,9 +109,21 @@ export default function EditImage(
     const [file, setFile] = useState<File | undefined>(undefined);
     const [dirty, setDirty] = useState<boolean>(false);
     const [name, setName] = useState<string>(imageInfo.name);
-    const [keywords, setKeywords] = useState<string[] | undefined>(imageInfo.keywords);
-
-
+    const [tags, setTags] = useState<Tag[] | undefined>(imageInfo.keywords?.map(k => ({id:k, text:k})));
+    const KeyCodes = {
+        comma: 188,
+        enter: 13,
+      };
+    
+    const delimiters = [KeyCodes.comma, KeyCodes.enter];
+    const handleAddition = (tag: Tag) => {
+       setTags(currentTags => currentTags? [...currentTags, tag] : [tag]);
+    };
+    
+     const handleDelete = (i :number) => {
+       setTags(tags?.filter((tag, index) => index !== i));
+    };
+     
     function onSelectedFile(f: any) {
         if (!f.target.files || f.target.files.length === 0) {
             setPreview(undefined);
@@ -158,7 +171,17 @@ export default function EditImage(
                     onClick={() => inputEl?.current?.click()} />}
             </div>
             <div>מילות חיפוש</div>
-            <input type="text" value={keywords} onChange={(e) => { setKeywords([e.target.value]) }} />
+            <ReactTags
+                tags={tags}
+                delimiters={delimiters}
+                placeholder="הכנס מילה חיפוש"
+                handleDelete={handleDelete}
+                handleAddition={handleAddition}
+                inputFieldPosition="bottom"
+                autocomplete
+            />
+
+  
         </div>
 
         <div className="edit-image-buttons">
@@ -172,14 +195,14 @@ export default function EditImage(
                     getCroppedImg(imgRef.current, crop, name).then((f: File | undefined) => onSave({
                         ...imageInfo,
                         name,
-                        keywords
+                        keywords : tags?.map(t=>t.id),
                     }, f)
                     );
                 } else {
                     onSave({
                         ...imageInfo,
                         name,
-                        keywords
+                        keywords : tags?.map(t=>t.id),
                     })
                 }
             }}>שמור</Button>
