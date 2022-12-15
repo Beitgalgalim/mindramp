@@ -4,15 +4,17 @@ import { LegacyRef, MutableRefObject, useEffect, useRef, useState } from "react"
 import { EventsMain, HBox, Text, VBoxC } from "./elem";
 import { Event } from "./event";
 import EventElement from "./event-element";
-import EventElementNew from "./event-element-new";
+//import EventElementNew from "./event-element-new";
 import { EventsContainer } from "./events-container";
 import EventsNavigation from "./events-navigation";
 import EventsNavigationNew from "./events-navigation-new";
 import Message from "./message";
 import { Design } from "./theme";
 import { AccessibilitySettingsData } from "./types";
-import { DateFormats, organizeEventsForDisplay } from "./utils/date";
+import { DateFormats, getNiceDay, organizeEventsForDisplay } from "./utils/date";
 import * as api from './api'
+
+import "./css/event.css";
 
 
 const scrollInterval = 600;
@@ -52,10 +54,10 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                     setScroll(old => {
                         console.log(old, scrollElem.current && h - scrollElem.current.clientHeight)
                         if (scrollElem.current) {
-                            if (old >h- scrollElem?.current?.clientHeight) {
+                            if (old > h - scrollElem?.current?.clientHeight) {
                                 setScrollingColumn(oldCol => {
                                     console.log("promoteCol", oldCol)
-                                    if(scrollElem.current) scrollElem.current.scrollBy({ behavior: "smooth", top: - old });
+                                    if (scrollElem.current) scrollElem.current.scrollBy({ behavior: "smooth", top: - old });
                                     if (oldCol < 2) return oldCol + 1;
                                     return 0;
                                 })
@@ -114,71 +116,42 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
 
     const columnWidth = 100 / days.length;
 
-    return (<HBox style={{ justifyContent: "space-evenly" }}>
+    return (<div style={{ justifyContent: "space-evenly" }}>
         {days.map((day, dayIndex) =>
-            <EventsMain key={dayIndex} height={height} width={(columnWidth) + "vw"}
-            >
-                {!isTV && (beta ? <EventsNavigationNew
-                    height={"8vh"}
-                    currentNavigation={daysOffset}
-                    onNavigate={(offset: number) => {
-                        if (offset > 0) {
-                            api.logAnalyticEvent("NavButton", {offset});
-                        }
-                        onChangeDaysOffset(offset)
-                    }}
-                    buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
-                    tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
-                    kiosk={kioskMode}
-                /> : 
-                <EventsNavigation
-                    height={"8vh"}
-                    currentNavigation={daysOffset}
-                    onNavigate={(offset: number) => {
-                        if (offset > 0) {
-                            api.logAnalyticEvent("NavButton", {offset});
-                        }
-                        onChangeDaysOffset(offset);
-                    }}
-                    buttons={[{ caption: "היום" }, { caption: "מחר" }, { caption: "מחרתיים" }]}
-                    tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
-                    kiosk={kioskMode}
-                />
-                )}
+            <div className="events-main" key={dayIndex} style={{
+                height: height + "vh", width: columnWidth + "vw"
+            }}>
+
+
+                {!isTV &&
+                    <EventsNavigationNew
+                        height={"8vh"}
+                        currentNavigation={daysOffset}
+                        onNavigate={(offset: number) => {
+                            if (offset > 0) {
+                                api.logAnalyticEvent("NavButton", { offset });
+                            }
+                            onChangeDaysOffset(offset);
+                        }}
+                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent:28, caption: "מחר" }, { widthPercent:28, caption: "מחרתיים" }]}
+                        tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
+                        kiosk={kioskMode}
+                    />
+                }
+                <div className="events-top-seperator" />
 
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
 
-                <EventsContainer
+                <div className="events-scroll-container">
+                    {/* <EventsContainer
                     backgroundColor={beta?"white": "#EBF0F2"}
                     ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}
                     vhHeight={height - 8}
 
-                >
-                    {day.eventGroup?.map((evGroup, i) =>
-                        beta ?
-                            evGroup.map((ev, j, ar) => (<EventElementNew
-                                groupIndex={i}
-                                kioskMode={kioskMode}
-                                tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
-                                key={ev.tag}
-                                itemHeightPixels={Design.singleEventHeight}
-                                accessibilitySettings={accSettings}
-                                showingKeyEvent={false}
-                                width={columnWidth - 1}
-                                single={true} firstInGroup={true} event={ev} now={showDateTime}
-                                audioRef={audioRef}
-                            />))
-                            :
-
-                            <HBox
-                                style={{
-                                    width: "100%",
-                                    overflowX: evGroup.length > 1 ? "auto" : "hidden",
-                                    flexWrap: "nowrap",
-                                }}
-                                key={evGroup.length > 0 ? evGroup[0].tag : i}
-                                itemHeightPixels={evGroup.length > 0 ? Design.multiEventHeight : Design.singleEventHeight}
-                            >
+                > */}
+                    {
+                        day.eventGroup?.map((evGroup, i) => (
+                            <div className={evGroup.length > 1 ? "multiple-events-container" : ""}>
                                 {
                                     evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
                                         groupIndex={i}
@@ -186,22 +159,24 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                                         tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
                                         accessibilitySettings={accSettings}
                                         showingKeyEvent={false}
-                                        width={columnWidth - 1}
-                                        single={ar.length === 1} firstInGroup={j === 0} event={ev} now={showDateTime}
+                                        width={columnWidth}
+                                        single={ar.length === 1}
+                                        firstInGroup={j === 0}
+                                        event={ev}
+                                        now={showDateTime}
                                         audioRef={audioRef}
-
                                     />))
                                 }
-                            </HBox>)
+                            </div>))
                     }
-                    {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
-                        <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
-                        {loading && <CircularProgress size={Design.buttonSize} />}
+                </div>
+                {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
+                    <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
+                    {loading && <CircularProgress size={Design.buttonSize} />}
 
-                    </VBoxC>}
+                </VBoxC>}
 
-                </EventsContainer>
-            </EventsMain>
+            </div>
         )}
-    </HBox>);
+    </div>);
 }

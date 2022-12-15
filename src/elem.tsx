@@ -293,12 +293,14 @@ export function HBox(props: any) {
 }
 
 export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
-    if (!imageSrc)
-        return <PersonOutlined style={{ borderRadius: size / 2, width: size, height: size }} />
+    const style={ borderRadius: size / 2, width: size, height: size };
 
-    return <img src={imageSrc}
+    if (!imageSrc)
+        return <PersonOutlined style={style} />
+
+    return <img src={imageSrc} style={style}
         className={"cover"}
-        alt="" style={{ borderRadius: size / 2, width: size, height: size }} />
+        alt=""  />
 }
 
 export function Spacer(props: any) {
@@ -353,7 +355,8 @@ export function Text(props: any) {
 }
 
 export function EventsMain({ children, height, width, style }: any) {
-    return <div style={{
+    return <div 
+        style={{
         width: width || window.innerWidth,
         height,
         backgroundColor: Colors.EventBackground,
@@ -367,34 +370,15 @@ export function EventsMain({ children, height, width, style }: any) {
 
 
 export function EventProgress(props: any) {
-    const pastColor = "#6F9CB6";
-    const futureColor = "#CCDEE9";
+    const progress = Math.min(props.progress, 1) * 100;
 
-    const progress = Math.min(props.progress, 1);
-
-    return <div style={{ width: "100%", display: "flex", flexDirection: "row", alignItems: "center" }}>
-        <div aria-hidden="true" dir="rtl" style={{
-            width: (progress * 100) + "%",
-            height: 5,
-            borderTopRightRadius: 5,
-            borderBottomRightRadius: 5,
-            backgroundColor: pastColor
-        }} />
-        <Spacer width={2} />
-        <div aria-hidden="true" dir="rtl" style={{
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: pastColor
-        }} />
-        <Spacer width={2} />
-        <div aria-hidden="true" dir="rtl" style={{
-            width: ((1 - progress) * 100) + "%",
-            height: 5,
-            borderTopLeftRadius: 5,
-            borderBottomLeftRadius: 5,
-            backgroundColor: futureColor
-        }} />
+    return <div className="event-progress" 
+    style={{
+        background: progress >= 0 ?
+                    `linear-gradient(to left,#6F9CB6 ${progress}%, white ${progress}% 100%)` :
+                    "CCDEE9",
+    }}>
+        
     </div >
 }
 

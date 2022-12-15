@@ -7,9 +7,11 @@ import { Colors, Design } from "./theme";
 import { CircularProgress } from "@material-ui/core";
 import dayjs from './localDayJs'
 import './css/event.css'
+import genericEventImg from './icons/generic-event.png';
+import personalEventImg from './icons/personal-event.png';
 
 
-import { AccessTime, MicOutlined } from "@mui/icons-material";
+import { AccessTime, MicOutlined, PeopleAlt, VolumeUp } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
 import { AccessibilitySettingsData, UserElementProps } from "./types";
@@ -62,8 +64,8 @@ export default function EventElement({
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
 
-    const eventProgress = Math.abs(now.diff(event.start, "minutes")) <= 1 ? 0 :
-        now.isAfter(event.start) && now.isBefore(event.end) ?
+    const eventProgress = Math.abs(now.diff(event.start, "minutes")) <= 0 ? 0 :
+        now.isAfter(event.start) && (now.isBefore(event.end) || now.isSame(event.end)) ?
             now.diff(event.start, "seconds") / dayjs(event.end).diff(event.start, "seconds") :
             -1;
 
@@ -78,13 +80,10 @@ export default function EventElement({
         }
     }, [])
 
-    const titleAndLocation = <div className="title-location" >
-        <div style={{ fontSize: titleSize + "em" }}>{event.title}</div>
-        {event.location && <Text fontSize={0.7 * titleSize + "em"}>{event.location}</Text>}
-    </div>
-
     const dateTime = event.allDay ? "כל היום" : t1 + " - " + t2 +
         (showingKeyEvent ? " " + getNiceDate(event.date, true) : "");
+
+
 
 
     if (audioRef?.current?.src !== event.audioUrl && playProgress > 0) {
@@ -93,19 +92,19 @@ export default function EventElement({
 
     const isSingle = !!single;
     const widthPixels = window.innerWidth * (width / 100);
+    console.log("eventProgress", eventProgress)
     return (
         <button
-            className={ "event-container" + (kioskMode ? " kiosk-nav" : "")}
+            className={"event-container" + (kioskMode ? " kiosk-nav" : "")}
             tab-marker={tabMarker}
             aria-label={getAccessibleEventText(event)}
             style={{
-
-                width: (isSingle ? widthPixels : widthPixels * 0.7) - 48,
+                width: (isSingle ? widthPixels : widthPixels * 0.5),
                 height: single ? Design.singleEventHeight : Design.multiEventHeight,
                 background: playProgress >= 0 ?
                     `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
                     "white",
-                marginRight: firstInGroup ? 24 : 0,
+                //marginRight: firstInGroup ? 24 : 0,
             }}
             onClick={() => {
                 if (event.unread === true && onSetRead) {
@@ -158,90 +157,63 @@ export default function EventElement({
                     <img src={myEvent} style={{ width: 45, height: 45 }} />
                 </div>
             }
-            <div className="event-title">
-                {
-                    event.imageUrl && <img src={event.imageUrl} style={{
+
+            <div className="title-and-image" style={{ flexDirection: single ? "row-reverse" : "column" }}>
+
+
+                <div className="event-text">
+                    <div style={{ fontSize: titleSize * 1.6 + "em", lineHeight: titleSize * 1.6 + "rem" }}>{event.title}</div>
+                    <Spacer height={15} />
+                    <div style={{ fontSize: hourSize * 1.1 + "em", lineHeight: hourSize * 1.1 + "rem" }}>{dateTime}</div>
+                    <Spacer height={5} />
+                    <Text fontSize={0.9 * titleSize + "em"} lineHeight={0.9 * titleSize + "rem"}>{event.location || ""}</Text>
+                </div>
+                <img src={event.imageUrl ||
+
+                    (event.participants && Object.entries(event.participants).length > 0 ?
+                        personalEventImg : genericEventImg
+                    )} style={{
                         maxWidth: Design.eventImageSize * imageSize,
                         maxHeight: Design.eventImageSize * imageSize,
                         borderRadius: 10,
+                        marginLeft: 15,
                         objectFit: "cover",
-                    }} alt="תמונה"
-                    />
-                }
-                {titleAndLocation}
+                    }} alt="תמונה" />
             </div>
-            <div className="event-footer-right" style={{ lineHeight: hourSize + "em"}}>
-                <div className="event-time">
-                <AccessTime style={{ fontSize: hourSize + "em", color: Colors.EventIcons }} />
-                <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
-                </div>
-                <div className="event-progress">
-                {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
-                </div>
-            </div>
+
+
+            {eventProgress >= 0 && <div className="event-progress"
+                style={{
+                    background: `linear-gradient(to left,#5A6F8E ${eventProgress * 100 + 2}%, #8F9FB7 ${eventProgress * 100 + 2}% 100%)`
+                }} />
+            }
 
             <div className="event-footer-left">
                 {event.guide && <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} />}
+                <Spacer />
                 {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
                 {
                     event.audioUrl &&
-                    <div style={{
-                        height: Design.buttonSize, minWidth: Design.buttonSize,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        color: "white",
-                        backgroundColor: Colors.EventIcons,
-                        borderRadius: Design.buttonSize / 2,
-                    }}>
-                        <MicOutlined style={{
-                            fontSize: Design.buttonSize * .7,
-                        }} />
-                    </div>
+
+                    <VolumeUp style={{
+                        fontSize: Design.buttonSize,
+                    }} />
+                }
+                {event.participants && Object.entries(event.participants).length > 0 &&
+                    <PeopleAlt style={{
+                        fontSize: Design.buttonSize,
+                    }} />
                 }
             </div>
-            {/* <HBoxSB style={{ width: undefined, paddingRight: 10 }}>
-                <VBox style={{ width: "75%" }}>
-                    <HBox style={{ alignItems: "center", width: "100%" }}>
-                        <AccessTime style={{ color: Colors.EventIcons }} />
 
-                        <Spacer />
-                        
-
-                        <Text aria-hidden="true" fontSize={hourSize + "em"}>{dateTime}</Text>
-                    </HBox>
-                    <Spacer />
-                    {eventProgress >= 0 && <EventProgress progress={eventProgress} event={event} />}
-                </VBox>
-                <HBox>
-                    {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
-                    {
-                        event.audioUrl &&
-                        <div style={{
-                            height: Design.buttonSize, minWidth: Design.buttonSize,
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            color: "white",
-                            backgroundColor: Colors.EventIcons,
-                            borderRadius: Design.buttonSize / 2,
-                        }}>
-                            <MicOutlined style={{
-                                fontSize: Design.buttonSize * .7,
-                            }} />
-                        </div>
-                    }
-                    <Spacer />
-                    {isSingle && event.guide ? <Avatar size={Design.avatarSize} imageSrc={event.guide?.icon} /> : isSingle && <Spacer width={Design.avatarSize} />}
-                    <Spacer height={Design.avatarSize} />
-                </HBox>
-            </HBoxSB> */}
 
             {
                 minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
                     <Text>{getBeforeTimeText(minutesBefore)}</Text>
                 </div>
             }
+            {!single && firstInGroup && <div className="event-left-seperator" />}
+            <div className="event-seperator" />
         </button >
     );
 }

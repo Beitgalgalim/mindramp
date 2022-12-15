@@ -219,9 +219,10 @@ function App(props: any) {
 
           <Route path="/*" element={
             kiosk && !delagatedUser ?
-              <Kiosk onSelectUser={(u:string|undefined, avatarUrl?:string)=>{
-                console.log("kiosk open: ", u);
-                setDelegatedUser(u);
+              <Kiosk onSelectUser={(userN:string|undefined, nickN:string|undefined, avatarUrl?:string)=>{
+                console.log("kiosk open: ", userN);
+                setDelegatedUser(userN);
+                setNickName(nickN);
                 setAvatarUrl(avatarUrl);
 
               }} />:

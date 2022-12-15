@@ -52,7 +52,6 @@ export const EventsContainer = forwardRef((props: any, ref:LegacyRef<HTMLDivElem
                 ...props.style,
             }}
         >
-
             {
                 props.autoScroll === true ?
                     props.children.map((child: any) => {

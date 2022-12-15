@@ -12,12 +12,9 @@ export const Design = {
     boxShadowPersonal: "5px 10px 15px rgb(94 238 9 / 93%)",
     popUpboxShadow: "0px 18px 22px rgba(44, 85, 102, 0.26)",
     singleEventHeight: 150,
-    multiEventHeight:205,
+    multiEventHeight:250,
     messageHeight: 110,
-    eventImageSize: 78,
-    avatarSize:50,
-    buttonSize: 50,
-
-
-
+    eventImageSize: 90,
+    avatarSize:40,
+    buttonSize: 40,
 }

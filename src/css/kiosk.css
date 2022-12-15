@@ -1,7 +1,7 @@
 
 .kiosk-container {
     width: 100vw;
-    height: 90vh;
+    
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -15,20 +15,29 @@
     align-items: center;
     padding:20px;
     border: 0;
-    width:250px;
-    height:250px;
     font-size: 30px;
     background-color:lightblue;
     border-radius: 10px;
     margin: 10px;
-    
 }
 
 .kiosk-person:focus {
     outline: 10px solid lightsalmon !important;
 }
 
-.kiosk-person-img {
-    height: 180px;
-    width: 180px;
+.kiosk-btn-enter {
+    margin: 10px;
+    padding:20px;
+    width:25vw;
+    height:80px;
+    font-size: 3em;
+}
+.kiosk-btn-enter:focus {
+    outline: 10px solid lightsalmon !important;
+}
+.kiosk-enter {
+    background-color: mediumspringgreen;
+}
+.kiosk-cancel {
+    background-color: red;
 }

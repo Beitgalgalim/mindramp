@@ -264,7 +264,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
 
     return <div dir={"rtl"} className="userEventsContainer"
-        style={beta ? { backgroundColor: "#0CA1D0" } : {}}
+        
         onKeyDown={(e: any) => {
             if (e.key == "Tab" && !e.shiftKey) {
                 if (kioskMode) beep(200, 50, 40)
@@ -337,7 +337,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     audioRef={audioRef}
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
                     loading={loadingEvents}
-                    height={admin ? 82 : 88}
+                    height={admin ? 79 : 85}
                 /> :
 
                 <Events

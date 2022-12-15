@@ -1,12 +1,14 @@
 import './css/event.css'
-import {Text} from './elem'
+import { Text } from './elem'
 
 
 export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMarker, kiosk }:
-    { caption: string, 
-        subCaption?:string,
-        selected?: boolean, 
-        badge: number, onPress: CallableFunction, tabMarker?: string, kiosk?: boolean }) => {
+    {
+        caption: string,
+        subCaption?: string,
+        selected?: boolean,
+        badge: number, onPress: CallableFunction, tabMarker?: string, kiosk?: boolean
+    }) => {
     return <button className={"event-nav-button" + (kiosk ? " kiosk-nav" : "")}
         tab-marker={tabMarker}
         style={{
@@ -21,7 +23,7 @@ export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMa
             fontSize: "0.8em",
             lineHeight: "2.2em",
             textAlign: "center",
-            margin:5
+            margin: 5
 
         }}
         onClick={(e) => onPress(e)}>
@@ -42,33 +44,41 @@ export const NavButton = ({ caption, subCaption, selected, badge, onPress, tabMa
             >{badge}</div>
         }
         <div className="nav-btn">
-        {caption}
-        
+            {caption}
+
         </div>
     </button>
 }
 
 export default function EventsNavigation(props: any) {
-    return <div style={{
+    return <div
+        style={{
+            // position:"fixed",
+            zIndex:1000, width:"100%"
+        }}
+    ><div style={{
         height: props.height,
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-evenly",
         alignItems: "center",
         width: "100%",
+        backgroundColor:"white",
 
     }}>
-        {
-            props.buttons.map((btn: any, i: number) => (<NavButton
-                kiosk={props.kiosk}
-                key={i}
-                caption={btn.caption}
-                subCaption={btn.subCaption}
-                badge={btn.badge}
-                selected={props.currentNavigation === i}
-                onPress={() => props.onNavigate(i)}
-                tabMarker={i === props.buttons.length - 1 ? props.tabMarker : ""}
-            />))
-        }
+            {
+                props.buttons.map((btn: any, i: number) => (<NavButton
+                    kiosk={props.kiosk}
+                    key={i}
+                    caption={btn.caption}
+                    subCaption={btn.subCaption}
+                    badge={btn.badge}
+                    selected={props.currentNavigation === i}
+                    onPress={() => props.onNavigate(i)}
+                    tabMarker={i === props.buttons.length - 1 ? props.tabMarker : ""}
+                />))
+            }
+        </div>
     </div>
+
 }

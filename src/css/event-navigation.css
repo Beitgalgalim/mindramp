@@ -1,0 +1,42 @@
+.event-nav {
+    border: none;
+    /* min-height: 8vh; */
+    display: flex;
+    flex-direction: row;
+}
+
+.event-nav-button2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: none;
+    background-color: #ffffff;
+    min-height: 5vh;
+    width: 100%;
+    font-size: 0.8em;
+    line-height: 2.2em;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.nav-underline {
+    background-color: #16A5D2;
+    min-height: 5px;
+    border-radius: 2px;
+    width: 60%;
+}
+
+.day-nav-button {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-size: 1.7em;
+    line-height:1.7em;
+}
+
+.horiz-seperator {
+    margin-top: 12px;
+    height: 60%;
+    width: 2px;
+    background-color: #E0E0E0;
+}

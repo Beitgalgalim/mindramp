@@ -91,6 +91,7 @@ export interface UserInfo {
     avatar?: AvatarInfo,
     type: UserType,
     showInKiosk?: boolean;
+    nickName?:string;
     _ref?: DocumentReference
 }
 
@@ -217,7 +218,7 @@ export interface Notifying {
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
 export interface KioskProps {
-    onSelectUser: (user: string | undefined, avatarUrl: string | undefined) => void,
+    onSelectUser: (user: string | undefined, nickName: string | undefined, avatarUrl: string | undefined) => void,
 }
 export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles {
     events: any[],

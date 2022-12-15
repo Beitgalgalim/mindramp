@@ -296,6 +296,7 @@ export function getUsers(): Promise<UserInfo[]> {
         displayName: d.fname + " " + d.lname,
         phone: d.phone,
         type: d.type,
+        nickName: d.nickName,
         showInKiosk: d.showInKiosk,
     })));
 }
@@ -310,6 +311,7 @@ export function getKioskUsers(): Promise<UserInfo[]> {
         _ref: d._ref,
         displayName: d.fname + " " + d.lname,
         phone: d.phone,
+        nickName: d.nickName,
         type: d.type,
     })));
 }

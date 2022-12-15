@@ -51,7 +51,7 @@ export default function EventsHeader({ user,
 }: EventsHeaderProps) {
     const navigate = useNavigate();
 
-    const handleLongPress = useLongPress( () =>  {
+    const handleLongPress = useLongPress(() => {
         onLogoDoubleClicked();
     });
 
@@ -68,7 +68,7 @@ export default function EventsHeader({ user,
         },
         undefined, 350);
 
-    let headerMsg = "הי " + (nickName && nickName.length > 0 ?  nickName : "אורח.ת");
+    let headerMsg = "הי " + (nickName && nickName.length > 0 ? nickName : "אורח.ת");
 
     if (showDateTime) {
         const h = showDateTime.hour();
@@ -90,16 +90,8 @@ export default function EventsHeader({ user,
             notificationOn ?
                 NotificationsActive : NotificationsNone);
 
-    return <div style={{
-        height: height,
-        fontSize: '1.7rem',
-        fontWeight: 900,
-        color: "white",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 15, marginLeft: 15,
-    }}>
+    return <div className="main-header">
+
         {/* {
             // Connected sign
             user && <div style={{
@@ -119,14 +111,16 @@ export default function EventsHeader({ user,
             {newNotificationCount > 0 && !showingNotifications &&
                 <div style={{
                     position: "absolute",
-                    top: 0,
-                    right: 10,
-                    backgroundColor: "red",
-                    fontSize: "0.9rem",
-                    lineHeight: "0.8rem",
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
+                    top: 3,
+                    right: 4,
+                    backgroundColor: "#D00C0C",
+                    color:"white",
+                    fontSize: "15px",
+                    lineHeight: "18px",
+                    fontWeight: 700,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
                     zIndex: 1000,
                 }}
                 >{newNotificationCount}</div>
@@ -143,26 +137,26 @@ export default function EventsHeader({ user,
 
         </button>
 
-        <Text marginTop={17} textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
+        <Text marginTop={30} textAlign={centered ? "center" : "right"}>{headerMsg}</Text>
         <div className="events-header-left">
-        {kioskMode && <button
-            ref={kioskMode && firstElemRef}
-            className={"event-home-btn2 kiosk-nav"}
-            aria-label="חזרה למסך בחירת משתמשים"
-            onClick={() => onGoHome()}>
-            <Home
-                style={{ fontSize: "inherit" }}
-            /></button>}
-        <Spacer width={10} />
-        {kioskMode && avatarUrl && <img src={avatarUrl} className="events-header-avatar" />}
-        <Spacer width={10} />
-        <img
-            {...handleLongPress}
-            className="events-header-logo"
-            src={logo}
-            onClick={handleClick}
-            alt={"לוגו של בית הגלגלים"}
-            aria-hidden="true" />
-</div>
+            {kioskMode && <button
+                ref={kioskMode && firstElemRef}
+                className={"event-home-btn2 kiosk-nav"}
+                aria-label="חזרה למסך בחירת משתמשים"
+                onClick={() => onGoHome()}>
+                <Home
+                    style={{ fontSize: "inherit" }}
+                /></button>}
+            <Spacer width={10} />
+            {kioskMode && avatarUrl && <img src={avatarUrl} className="events-header-avatar" />}
+            <Spacer width={10} />
+            <img
+                {...handleLongPress}
+                className="events-header-logo"
+                src={logo}
+                onClick={handleClick}
+                alt={"לוגו של בית הגלגלים"}
+                aria-hidden="true" />
+        </div>
     </div>
 }

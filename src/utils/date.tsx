@@ -449,10 +449,24 @@ export function organizeEventsForDisplay(events: any[]): any[][] {
     return eventsArray;
 }
 
+export const day2shortDayName: { [id: number]: string; } = {
+    0: "א׳",
+    1: "ב׳",
+    2: "ג׳",
+    3: "ד׳",
+    4: "ה׳",
+    5: "ו׳",
+    6: "ש׳",
+};
+
+export function getNiceDay(day:number) {
+    return  " יום " + day2shortDayName[day];
+}
+
 
 export function getNiceDate(d: string | Dayjs, withDay: boolean = false) {
     const djs = dayjs(d);
-    let res = withDay ? "יום א׳ " : "";
+    let res = withDay ? getNiceDay(djs.day()) : "";
     res += MonthMap[djs.format("MMM")] + "-" + djs.format("DD");
     if (djs.year() !== dayjs().year()) {
         res += ", " + djs.year();

@@ -36,30 +36,40 @@ function hashForColor(name: string) {
 
 const KioskPerson = forwardRef((props: any, ref: LegacyRef<HTMLButtonElement>) => {
     return <button ref={ref} className="kiosk-person"
+        tabIndex={props.ignoreTab?-1:undefined}
         tab-marker={props["tab-marker"]}
-        onClick={props.onPress} style={{ backgroundColor: hashForColor(props.name) }}
+        onClick={props.onPress}
+        style={{ backgroundColor: hashForColor(props.name), 
+            width: props.width, height: props.height}}
         onKeyDown={props.onKeyDown}
     >
-        {props.icon ? <img className="kiosk-person-img" src={props.icon} /> : <PersonOutlined style={{ fontSize: 180 }} />}
+        {props.icon ? <img style={{ width: props.width - 70, height: props.height - 70 }} src={props.icon} /> :
+            <PersonOutlined style={{ fontSize: props.height - 70 }} />}
         <span>{props.name}</span>
     </button>
 });
 
+function getNick(user:UserInfo) {
+    return user.nickName ? user.nickName : (user.fname + " " + user.lname);
+}
 
 export default function Kiosk({ onSelectUser }:
     KioskProps) {
     const [users, setUsers] = useState<UserInfo[]>([]);
-    const [focusIndex, setFocusIndex] = useState(0);
     const firstElemRef = useRef<HTMLButtonElement>(null);
+    const [userAboutToEnter, setUserAboutToEnter] = useState<UserInfo | null>(null);
 
     useEffect(() => {
         api.getKioskUsers().then((users: UserInfo[]) => setUsers(users));
     }, []);
-    const maxTabIndex = users.length - 1;
+
+    const usersArray = userAboutToEnter ? [userAboutToEnter] : users;
+
+    const userEnterScale = Math.min(window.innerWidth,  window.innerHeight );
 
     return <div >
         <h1>יומן בית הגלגלים - בחירת משתמשים</h1>
-        <div className="kiosk-container"
+        <div
             onKeyDown={(e: any) => {
                 if (e.key == "Tab" && !e.shiftKey) {
                     beep(200, 50, 40)
@@ -70,14 +80,34 @@ export default function Kiosk({ onSelectUser }:
                 }
             }}
         >
-            {users.map((user, i) => (<KioskPerson
-                ref={i === 0 ? firstElemRef : undefined}
-                key={i}
-                name={user.fname + " " + user.lname}
-                icon={user.avatar?.url}
-                onPress={() => onSelectUser(user._ref?.id, user.avatar?.url)}
-                tab-marker={i === users.length-1?"last":""}
-            />))}
+            {userAboutToEnter && <button className="kiosk-btn-enter kiosk-enter"
+            onClick={() => onSelectUser(userAboutToEnter._ref?.id, getNick(userAboutToEnter), userAboutToEnter.avatar?.url)}
+            ref={firstElemRef} >הכנס</button>}
+            {userAboutToEnter &&
+                <button className="kiosk-btn-enter kiosk-cancel"onClick={() => setUserAboutToEnter(null)} tab-marker="last">בטל</button>
+            }
+            <div className="kiosk-container" style={{height:userAboutToEnter?"70vh":"90vh"}}>
+                {usersArray.map((user, i) => {
+
+                    return (<KioskPerson
+                        ref={i === 0 && !userAboutToEnter ? firstElemRef : undefined}
+                        key={i}
+                        ignoreTab={!!userAboutToEnter}
+                        width={userAboutToEnter ? userEnterScale * .7 : 250}
+                        height={userAboutToEnter ? userEnterScale * .7 : 250}
+                        name={getNick(user)}
+                        icon={user.avatar?.url}
+                        //onPress={() => onSelectUser(user._ref?.id, nickName, user.avatar?.url)}
+                        onPress={() => {
+                            setUserAboutToEnter(user)
+                            setTimeout(()=>firstElemRef.current?.focus(),50);
+                        }}
+                        tab-marker={i === users.length - 1 ? "last" : ""}
+                    />)
+                })}
+            </div>
+
+            
         </div>
     </div >
 }
