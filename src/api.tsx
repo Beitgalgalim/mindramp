@@ -439,13 +439,16 @@ export async function addMedia(name: string, type: "icon" | "photo", keywords: s
             // Upload the file and metadata
             const uploadTask = uploadBytes(resourceRef, file, metadata);
             return uploadTask.then(val => {
+                const trimKeywords = keywords?.map(keyword => {
+                    return keyword.trim();
+                });
                 return getDownloadURL(val.ref).then(url => {
                     const res = {
                         name,
                         type,
                         url,
                         path: val.ref.fullPath,
-                        keywords,
+                        trimKeywords,
                     };
                     const docRef = doc(collection(db, Collections.MEDIA_COLLECTION));
                     return setDoc(docRef, res).then(() => ({ _ref: docRef, ...res }));
