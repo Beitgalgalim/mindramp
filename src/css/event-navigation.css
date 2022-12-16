@@ -19,6 +19,16 @@
     margin-right: 10px;
 }
 
+
+
+@media (max-width: 380px) {
+    .event-nav-button2 {
+        font-size: 0.6em;
+        line-height: 2em;
+    }
+  }
+  
+
 .nav-underline {
     background-color: #16A5D2;
     min-height: 5px;

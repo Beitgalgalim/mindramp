@@ -147,7 +147,7 @@ export default function EditImage(
     return <div className="edit-image-container">
 
         <input className="custom-file-input" type="file" ref={inputEl} style={{ visibility: "hidden" }} onChange={onSelectedFile} />
-        <h1>{imageInfo._ref ? "עדכון תמונה" : "הוספת תמונה"}</h1>
+        <h2>{imageInfo._ref ? "עדכון תמונה" : "הוספת תמונה"}</h2>
         <div className="edit-image-fields-container">
             <div>שם</div>
             <input type="text" value={name} onChange={(e) => { setName(e.target.value) }} />
@@ -174,7 +174,7 @@ export default function EditImage(
             <ReactTags
                 tags={tags}
                 delimiters={delimiters}
-                placeholder="הכנס מילה חיפוש"
+                placeholder="הכנס מילת חיפוש ולחץ אנטר"
                 handleDelete={handleDelete}
                 handleAddition={handleAddition}
                 inputFieldPosition="bottom"

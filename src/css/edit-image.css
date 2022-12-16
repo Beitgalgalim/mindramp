@@ -4,6 +4,9 @@
     height:100%;
 }
 
+.edit-image-container > h2 {
+  margin:0;
+}
 
 .edit-image-fields-container {
     width:90%;
@@ -32,7 +35,13 @@
 }
 
 
-/* Styles for the input */
+/* Styles for the tag input */
+.ReactTags__tags {
+  flex-direction: column;
+  display: flex;
+  align-items: flex-start;
+}
+
 .ReactTags__tagInput {
     width: 200px;
     border-radius: 2px;

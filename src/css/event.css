@@ -204,11 +204,15 @@
     justify-items: flex-end;
     left: 15px;
     height: 90px;
+    -webkit-touch-callout: none !important; 
+    -webkit-user-select: none !important; 
+    user-select: none !important;
 }
 
 .events-header-logo {
     height: 60px;
     border-radius: 7px;
+    
 }
 
 .events-header-avatar {

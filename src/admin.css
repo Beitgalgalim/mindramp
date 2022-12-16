@@ -1,3 +1,7 @@
+.custom-file-input {
+height:0;
+}
+
 .custom-file-input::-webkit-file-upload-button {
     visibility: hidden;
   }
