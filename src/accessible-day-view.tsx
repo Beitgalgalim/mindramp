@@ -116,7 +116,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
 
     const columnWidth = 100 / days.length;
 
-    return (<div style={{ justifyContent: "space-evenly" }}>
+    return (<div className="events-main-container">
         {days.map((day, dayIndex) =>
             <div className="events-main" key={dayIndex} style={{
                 height: height + "vh", width: columnWidth + "vw"
@@ -141,6 +141,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 <div className="events-top-seperator" />
 
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
+                {isTV && <div className="events-top-seperator" />}
 
                 <div className="events-scroll-container">
                     {/* <EventsContainer
@@ -170,6 +171,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                             </div>))
                     }
                 </div>
+                {isTV && <div className="event-day-seperator" />}
                 {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
                     <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
                     {loading && <CircularProgress size={Design.buttonSize} />}
