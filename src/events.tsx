@@ -1,22 +1,22 @@
 import { useEffect, useState, useRef } from 'react';
 import * as api from './api'
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import { DateSelectArg, EventChangeArg, EventClickArg, EventMountArg } from '@fullcalendar/common'
-import { CircularProgress, Fab } from '@mui/material'
-import { Add, NavigateBefore, NavigateNext, Today, VolumeUp } from '@mui/icons-material';
+import { Checkbox, CircularProgress, Fab } from '@mui/material'
+import { Add, FilterAlt, NavigateBefore, NavigateNext, Today, VolumeUp } from '@mui/icons-material';
 import { Event } from './event';
 
 import EditEvent from './edit-event';
 import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
 import dayjs from 'dayjs';
 import { EditEventArgs, EventsProps, Roles } from './types';
-import { Text } from './elem';
-import EventsNavigation from './events-navigation';
+import { FloatingAdd, Modal, Spacer } from './elem';
 import './css/events.css';
 import { hasRole } from './utils/common';
+import { PeoplePicker, Person } from './people-picker';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+
+import { DateSelectArg, EventApi, EventChangeArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
 
 /*
 "title":"סדנת ציור",
@@ -41,22 +41,30 @@ function getMarkerIcon(d: string) {
     </svg>)
 }
 
+function hashUser(email:string) {
+    let hash = 5381;
+    for (var i = 0; i < email.length; i++) {
+        hash = ((hash << 5) + hash) + email.charCodeAt(i); /* hash * 33 + c */
+    }
+    return Math.abs(hash) % 17 + 1;
+}
 
-function renderOneEvent(event: any): any {
+
+function renderOneEvent(event:EventApi): any {
     const recurrent = event.extendedProps.recurrent;
     const instanceStatus = event.extendedProps?.instanceStatus;
-    const hasParticipants = event.extendedProps?.participants && Object.entries(event.extendedProps.participants).length > 0;
-    const t1 = dayjs(event.start).format(DateFormats.TIME)
-    const t2 = dayjs(event.end).format(DateFormats.TIME)
+    // const hasParticipants = event.extendedProps?.participants && Object.entries(event.extendedProps.participants).length > 0;
+    // const t1 = dayjs(event.start).format(DateFormats.TIME)
+    // const t2 = dayjs(event.end).format(DateFormats.TIME)
     const high = dayjs(event.end).diff(event.start, "minute") > 59;
 
     return <div className={high ? "fc-one-event-container-high" : "fc-one-event-container"}>
-        {!event.allDay && <div className="fc-one-event-time">
+        {/* {!event.allDay && <div className="fc-one-event-time">
             <div>
                 {t2 + "-" + t1}
             </div>
         </div>
-        }
+        } */}
         <div className="fc-one-event-title">
             {event.title}
         </div>
@@ -67,9 +75,9 @@ function renderOneEvent(event: any): any {
                     "M3 2 L24 23 L23 24 L2 3zM21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z" :
                     "M21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z")
             }
-            {hasParticipants && getMarkerIcon("M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z")}
-            {event.extendedProps.audioUrl && <VolumeUp />}
-            {event.extendedProps.imageUrl && <img src={event.extendedProps.imageUrl} />}
+            {/* {hasParticipants && getMarkerIcon("M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z")} */}
+            {/* {event.extendedProps.audioUrl && <VolumeUp />} */}
+            {/* {event.extendedProps.imageUrl && <img src={event.extendedProps.imageUrl} />} */}
         </div>
     </div>;
 }
@@ -78,9 +86,12 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     onChangeDaysOffset,
     onRemoveEvents,
     onUpsertEvent,
+    filter,
+    setFilter,
 
 }: EventsProps) {
     const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
+    const [showFilter, setShowFilter] = useState<boolean>(false);
     const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
     // const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
 
@@ -228,7 +239,6 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     const currDate = refDate.add(daysOffset, "day");
     const dayInWeek = currDate.day();
 
-
     const days = ["א", "ב", "ג", "ד", "ה", "ו", "ש",];
 
     console.log("render", daysOffset, dayInWeek)
@@ -256,33 +266,74 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             <div className="events-nav-btn" onClick={() => onChangeDaysOffset(daysOffset + 7)}><NavigateNext /></div>
             <div className="events-nav-btn" onClick={() => onChangeDaysOffset(daysOffset - 7)}><NavigateBefore /></div>
             <div className="events-nav-btn" onClick={() => onChangeDaysOffset(0)}><Today /></div>
+            <div className="events-nav-btn" onClick={() => setShowFilter(old => !old)}>
+                <FilterAlt />
+                {(!filter.publicEvents || !filter.allPrivateEvents) && <div className={"filter-red-dot"} />}
+            </div>
         </div>
 
+
+        {showFilter && <Modal className="filter-container" onClose={() => setShowFilter(false)}>
+            <div className="filter-title">סינון</div>
+            <div className="filter-item filter-checkbox-all"><Checkbox checked={filter.publicEvents} onChange={(e) => setFilter({ ...filter, publicEvents: e.target.checked })} />יומן ציבורי</div>
+            <div className="filter-item filter-checkbox-private"><Checkbox checked={filter.allPrivateEvents} onChange={(e) => setFilter({ ...filter, allPrivateEvents: e.target.checked })} />כל היומנים הפרטיים</div>
+            {!filter.allPrivateEvents && <div className="filter-users-container">
+                <div className="filter-select-users" >
+                    <label>בחר יומנים</label>
+                    <PeoplePicker
+                        users={users.filter(user => !filter.users.some(u => u == user._ref?.id))}
+                        placeholder={"הוספת מוזמנים"}
+
+                        onSelect={(userId: string) => {
+
+                            //!e.target.checked 
+                            const newUsers = [...filter.users, userId];
+
+                            setFilter({
+                                publicEvents: filter.publicEvents,
+                                allPrivateEvents: filter.allPrivateEvents,
+                                users: newUsers
+                            })
+                        }}
+                    />
+                </div>
+                <Spacer height={15}/>
+
+                <div className="filter-selected-users">
+                    {filter.users.map((userId, i) => {
+                        const user = users.find(user => user._ref?.id == userId);
+                        if (user) {
+                            return (<Person
+                                key={i}
+                                width={170}
+                                icon={user.avatar?.url}
+                                name={user.displayName}
+                                onRemove={() => {
+                                    setFilter({
+                                        ...filter,
+                                        users: filter.users.filter(u => u !== userId),
+                                    })
+                                }}
+                            />)
+                        }
+                    })}
+
+                </div>
+            </div>}
+        </Modal>}
 
 
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!newEvent && hasRole(roles, Roles.Editor) && <Fab
-                color="primary" aria-label="הוסף"
-                variant="circular"
-                style={{
-                    position: "fixed",
-                    bottom: 60,
-                    right: 50,
-                    zIndex: 1000,
-                    borderRadius: '50%',
-                    backgroundColor:'#0CA1D0'
-                }}
-            >
-                <Add onClick={() => { setNewEvent({ event: getNewEvent() }) }} />
-            </Fab>
+        {!newEvent && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setNewEvent({ event: getNewEvent() }) } />
+        
         }
 
         <FullCalendar
 
             ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            plugins={[dayGridPlugin, timeGridPlugin]}
             headerToolbar={false}
             dayHeaders={false}
             buttonText={{
@@ -292,7 +343,8 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                 day: 'יום',
                 list: 'רשימה'
             }}
-            allDayText="הודעה"
+            //allDayText="הודעה"
+            allDayContent={<div />}
 
             initialView='timeGridDay'
             height={"100%"}
@@ -304,19 +356,32 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             dayMaxEvents={true}
             weekends={true}
             weekText={"שבוע"}
-            // slotMinTime={"06:00:00"}
-            // slotMaxTime={"22:00:00"}
+            slotMinTime={"06:00:00"}
+            slotMaxTime={"22:00:00"}
+            scrollTime={"07:00:00"}
             initialEvents={[]}
             handleWindowResize={true}
             select={handleDateSelect}
             selectLongPressDelay={300}
             eventChange={eventChanged}
-            eventClick={(arg) => eventPressed(arg)}
-            eventContent={(args: any) => {
-                //console.log(JSON.stringify(args.event))
-                return renderOneEvent(args.event);
-            }}
+            eventClick={eventPressed}
+            eventContent={(arg:EventContentArg) => renderOneEvent(arg.event)}
+            eventClassNames={(args:EventContentArg) => {
+                const participants =  args.event.extendedProps?.participants
+                if (!participants) {
+                    return "public-event";
+                }
+                const participantsArr = Object.entries(participants);
 
+                if (participantsArr.length > 1){
+                    return "multi-user-event";
+                }
+                if (participantsArr.length == 1) {
+                    const hash = hashUser((participantsArr[0][1] as any).email);
+                    return "p" + hash;
+                }
+                return "public-event";
+            }}
         />
         {
             newEvent && <EditEvent

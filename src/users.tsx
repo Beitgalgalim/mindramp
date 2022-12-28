@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { UsersProps, UserInfo, UserType, RoleRecord } from './types';
 import * as api from "./api";
 
-import { Text, HBox, Spacer } from './elem';
+import { Text, HBox, Spacer, FloatingAdd } from './elem';
 import { Fab, Grid } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import EditUser from './edit-users';
@@ -50,20 +50,8 @@ export default function Users({ user, users, notify, reload, roles }: UsersProps
 
         <div className="users-container">
             {editedUser && <EditUser user={user} userInfo={editedUser} afterSaved={afterEdit} notify={notify} roles={roles} roleRecords={roleRecords}  />}
-            {!editedUser &&
-                <Fab
-                    color="primary" aria-label="הוסף"
-                    variant="circular"
-                    style={{
-                        position: "fixed",
-                        bottom: 60,
-                        right: 50,
-                        zIndex: 1000,
-                        borderRadius: '50%'
-                    }}
-                >
-                    <Add onClick={() => { setEditedUser(getNewUserInfo()) }} />
-                </Fab>
+            {!editedUser && <FloatingAdd onClick={() => setEditedUser(getNewUserInfo())} />
+               
             }
             <div className="users-search">
                 <div>חיפוש</div>

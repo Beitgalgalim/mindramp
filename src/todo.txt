@@ -1,5 +1,27 @@
 Backlog:
 -------
+V- color per type (public, personal, multi-user)
+V- remove redundent info in events
+V- check complexity of width of events
+V- filter checkbox to match the color
+V- filter: space between combo to selected
+V- time range
+V- pixel per 30 min
+V- icon 
+V- z-index 100 to bottom buttons
+- edit event
+V- icons from figma
+
+
+
+
+
+
+
+
+
+
+-------
 - Performance Optimizeation: 
   - Cache Admins in functions? 
 

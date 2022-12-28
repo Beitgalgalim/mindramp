@@ -13,20 +13,15 @@ import { Tag } from 'react-tag-input';
 import {
     getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
-    createUserWithEmailAndPassword
 } from "firebase/auth";
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebase/analytics";
 
-
-import { EventApi } from '@fullcalendar/common'
 
 import { firebaseConfig } from './config';
 import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, Roles, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
-import { sortEvents } from './utils/date';
 
 let app: FirebaseApp;
 let db: Firestore;

@@ -17,7 +17,7 @@
 
 .userEventsContainer {
   /* background-color: #0078C3;  */
-  
+
   font-size: 24px;
   font-family: Assistant;
   font-weight: 700;
@@ -29,21 +29,33 @@
   background-color: #EBF0F2;
 }
 
+.admin-pane-btn-seperator {
+  position: fixed;
+  z-index:100;
+  bottom: 78px;
+  width:100%;
+  height: 8px;
+  background: linear-gradient(180deg, rgba(217, 217, 217, 0.55) 0%, rgba(191, 209, 255, 0.33) 25%, rgba(217, 217, 217, 0) 100%);
+  transform: rotate(180deg);
+}
+
 .admin-pane-btn-container {
   position: fixed;
-  bottom:0;
-  height: 6vh;
+  bottom: 0;
+  height: 70px;
   padding-bottom: 2px;
   display: flex;
-  width:100vw;
+  width: 100vw;
   flex-direction: row;
   align-items: center;
   justify-content: space-evenly;
   background-color: white;
-  padding-top:5px;
+  padding-top: 5px;
   border-top: lightgrey;
   border-top-width: 5;
   border-top-style: solid;
+  z-index: 100;
+
 }
 
 .admin-pane-btn {
@@ -51,21 +63,28 @@
   flex-direction: column;
   align-items: center;
   margin-top: 2px;
-  padding-left:10px;
-  padding-right:10px;
+  padding-left: 10px;
+  padding-right: 10px;
   height: 6vh;
-  
-}
-.selected {
-  background-color: lightgrey;
-  border-radius: 10px;
+
 }
 
-.admin-pane-btn > text {
+.selected {
+  /* background-color: lightgrey; */
+  border-radius: 10px;
+  color: blue;
+}
+
+.admin-pane-btn>text {
   font-size: 15px;
-  color: black;
 }
-.admin-pane-btn > svg {
-  font-size: 20 px;
-  color: black;
+
+.admin-pane-btn>svg {
+  
+  color: #89929E;
 }
+
+.selected > svg {
+  fill: #1AA7D4;
+}
+

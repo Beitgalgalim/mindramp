@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
+import { AccessibilitySettingsData, EventFilter, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import Events from './events';
 
@@ -16,28 +16,39 @@ import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
 import { beep, hasRole } from "./utils/common";
 import { AccessibleView } from "./accessible-day-view";
-import { CalendarMonth, FilterAlt, FilterAltOff, PeopleAlt, Photo } from "@mui/icons-material";
+//import { CalendarMonth, FilterAlt, FilterAltOff, PeopleAlt, Photo } from "@mui/icons-material";
 import Users from "./users";
 import Media from "./media";
 import NotificationView from "./notification-view";
 
+import { ReactComponent as CalBtn } from './icons/cal2.svg'
+import { ReactComponent as UsersBtn } from './icons/users.svg'
+import { ReactComponent as MediaBtn } from './icons/media.svg'
 
-const FilterEvents = ({
-    onSelect,
-    on
-}: any) => (
-    <div onClick={() => onSelect(!on)}
-        style={{ position: "absolute", right: 5, bottom: 5, fontSize: 35, width: 35, outline: on ? "2px solid black" : "" }}>
-        <FilterAlt />
-    </div>);
+import { Voicemail } from "@mui/icons-material";
+
+// const FilterEvents = ({
+//     onSelect,
+//     on
+// }: any) => (
+//     <div onClick={() => onSelect(!on)}
+//         style={{ position: "absolute", right: 5, bottom: 5, fontSize: 35, width: 35, outline: on ? "2px solid black" : "" }}>
+//         <FilterAlt />
+//     </div>);
+
+function XOR(a: boolean, b: boolean) {
+    return (a || b) && !(a && b);
+}
 
 
 const AdminBtn = ({
     selected,
     onPress,
     caption,
+    style,
     icon }: any) => (<div
-        className={"admin-pane-btn" + (selected ? " selected" : "")}
+        className={"admin-pane-btn " + (selected ? " selected" : "")}
+        style={style}
         onClick={() => onPress()} >
         {icon}
         <text>{caption}</text>
@@ -59,9 +70,9 @@ function messageEquals(msg1: MessageInfo, msg2: MessageInfo): boolean {
 }
 
 
-export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode, avatarUrl, 
+export default function UserEvents({ connected, notify, user, roles, isGuide, kioskMode, avatarUrl,
     notificationOn, onNotificationOnChange, onNotificationToken,
-    onPushNotification, onGoHome , nickName, onNickNameUpdate}: UserEventsProps) {
+    onPushNotification, onGoHome, nickName, onNickNameUpdate }: UserEventsProps) {
     const [rawEvents, setRawEvents] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
     const [etag, setEtag] = useState<string | undefined>();
@@ -81,7 +92,13 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [daysOffset, setDaysOffset] = useState<number>(0);
     const [manageUsers, setManageUsers] = useState(false);
     const [manageMedia, setManageMedia] = useState(false);
-    const [filter, setFilter] = useState(false);
+    const [filter, setFilter] = useLocalStorageState<EventFilter>("eventsFilter", {
+        defaultValue: {
+            users: [],
+            publicEvents: true,
+            allPrivateEvents: true,
+        }
+    });
     const [accessibleCalendar, setAccessibleCalendar] = useLocalStorageState<boolean | undefined>("accessibleCalendar", { defaultValue: undefined });
 
     const [media, setMedia] = useState<MediaResource[]>([]);
@@ -151,13 +168,19 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
 
     useEffect(() => {
         if (initialized) {
-            const participantKey = Event.getParticipantKey(user || undefined);
-            const evts = filter ? rawEvents.filter(re =>
-                !re.participants ||
-                Object.entries(re.participants).length == 0 ||
-                re.participants[participantKey] ||
-                re.guide?.email === user
-            ) : rawEvents;
+            //const participantKey = Event.getParticipantKey(user || undefined);
+            const evts = rawEvents
+                // public events
+                .filter(re => {
+                    if (!re.participants || Object.entries(re.participants).length == 0) {
+                        return filter.publicEvents;
+                    }
+                    if (filter.allPrivateEvents) return true;
+
+                    return (filter.users.some(u =>
+                        re.participants[Event.getParticipantKey(u)] !== undefined || re.guide?.email === u))
+                })
+
             const sortedEvents = sortEvents(explodeEvents(evts, 30, 30, startDate));
 
             const keyEvts = sortedEvents.filter(ev => ev.keyEvent).filter(ev => ev.end >= refDate.format(DateFormats.DATE));
@@ -230,11 +253,11 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             user={user}
             onSaveNickName={(newNick) => {
                 user && api.updateNickName(user, newNick).then(
-                    ()=>{
+                    () => {
                         notify.success("כינוי עודכן בהצלחה");
                         onNickNameUpdate(newNick);
                     },
-                    (err)=>notify.error(err)
+                    (err) => notify.error(err)
                 )
                 // setNickName((prev: any) => {
                 //     let newValue = { ...prev };
@@ -264,7 +287,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
 
     return <div dir={"rtl"} className="userEventsContainer"
-        
+
         onKeyDown={(e: any) => {
             if (e.key == "Tab" && !e.shiftKey) {
                 if (kioskMode) beep(200, 50, 40)
@@ -353,47 +376,50 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}
                     roles={roles}
+                    filter={filter}
+                    setFilter={setFilter}
 
                 />)
             }
         </div>
 
-
-
-        {admin && <div className="admin-pane-btn-container">
-
-            <FilterEvents onSelect={(on: boolean) => setFilter(on)} on={filter} />
-
-            <AdminBtn
-                onPress={() => {
-                    setManageMedia(false);
-                    setManageUsers(false);
-                    setShowNotifications(false);
-                }}
-                icon={<CalendarMonth />}
-                selected={!manageMedia && !manageUsers}
-                caption="יומן"
-            />
-            <AdminBtn
-                onPress={() => {
-                    setManageMedia(false);
-                    setManageUsers(true)
-                    setShowNotifications(false);
-                }}
-                icon={<PeopleAlt />}
-                selected={manageUsers}
-                caption="משתמשים"
-            />
-            <AdminBtn
-                onPress={() => {
-                    setManageMedia(true);
-                    setManageUsers(false)
-                    setShowNotifications(false);
-                }}
-                icon={<Photo />}
-                selected={manageMedia}
-                caption="מדיה"
-            />
+        {admin && <div>
+            <div className="admin-pane-btn-seperator" />
+            <div className="admin-pane-btn-container">
+                <AdminBtn
+                    onPress={() => {
+                        setManageMedia(false);
+                        setManageUsers(false);
+                        setShowNotifications(false);
+                    }}
+                    //icon={<img src={calPng} />}
+                    //style={{backgroundImage:`url(${calPng})`}}
+                    icon={<CalBtn/>}
+                    selected={!manageMedia && !manageUsers}
+                    caption="יומן"
+                />
+                <AdminBtn
+                    onPress={() => {
+                        setManageMedia(false);
+                        setManageUsers(true)
+                        setShowNotifications(false);
+                    }}
+                    //icon={<img src={usersPng} />}
+                    icon={<UsersBtn/>}
+                    selected={manageUsers}
+                    caption="משתמשים"
+                />
+                <AdminBtn
+                    onPress={() => {
+                        setManageMedia(true);
+                        setManageUsers(false)
+                        setShowNotifications(false);
+                    }}
+                    icon={<MediaBtn/>}
+                    selected={manageMedia}
+                    caption="מדיה"
+                />
+            </div>
         </div>
         }
     </div >

@@ -217,6 +217,13 @@ export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 export interface KioskProps {
     onSelectUser: (user: string | undefined, nickName: string | undefined, avatarUrl: string | undefined) => void,
 }
+
+export interface EventFilter {
+    users:string[],
+    publicEvents: boolean,
+    allPrivateEvents: boolean,
+}
+
 export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles {
     events: any[],
     beta: boolean,
@@ -226,6 +233,8 @@ export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles 
     onChangeDaysOffset: (newOffet: number) => void,
     onRemoveEvents: (id: string[]) => void,
     onUpsertEvent: (event: Event, event2?:Event) => void,
+    setFilter: (filter:EventFilter)=>void,
+    filter: EventFilter
 }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying, WithRoles {
     isGuide: boolean,

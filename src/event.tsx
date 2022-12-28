@@ -2,7 +2,7 @@ import {
     deleteField, DocumentReference
 
 } from 'firebase/firestore/lite';
-import { EventApi } from '@fullcalendar/common'
+import { EventApi } from '@fullcalendar/core'
 import { DateFormats } from "./utils/date";
 import dayjs from './localDayJs'
 import { MapLike } from "typescript";

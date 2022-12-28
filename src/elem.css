@@ -17,3 +17,16 @@
   overflow-y: auto;
 }
 
+.modal-outer {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(191, 209, 255, 0.3);
+  z-index: 1000;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top:5px;
+  left:5px;
+}

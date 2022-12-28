@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { MediaProps, MediaResource } from './types';
 
-import { Text, HBox, HBoxC, Spacer } from './elem';
+import { Text, HBox, HBoxC, Spacer, FloatingAdd } from './elem';
 import * as api from './api'
 import "./admin.css"
 import EditImage from './edit-image';
@@ -72,20 +72,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
         backgroundColor:"white"
 
     }}>
-        <Fab
-            color="primary" aria-label="הוסף"
-            variant="circular"
-            style={{
-                position: "fixed",
-                bottom: 60,
-                right: 50,
-                zIndex: 1000,
-                borderRadius: '50%'
-            }}
-        >
-            <Add onClick={() => { setEditedImage(getNewImageInfo()) }} />
-        </Fab>
-
+        <FloatingAdd onClick={() => setEditedImage(getNewImageInfo()) } />
 
         {media.map((m, i) => (
             <div className="media-entry" key={i} onClick={() => setEditedImage(m)}>

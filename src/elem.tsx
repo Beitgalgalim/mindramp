@@ -1,7 +1,7 @@
 
 import React, { MutableRefObject, ReactElement, useEffect } from 'react';
 import {
-    Box, ListItemButton, TextField, Typography, InputAdornment,
+    Box, ListItemButton, TextField, Typography, InputAdornment, Fab,
 } from '@mui/material';
 import {
     ClickAwayListener,
@@ -16,8 +16,7 @@ import {
 } from "@material-ui/core/styles";
 
 import { FixedSizeList } from 'react-window';
-import { ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
-import { EventMountArg } from '@fullcalendar/common'
+import { Add, Close, ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
 import "./elem.css";
@@ -293,14 +292,14 @@ export function HBox(props: any) {
 }
 
 export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | undefined }) {
-    const style={ borderRadius: size / 2, width: size, height: size };
+    const style = { borderRadius: size / 2, width: size, height: size };
 
     if (!imageSrc)
         return <PersonOutlined style={style} />
 
     return <img src={imageSrc} style={style}
         className={"cover"}
-        alt=""  />
+        alt="" />
 }
 
 export function Spacer(props: any) {
@@ -355,15 +354,15 @@ export function Text(props: any) {
 }
 
 export function EventsMain({ children, height, width, style }: any) {
-    return <div 
+    return <div
         style={{
-        width: width || window.innerWidth,
-        height,
-        backgroundColor: Colors.EventBackground,
-        borderTopRightRadius: 40,
-        borderTopLeftRadius: 40,
-        ...style
-    }}>
+            width: width || window.innerWidth,
+            height,
+            backgroundColor: Colors.EventBackground,
+            borderTopRightRadius: 40,
+            borderTopLeftRadius: 40,
+            ...style
+        }}>
         {children}
     </div>
 }
@@ -372,13 +371,13 @@ export function EventsMain({ children, height, width, style }: any) {
 export function EventProgress(props: any) {
     const progress = Math.min(props.progress, 1) * 100;
 
-    return <div className="event-progress" 
-    style={{
-        background: progress >= 0 ?
-                    `linear-gradient(to left,#6F9CB6 ${progress}%, white ${progress}% 100%)` :
-                    "CCDEE9",
-    }}>
-        
+    return <div className="event-progress"
+        style={{
+            background: progress >= 0 ?
+                `linear-gradient(to left,#6F9CB6 ${progress}%, white ${progress}% 100%)` :
+                "CCDEE9",
+        }}>
+
     </div >
 }
 
@@ -462,47 +461,36 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour, vertical, 
     );
 }
 
-export function addRepeatIcon(info: EventMountArg) {
-    let timeDiv = info.el.getElementsByClassName("fc-event-time");
-    if (timeDiv.length > 0) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', "svg");
-        svg.setAttributeNS(null, "viewBox", "0 0 24 24");
-        svg.setAttributeNS(null, "width", "15");
-        svg.setAttributeNS(null, "height", "15");
-        svg.setAttributeNS(null, "fill", "white");
-        svg.style.display = "block";
-        const path = document.createElementNS('http://www.w3.org/2000/svg', "path");
-        if (info.event.extendedProps?.instanceStatus) {
-            path.setAttribute("d", "M3 2 L24 23 L23 24 L2 3zM21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z");
-        } else {
-            path.setAttribute("d", "M21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z");
-        }
-        svg.appendChild(path)
 
-        timeDiv[0].prepend(svg);
-        timeDiv[0].setAttribute("style", "display: flex; flex-direction: row;")
-    }
+
+export function Modal(props: any) {
+    return <div className="modal-outer" onClick={props.onClose}>
+        <div className={props.className} style={{ position: "absolute" }} onClick={(evt) => evt.stopPropagation()}>
+            <div className="modal-close-btn" onClick={props.onClose}><Close /> </div>
+            {props.children}
+        </div>
+    </div>
 }
 
-export function addParticipantsIcon(info: EventMountArg) {
-    let mainDiv = info.el.getElementsByClassName("fc-event-main");
-    if (mainDiv.length > 0) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', "svg");
-        svg.setAttributeNS(null, "viewBox", "0 0 24 24");
-        svg.setAttributeNS(null, "width", "15");
-        svg.setAttributeNS(null, "height", "15");
-        svg.setAttributeNS(null, "fill", "white");
-        svg.style.display = "block";
-        svg.style.position = "absolute";
-        svg.style.left = "0";
-        const path = document.createElementNS('http://www.w3.org/2000/svg', "path");
-        path.setAttribute("d", "M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z");
-        svg.appendChild(path)
-
-        mainDiv[0].append(svg);
-        mainDiv[0].setAttribute("style", "display: flex; flex-direction: row;")
-    }
+export function FloatingAdd(props: any) {
+    return <Fab
+        color="primary" aria-label="הוסף"
+        variant="circular"
+        style={{
+            position: "fixed",
+            bottom: 100,
+            left: 30,
+            width: 80,
+            height: 80,
+            zIndex: 1000,
+            borderRadius: '50%',
+            backgroundColor: '#1AA7D4'
+        }}
+    >
+        <Add style={{ fontSize: 80 }} onClick={props.onClick} />
+    </Fab>
 }
+
 
 
 export const Style = {
