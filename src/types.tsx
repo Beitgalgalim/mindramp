@@ -335,6 +335,7 @@ export interface DatePickerProps {
     setEnd: setDateFunc;
     style?: any;
     allDay?: boolean;
+    readOnly?: boolean;
 }
 
 export interface RecorderProps {

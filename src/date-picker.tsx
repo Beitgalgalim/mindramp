@@ -47,7 +47,7 @@ function calcDiff(d: string, newTime: string) {
 }
 
 
-export default function MyDatePicker({ start, end, setStart, setEnd, style, allDay }: DatePickerProps) {
+export default function MyDatePicker({ start, end, setStart, setEnd, style, allDay, readOnly }: DatePickerProps) {
     const [invalidStart, setInvalidStart] = useState(false);
     const [invalidEnd, setInvalidEnd] = useState(false);
 
@@ -93,7 +93,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
         }
         // since all day events don't show the next day, add one day
 
-        setEnd(dayjs(newEndDate).add(1,"days").format(DateFormats.DATE_TIME));
+        setEnd(dayjs(newEndDate).add(1, "days").format(DateFormats.DATE_TIME));
     }
 
     return (
@@ -101,7 +101,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
             <div style={{ width: "40%" }}>
                 <ReactDatePicker
                     ref={dateStartPicker}
-
+                    disabled={!!readOnly}
                     selected={dayjs(start).toDate()}
                     onChange={(d: Date) => setDate(dayjs(d).format(DateFormats.DATE))}
                     shouldCloseOnSelect={true}
@@ -109,7 +109,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
                         <ClickableText
                             showExpand={true}
                             onClick={() => dateStartPicker?.current?.setOpen(true)}>
-
+                            readOnly={readOnly}
                         </ClickableText>
                     }
                     dateFormat={"dd/MM/yy"}
@@ -127,7 +127,9 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
                     onChange={(newValue: string) => {
                         setStartTime(newValue)
                     }}
-                    invalid={invalidStart} />
+                    invalid={invalidStart}
+                    readOnly={readOnly}
+                />
                 <Spacer width={"2%"} />
                 -
                 <Spacer width={"2%"} />
@@ -139,15 +141,17 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
                     value={getTime(end)} items={getTimes(dayjs(start))}
                     onSelect={(newValue: string) => setEndTime(newValue)}
                     onChange={(newValue: string) => setEndTime(newValue)}
-                    invalid={invalidEnd} />
+                    invalid={invalidEnd}
+                    readOnly={readOnly}
+                />
 
             </Fragment>}
             {allDay && <div style={{ width: "40%" }}>
                 <ReactDatePicker
                     ref={dateEndPicker}
 
-                    selected={dayjs(end).subtract(1, "days").isAfter(start)?
-                        dayjs(end).subtract(1, "days").toDate():
+                    selected={dayjs(end).subtract(1, "days").isAfter(start) ?
+                        dayjs(end).subtract(1, "days").toDate() :
                         dayjs(start).toDate()
                     }
                     onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE))}
@@ -156,6 +160,7 @@ export default function MyDatePicker({ start, end, setStart, setEnd, style, allD
                         <ClickableText
                             showExpand={true}
                             onClick={() => dateEndPicker?.current?.setOpen(true)}
+                            readOnly={readOnly}
                         />
                     }
                     dateFormat={"dd/MM/yy"}

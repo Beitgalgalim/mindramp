@@ -1,7 +1,7 @@
 
 import React, { MutableRefObject, ReactElement, useEffect } from 'react';
 import {
-    Box, ListItemButton, TextField, Typography, InputAdornment, Fab,
+    Box, ListItemButton, TextField, Typography, InputAdornment, Fab, IconButton,
 } from '@mui/material';
 import {
     ClickAwayListener,
@@ -16,7 +16,7 @@ import {
 } from "@material-ui/core/styles";
 
 import { FixedSizeList } from 'react-window';
-import { Add, Close, ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
+import { Add, Close, ExpandLess, ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
 import "./elem.css";
@@ -66,7 +66,8 @@ export function VBox(props: any) {
 }
 
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
-    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand } = props;
+    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand, setOpen, open, readOnly } = props;
+    console.log("ClickableText", readOnly)
     return (
         //<HBoxC onClick={onClick} style={{ width: "100%" }}>
         <TextField
@@ -86,11 +87,23 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
             type="text"
             ref={ref}
             InputProps={{
-                readOnly: props.readOnly === true,
+                disabled: readOnly,
                 startAdornment: showExpand && (
-                    <InputAdornment position="end" sx={{ margin: 0 }}>
-                        <ExpandMore />
-                    </InputAdornment>
+                    // <InputAdornment position="end" sx={{ margin: 0 }} onClick={()=>setOpen || setOpen(!open)}>
+                    //     <ExpandMore />
+                    // </InputAdornment>
+                    <InputAdornment position="end">
+                        <IconButton
+                            edge="end"
+                            onClick={(e) => {
+                                console.log("click", open)
+                                if (setOpen) setOpen(!open)
+                                e.stopPropagation()
+                            }}
+                        >
+                            {open ? <ExpandLess /> : <ExpandMore />}
+                        </IconButton>
+                    </InputAdornment >
                 ),
             }}
             onMouseOver={(e) => {
@@ -143,7 +156,7 @@ export interface ComboBoxProps {
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth } = props;
+    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth, readOnly } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
@@ -238,9 +251,11 @@ export function ComboBox(props: ComboBoxProps) {
                         }
                     }
                     }
+                    setOpen={(o:boolean)=>setOpen(o)}
+                    open={open}
                     placeholder={placeholder}
                     value={localValue}
-                    readOnly={props.readOnly === true}
+                    readOnly={readOnly}
                     invalid={props.invalid}
                     onArrowUp={() => console.log("up")}
                     onArrowDown={() => console.log("down")}

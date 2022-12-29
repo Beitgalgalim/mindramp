@@ -17,6 +17,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 
 import { DateSelectArg, EventApi, EventChangeArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
+import EventDetails from './event-details';
 
 /*
 "title":"סדנת ציור",
@@ -41,7 +42,7 @@ function getMarkerIcon(d: string) {
     </svg>)
 }
 
-function hashUser(email:string) {
+function hashUser(email: string) {
     let hash = 5381;
     for (var i = 0; i < email.length; i++) {
         hash = ((hash << 5) + hash) + email.charCodeAt(i); /* hash * 33 + c */
@@ -50,7 +51,7 @@ function hashUser(email:string) {
 }
 
 
-function renderOneEvent(event:EventApi): any {
+function renderOneEvent(event: EventApi): any {
     const recurrent = event.extendedProps.recurrent;
     const instanceStatus = event.extendedProps?.instanceStatus;
     // const hasParticipants = event.extendedProps?.participants && Object.entries(event.extendedProps.participants).length > 0;
@@ -94,6 +95,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
     // const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
+    const [showEventDetails, setShowEventDetails] = useState<Event | undefined>(undefined);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
@@ -131,8 +133,11 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         calendarApi?.gotoDate(newDate.format(DateFormats.DATE_TIME));
     }, [calendarApi, daysOffset]);
 
-    const eventPressed = (eventClickArg: EventClickArg) => {
-        const evt = Event.fromEventAny(eventClickArg.event);
+    const eventPressed = (evt: Event) => {
+        setShowEventDetails(evt);
+    }
+
+    const editEvent = (evt: Event) => {
         if (evt.recurrent?.gid) {
             if (evt.instanceStatus) {
                 setNewEvent({ event: evt, editAllSeries: false });
@@ -144,13 +149,17 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                         callback: () => {
                             const evt2 = events.find(e => e.id === evt.recurrent?.gid);
                             if (evt) {
+                                setShowEventDetails(undefined);
                                 setNewEvent({ event: evt2, editAllSeries: true })
                             }
                         }
                     },
                     {
                         caption: "מופע נוכחי",
-                        callback: () => setNewEvent({ event: evt, editAllSeries: false })
+                        callback: () => {
+                            setNewEvent({ event: evt, editAllSeries: false });
+                            setShowEventDetails(undefined);
+                        }
                     },
                     {
                         caption: "בטל",
@@ -160,6 +169,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             }
         } else {
             setNewEvent({ event: evt });
+            setShowEventDetails(undefined);
         }
     }
 
@@ -273,6 +283,10 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         </div>
 
 
+        {showEventDetails && <Modal className="event-details-container" onClose={() => setShowEventDetails(undefined)}>
+            <EventDetails event={showEventDetails} onClose={() => setShowEventDetails(undefined)} onEdit={editEvent} />
+        </Modal>}
+
         {showFilter && <Modal className="filter-container" onClose={() => setShowFilter(false)}>
             <div className="filter-title">סינון</div>
             <div className="filter-item filter-checkbox-all"><Checkbox checked={filter.publicEvents} onChange={(e) => setFilter({ ...filter, publicEvents: e.target.checked })} />יומן ציבורי</div>
@@ -297,7 +311,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                         }}
                     />
                 </div>
-                <Spacer height={15}/>
+                <Spacer height={15} />
 
                 <div className="filter-selected-users">
                     {filter.users.map((userId, i) => {
@@ -326,9 +340,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!newEvent && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setNewEvent({ event: getNewEvent() }) } />
-        
-        }
+        {!newEvent && !showEventDetails && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setNewEvent({ event: getNewEvent() })} />}
 
         <FullCalendar
 
@@ -364,16 +376,16 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             select={handleDateSelect}
             selectLongPressDelay={300}
             eventChange={eventChanged}
-            eventClick={eventPressed}
-            eventContent={(arg:EventContentArg) => renderOneEvent(arg.event)}
-            eventClassNames={(args:EventContentArg) => {
-                const participants =  args.event.extendedProps?.participants
+            eventClick={(args: EventClickArg) => eventPressed(Event.fromEventAny(args.event))}
+            eventContent={(arg: EventContentArg) => renderOneEvent(arg.event)}
+            eventClassNames={(args: EventContentArg) => {
+                const participants = args.event.extendedProps?.participants
                 if (!participants) {
                     return "public-event";
                 }
                 const participantsArr = Object.entries(participants);
 
-                if (participantsArr.length > 1){
+                if (participantsArr.length > 1) {
                     return "multi-user-event";
                 }
                 if (participantsArr.length == 1) {

@@ -33,7 +33,7 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
         itemHeight={35}
         listWidth={150}
         placeholder={placeholder}
-        hideExpandButton={true}
+        hideExpandButton={false}
         onSelect={(key: string) => {
             onSelect(key);
         }}

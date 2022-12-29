@@ -89,10 +89,22 @@
     background-color: #1AA7D4;
 }
 
+.event-details-container {
+    position: absolute;
+    top: 5vh;
+    left: 5vw;
+    height: 70vh;
+    width: 90vw;
+    background-color: white;
+    z-index: 500;
+    border-radius: 15px;
+    overflow-y: scroll;
+}
+
 .filter-container {
     position: absolute;
     top: 20vh;
-    left: 10vw;
+    left: 15vw;
     height: 45vh;
     width: 70vw;
     background-color: lightgray;
@@ -125,11 +137,11 @@
 }
 
 .filter-checkbox-all .MuiCheckbox-colorPrimary{
-    color:#30686B;
+    color:#516E8F;
 }
 
 .filter-checkbox-all .Mui-checked {
-    color:#30686B !important;
+    color:#516E8F !important;
 }
 
 .filter-checkbox-private .MuiCheckbox-colorPrimary{
