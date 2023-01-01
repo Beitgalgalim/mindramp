@@ -1,15 +1,10 @@
 import { useCallback, useState, useEffect } from 'react';
-import Avatar from '@material-ui/core/Avatar';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import Link from '@material-ui/core/Link';
 import { ConstructionOutlined, LockOutlined } from '@mui/icons-material';
-import Typography from '@material-ui/core/Typography';
 
 import * as api from './api'
 import { LoginProps } from './types';
 import { HBox, Spacer, VBoxC } from './elem';
-import { Checkbox, FormControlLabel } from '@mui/material';
+import { Checkbox, FormControlLabel, Link , Button, TextField, Typography, Avatar} from '@mui/material';
 //import SelfRegistration from './self-registeration';
 
 

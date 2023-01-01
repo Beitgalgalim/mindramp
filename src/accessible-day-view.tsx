@@ -133,7 +133,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                             }
                             onChangeDaysOffset(offset);
                         }}
-                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent:28, caption: "מחר" }, { widthPercent:28, caption: "מחרתיים" }]}
+                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent:26, caption: "מחר" }, { widthPercent:30, caption: "מחרתיים" }]}
                         tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
                         kiosk={kioskMode}
                     />

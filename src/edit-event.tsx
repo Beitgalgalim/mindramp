@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button, FormControlLabel, FormGroup, getDialogActionsUtilityClass, TextField } from '@mui/material';
 import { HBoxC, HBoxSB, HBox, VBox, Text, Spacer, ComboBox } from './elem';
+import dayjs from './localDayJs';
 
 
 import { EditEventsProps, MediaResource, UserInfo, UserType, LocationInfo } from './types';
 import { AccessTime, AddPhotoAlternateOutlined, Clear, Image, Mic, Notes, NotificationsActive, PeopleOutline, PersonOutlined, Repeat, Title, LocationOn } from '@mui/icons-material';
-import { Checkbox, Grid } from '@material-ui/core';
-import MyDatePicker from './date-picker';
+import { Checkbox, Grid } from '@mui/material';
 import MediaPicker from './media-picker';
 // import { DocumentReference } from '@firebase/firestore/dist/lite';
 import { Event, EventFrequency, Participant, RecurrentEventFieldKeyValue, ReminderFieldKeyValue, LocationsFieldKeyValue } from './event';
@@ -15,7 +15,8 @@ import { getLocations } from './api'
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import { Colors, Design } from './theme';
 import { PeoplePicker, Person } from './people-picker';
-import { removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
+import { DateJSParseFormats, removeTime, replaceDatePreserveTime2, toMidNight } from './utils/date';
+import NewDatePicker from './newDatePicker';
 
 
 export default function EditEvent(
@@ -173,12 +174,13 @@ export default function EditEvent(
                         <AccessTime />
                     </Grid>
                     <Grid container item xs={10} spacing={2} >
-                        <VBox style={{ alignItems: 'flex-start' }}>
-                            <MyDatePicker
+                        <VBox style={{ alignItems: 'flex-start', width:"100%" }}>
+                            <NewDatePicker
+                                
                                 start={start} end={end}
                                 setStart={(d) => setStart(d)}
                                 setEnd={(d) => setEnd(d)}
-                                allDay={allDay}
+                                pickTimes={!allDay}
                             />
                             <FormGroup>
                                 <FormControlLabel control={<Checkbox
@@ -252,7 +254,7 @@ export default function EditEvent(
                             <HBox>
                                 <Spacer width={20} />
                                 {guide && <Person
-                                    width={150}
+                                    width={120}
                                     name={guide.displayName}
                                     icon={guide.icon}
                                     onRemove={() => setGuide(null)}
@@ -292,7 +294,7 @@ export default function EditEvent(
                             <HBox style={{ maxWidth: "80vw", flexWrap: "wrap" }}>
                                 <Spacer width={20} />
                                 {participants && Event.getParticipantsAsArray(participants).map((g: Participant, i) => <Person key={i}
-                                    width={170}
+                                    width={150}
                                     icon={g.icon}
                                     name={g.displayName}
                                     available={g.uidata?.available}
@@ -320,7 +322,7 @@ export default function EditEvent(
                     <Grid container item xs={5} spacing={2} >
                         <VBox style={{ alignItems: "flex-start" }}>
                             <ComboBox
-                                style={{
+                                listStyle={{
                                     width: 150,
                                     textAlign: "right",
                                     //backgroundColor: "white",
@@ -394,7 +396,7 @@ export default function EditEvent(
                     <Grid container item xs={6} spacing={2} >
 
                         {recurrent && <ComboBox
-                            style={{ width: "30vw", textAlign: "right" }}
+                            listStyle={{ width: "30vw", textAlign: "right" }}
                             listWidth={150}
                             value={recurrent}
                             items={RecurrentEventFieldKeyValue}
@@ -431,7 +433,7 @@ export default function EditEvent(
 
 
                         {(reminderMinutes || reminderMinutes === 0) && <ComboBox
-                            style={{ width: "40vw", textAlign: "right" }}
+                           listStyle={{ width: "40vw", textAlign: "right" }}
 
                             value={reminderMinutes || reminderMinutes === 0 ? reminderMinutes + "" : ""}
                             items={ReminderFieldKeyValue}
@@ -455,11 +457,11 @@ export default function EditEvent(
 
                     const recurrentField = inEvent.event.recurrent || {};
                     recurrentField.freq = recurrent || "none";
-                    let endDateTime = end;
-                    let startDateTime = start;
+                    let endDateTime;
+                    let startDateTime = start
                     if (!allDay) {
                         // only allDay event can span over multiple dates
-                        endDateTime = replaceDatePreserveTime2(end, start);
+                        endDateTime = replaceDatePreserveTime2(end, dayjs(start, DateJSParseFormats));
                     } else {
                         startDateTime = removeTime(start);
                         endDateTime = removeTime(end);

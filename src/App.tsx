@@ -2,12 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './css/App.css';
-import { Alert, AlertTitle } from '@mui/material'
+import { Alert, AlertTitle, Collapse } from '@mui/material'
 import { Text, Spacer, HBoxC } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import { Collapse } from '@material-ui/core';
 import { Button, LinearProgress } from '@mui/material';
 
 import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, Role, UserType } from './types';
@@ -183,7 +182,7 @@ function App(props: any) {
       {msg && <Collapse in={msg.open} timeout={500} style={{
         position: 'fixed',
         display: "flex", justifyContent: "center",
-        top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000
+        top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 10000
       }} >
         <Alert style={{
           fontSize: 22,

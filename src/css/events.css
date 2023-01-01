@@ -82,8 +82,8 @@
     position: fixed;
     bottom: 90px;
     left: 50px;
-    width:80px;
-    height:80px;
+    width: 80px;
+    height: 80px;
     z-index: 100;
     border-radius: 50%;
     background-color: #1AA7D4;
@@ -91,14 +91,13 @@
 
 .event-details-container {
     position: absolute;
-    top: 5vh;
+    top: 10vh;
     left: 5vw;
-    height: 70vh;
+    height: 80vh;
     width: 90vw;
     background-color: white;
     z-index: 500;
-    border-radius: 15px;
-    overflow-y: scroll;
+    overflow-y: visible;
 }
 
 .filter-container {
@@ -116,18 +115,19 @@
 
 .filter-red-dot {
     position: absolute;
-    top:0;
-    right:-5px;
+    top: 0;
+    right: -5px;
     width: 15px;
-    height:15px;
+    height: 15px;
     background-color: red;
     border-radius: 50%;
 }
 
-.filter-title{
+.filter-title {
     font-size: 2em;
     padding-bottom: 20px;
 }
+
 .filter-item {
     width: 100%;
     display: flex;
@@ -136,20 +136,20 @@
     padding-inline-start: 20px;
 }
 
-.filter-checkbox-all .MuiCheckbox-colorPrimary{
-    color:#516E8F;
+.filter-checkbox-all .MuiCheckbox-colorPrimary {
+    color: #516E8F;
 }
 
 .filter-checkbox-all .Mui-checked {
-    color:#516E8F !important;
+    color: #516E8F !important;
 }
 
-.filter-checkbox-private .MuiCheckbox-colorPrimary{
-    color:#D16969;
+.filter-checkbox-private .MuiCheckbox-colorPrimary {
+    color: #D16969;
 }
 
 .filter-checkbox-private .Mui-checked {
-    color:#D16969 !important;
+    color: #D16969 !important;
 }
 
 
@@ -193,4 +193,3 @@
 .fc-daygrid-day-events {
     height: 0 !important
 }
-

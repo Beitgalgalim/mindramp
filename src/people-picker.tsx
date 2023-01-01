@@ -24,7 +24,7 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 
     return <ComboBox
         items={items}
-        style={{
+        listStyle={{
             width: 150,
             textAlign: "right",
             //backgroundColor: "white",
@@ -59,8 +59,8 @@ export function Person({ name, icon, hover, selected, onRemove, flat, width, ava
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "flex-start",
-            backgroundColor: hover ? "#F5F5F5" : selected ? "#E1E1E1" : "white",
-            height: 35,
+            backgroundColor: hover ? "#F5F5F5" : selected ? "#E1E1E1" : "#D9D9D9",
+            height: 25,
             borderRadius: flat ? 0 : 15,
             margin: 2,
         }}>

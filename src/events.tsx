@@ -174,7 +174,6 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     }
 
     const handleDateSelect = (dateSelectArgs: DateSelectArg) => {
-        console.log("click", dateSelectArgs.startStr);
         if (dateSelectArgs.view.type === 'timeGridDay' || dateSelectArgs.view.type === 'timeGridWeek') {
             setNewEvent({
                 event: Event.fromAny({

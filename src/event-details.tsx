@@ -1,8 +1,7 @@
 import { Spacer } from './elem';
 
 
-import { Checkbox } from '@material-ui/core';
-import MyDatePicker from './date-picker';
+import { Checkbox } from '@mui/material';
 import { ReactComponent as UsersIcon } from './icons/users.svg'
 import { ReactComponent as GuideIcon } from './icons/guide.svg'
 import { ReactComponent as LocationIcon } from './icons/location.svg'
@@ -13,9 +12,13 @@ import { Event, RecurrentEventFieldKeyValue, ReminderFieldKeyValue } from './eve
 
 import AudioPlayerRecorder from './AudioRecorderPlayer';
 import {  Person } from './people-picker';
+import NewDatePicker from './newDatePicker';
 
 
 export default function EventDetails({ event, onClose, onEdit }: { event: Event, onClose:()=>void, onEdit:(event:Event)=>void }) {
+    
+
+
     return <div className="ev-details">
         <div className="ev-details-line ev-aligntop">
             <img className="ev-details-img" src={event.imageUrl} alt="אין"/>
@@ -26,13 +29,12 @@ export default function EventDetails({ event, onClose, onEdit }: { event: Event,
 
 
         <div className="ev-details-line">
-            <MyDatePicker
-                style={{width:"80%", textAlign:"start"}}
+            <NewDatePicker
+                //style={{width:"80%", textAlign:"start"}}
                 start={event.start} end={event.end}
                 setStart={(d) => { }}
                 setEnd={(d) => { }}
-
-                allDay={event.allDay}
+                pickTimes={!event.allDay}
                 readOnly={true}
             />
         </div>

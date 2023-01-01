@@ -47,7 +47,7 @@ export default function AccessibilitySettings({
                     min={1}
                     max={1.9}
                     step={0.1}
-                    isRtl={false}
+                    //isRtl={false}
                     value={accSettings ? accSettings.imageSize : 0}
                     onChange={(ev, value) => {
                         console.log("image size", value)
@@ -67,7 +67,7 @@ export default function AccessibilitySettings({
                     min={1}
                     max={2}
                     step={0.1}
-                    isRtl={false}
+                    //isRtl={false}
                     value={accSettings ? accSettings.titleSize : 0}
                     onChange={(ev, value) => {
                         onSettingsChange({
@@ -83,10 +83,14 @@ export default function AccessibilitySettings({
             </div>
             <div className="slider">
                 <Slider
+                    defaultValue={30}
+                    marks
+
+
                     min={1}
                     max={2}
                     step={0.1}
-                    isRtl={false}
+                    //isRtl={false}
                     value={accSettings ? accSettings.hoursSize : 0}
                     onChange={(ev, value) => {
                         onSettingsChange({

@@ -4,7 +4,7 @@ import { VBox, Text, Spacer, HBox, HBoxSB, EventProgress, Avatar, UnRead } from 
 import { DateFormats, getBeforeTimeText, getLengthText, getNiceDate, timeRange2Text } from "./utils/date";
 import { Event } from './event';
 import { Colors, Design } from "./theme";
-import { CircularProgress } from "@material-ui/core";
+import { CircularProgress } from "@mui/material";
 import dayjs from './localDayJs'
 import './css/event-new.css'
 import { AccessTime, MicOutlined, PeopleAlt, VolumeUp } from "@mui/icons-material";

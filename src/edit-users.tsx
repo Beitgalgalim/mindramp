@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, Fragment } from 'react';
 import { UserType, UserInfo } from './types';
 import * as api from "./api";
 import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
-import { CircularProgress } from '@material-ui/core';
+import { CircularProgress } from '@mui/material';
 import { hasRole } from './utils/common';
 
 export default function EditUser({ user, userInfo, afterSaved, notify, roles, roleRecords }: EditUserProps) {
@@ -298,7 +298,7 @@ export default function EditUser({ user, userInfo, afterSaved, notify, roles, ro
                 </Grid>
                 <Grid item xs={6} style={{ alignItems: "right" }}>
                     <ComboBox
-                        style={{
+                        listStyle={{
                             width: 150,
                             textAlign: "right",
                         }}

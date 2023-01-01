@@ -338,6 +338,18 @@ export interface DatePickerProps {
     readOnly?: boolean;
 }
 
+export interface NewDatePickerProps {
+    start: string;
+    end: string;
+    setStart: setDateFunc;
+    setEnd: setDateFunc;
+    style?: any;
+    pickTimes?: boolean;
+    isDateRange?:boolean;
+    readOnly?: boolean;
+}
+
+
 export interface RecorderProps {
     notify?: Notify;
     buttonSize?: number;

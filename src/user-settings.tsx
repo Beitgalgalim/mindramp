@@ -5,15 +5,15 @@ import { UserSettingsProps } from "./types";
 import { HBox, HBoxC, HBoxSB, Spacer, Text, VBoxC } from "./elem";
 import { Checkbox, TextField } from '@mui/material';
 import { useState, Fragment, useCallback, useEffect } from "react";
-import { Button, makeStyles } from "@material-ui/core";
+import { Button } from "@mui/material";
 import * as api from './api'
 import { Check, Close, Logout, Notifications, SettingsAccessibility } from "@mui/icons-material";
 
-const useStyles = makeStyles(() => ({
-    buttonIcon: {
-        margin: 10,
-    }
-}));
+// const useStyles = makeStyles(() => ({
+//     buttonIcon: {
+//         margin: 10,
+//     }
+// }));
 
 export default function UserSettings({ onSaveNickName, onClose, user, notify, nickName,
     notificationOn,
@@ -76,7 +76,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
     // };
     // };
 
-    const classes = useStyles();
+    //const classes = useStyles();
 
     return <div style={{ padding: 20 }}>
         <HBox style={{ justifyContent: "flex-end" }}>
@@ -150,7 +150,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                                 //disabled={!notificationOn}
                                 variant="outlined"
                                 endIcon={<Notifications />}
-                                classes={{ endIcon: classes.buttonIcon }}
+                                //classes={{ endIcon: classes.buttonIcon }}
                                 onClick={() => api.testNotif().then(() => {
                                     notify.success("בקשה לשליחת התראת בדיקה נשלחה, ההתראה תגיע בדקה הקרובה")
                                 }).catch(e => {
@@ -162,7 +162,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                             <Button
                                 variant="outlined"
                                 endIcon={<Logout />}
-                                classes={{ endIcon: classes.buttonIcon }}
+                                //classes={{ endIcon: classes.buttonIcon }}
                                 onClick={() => {
                                     api.logout();
                                 }}>התנתקות</Button>

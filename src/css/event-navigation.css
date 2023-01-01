@@ -21,7 +21,7 @@
 
 
 
-@media (max-width: 380px) {
+@media (max-width: 400px) {
     .event-nav-button2 {
         font-size: 0.6em;
         line-height: 2em;
@@ -40,7 +40,7 @@
     display: flex;
     flex-direction: column;
     margin: 0;
-    font-size: 1.7em;
+    font-size: 1.5em;
     line-height:1.7em;
 }
 

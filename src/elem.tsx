@@ -1,45 +1,29 @@
-
-import React, { MutableRefObject, ReactElement, useEffect } from 'react';
+import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import {
     Box, ListItemButton, TextField, Typography, InputAdornment, Fab, IconButton,
+
 } from '@mui/material';
+import { createPortal } from 'react-dom';
+
 import {
     ClickAwayListener,
     ListItem,
     ListItemText,
-    Popper,
-    Tab
-} from '@material-ui/core';
 
-import {
-    withStyles
-} from "@material-ui/core/styles";
+    Tab
+} from '@mui/material';
+
 
 import { FixedSizeList } from 'react-window';
-import { Add, Close, ExpandLess, ExpandMore, PersonOutlined, StarRate } from '@mui/icons-material';
+import { Add, Close, ExpandLess, ExpandMore, PersonOutlined, South, StarRate } from '@mui/icons-material';
 import { HourLinesProps } from './types';
 import { Colors } from './theme';
 import "./elem.css";
+import { PickersPopper } from '@mui/x-date-pickers/internals/components/PickersPopper';
 
 
 
-export const ResponsiveTab = withStyles({
-    root: {
-        minWidth: 70,
-    },
-    selected: {
 
-    },
-    textColorPrimary: {
-        color: "#737373",
-        fontSize: 25,
-        '&$selected': {
-            backgroundColor: "#A8A8A8",
-            //FontFace: "bold",
-            //textDecoration: "underline"
-        }
-    },
-})(Tab);
 
 export function Card(props: any) {
     return <Box style={{
@@ -65,47 +49,64 @@ export function VBox(props: any) {
     </Box>
 }
 
+
+
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
-    const { onClick, onChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand, setOpen, open, readOnly } = props;
-    console.log("ClickableText", readOnly)
-    return (
-        //<HBoxC onClick={onClick} style={{ width: "100%" }}>
-        <TextField
-            hiddenLabel
-            variant="standard"
-            onClick={onClick}
-            style={{
-                //width: "80%",
-                height: 30,
-                borderWidth: 0,
-                //borderRadius: 4,
-                backgroundColor: (invalid ? "red" : "transparent"),
-                direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
-                textAlign: props.style?.textAlign || "left"
-            }}
-            placeholder={placeholder}
+
+    const { textValue, style, onClick, onValueChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand, setOpen, open, readOnly } = props;
+    const handleExpand = useCallback((e) => {
+        if (setOpen) setOpen(!open)
+        e.stopPropagation();
+    }, [open]);
+
+
+    return (<div className="clickable-container">
+        <input
+            className="clickable-input"
             type="text"
             ref={ref}
-            InputProps={{
-                disabled: readOnly,
-                startAdornment: showExpand && (
-                    // <InputAdornment position="end" sx={{ margin: 0 }} onClick={()=>setOpen || setOpen(!open)}>
-                    //     <ExpandMore />
-                    // </InputAdornment>
-                    <InputAdornment position="end">
-                        <IconButton
-                            edge="end"
-                            onClick={(e) => {
-                                console.log("click", open)
-                                if (setOpen) setOpen(!open)
-                                e.stopPropagation()
-                            }}
-                        >
-                            {open ? <ExpandLess /> : <ExpandMore />}
-                        </IconButton>
-                    </InputAdornment >
-                ),
+            onClick={onClick}
+            style={{
+                borderWidth: 0,
+                backgroundColor: (invalid ? "red" : "transparent"),
+                ...style,
             }}
+
+            // inputProps={{
+            //     classes:{input: classes.inputCenter}
+            // }}
+            // sx={{
+            //     //width: "80%",
+            //     height: 30,
+            //     borderWidth: 0,
+            //     //borderRadius: 4,
+            //     //backgroundColor: (invalid ? "red" : "transparent"),
+            //     backgroundColor: "green",
+            //     textAlign:"center"
+            // }}
+            placeholder={placeholder}
+            // InputProps={{
+            //     disabled: readOnly,
+            //     sx: {
+            //         style: {
+            //             direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
+            //             textAlign: "center", //props.style?.textAlign || "left"
+            //         }
+            //     },
+            //     startAdornment: showExpand && (
+            //         <InputAdornment position="end">
+            //             <IconButton
+            //                 edge="end"
+            //                 onClick={(e) => {
+            //                     if (setOpen) setOpen(!open)
+            //                     e.stopPropagation()
+            //                 }}
+            //             >
+            //                 {open ? <ExpandLess /> : <ExpandMore />}
+            //             </IconButton>
+            //         </InputAdornment >
+            //     ),
+            //}}
             onMouseOver={(e) => {
                 if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
                 //e.currentTarget.style.textDecoration = "underline";
@@ -122,9 +123,14 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
                 }
             }}
             onBlur={(e) => onBlur && onBlur(e.currentTarget.value)}
-            onChange={(e) => onChange && onChange(e.currentTarget.value)}
-            value={props.value}
+            onChange={(e) => onValueChange && onValueChange(e.currentTarget.value)}
+            value={textValue}
         />
+        <div className="clickable-icon">
+
+            {showExpand && (open ? <ExpandLess onClick={handleExpand} /> : <ExpandMore onClick={handleExpand} />)}
+        </div>
+    </div>
 
     );
 });
@@ -141,8 +147,9 @@ export interface ComboBoxProps {
     value?: string, //actual value or key if an item in items
     onSelect: (itemKey: string) => void,
     onChange?: (newVal: string) => void,
-    elRef?: MutableRefObject<HTMLElement>,
-    style?: any,
+    //elRef?: MutableRefObject<HTMLElement>,
+    listStyle?: any,
+    textStyle?: any,
     readOnly?: boolean,
     invalid?: boolean,
     filterItem?: (item: ComboBoxItem, txtValue: string) => boolean,
@@ -156,23 +163,21 @@ export interface ComboBoxProps {
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { style, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth, readOnly } = props;
+    const { listStyle, textStyle, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth, readOnly } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
 
-    const localElRef = React.useRef<HTMLDivElement | null>(null);
+    const localElRef = React.useRef<any | null>(null);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(anchorEl ? null : event.currentTarget);
+    };
+    //const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
     const currentIndex = props.items.findIndex((item: any) => item === props.value || item?.key === props.value);
 
-    const handleElClick = () => {
-        setOpen(true);
-    }
 
-    useEffect(() => {
-        if (props.elRef && props.elRef.current != null) {
-            props.elRef.current.onclick = handleElClick;
-        }
-    }, [props.elRef])
 
     useEffect(() => {
         const item = props.items.find((item: any) => item.key === props.value);
@@ -181,7 +186,7 @@ export function ComboBox(props: ComboBoxProps) {
             console.log("setLocalValue", props.value)
         } else {
             setLocalValue(props.value || "");
-            console.log("setLocalValue", props.value)
+            console.log("setLocalValue free", props.value)
 
         }
     }, [props.value])
@@ -212,9 +217,9 @@ export function ComboBox(props: ComboBoxProps) {
                     primary={
                         props.renderItem ?
                             props.renderItem(items[renderProps.index], hoverItem === renderProps.index, false) :
-                            <Text style={{ fontSize: 12, textAlign: style?.textAlign || "left" }}>
+                            <div style={{ fontSize: 12, textAlign: listStyle?.textAlign || "left" }}>
                                 {txtValue}
-                            </Text>
+                            </div>
                     }
                 />
             </ListItemButton>
@@ -232,40 +237,33 @@ export function ComboBox(props: ComboBoxProps) {
         }
     }
 
-
     return <ClickAwayListener onClickAway={() => setOpen(false)} >
-        <div style={{ display: "flex", ...style }}>
-            {!props.elRef &&
-                <ClickableText
-                    showExpand={!hideExpandButton}
-                    style={{ width: "70%", ...style }}
-                    ref={localElRef}
-                    onClick={() => {
-                        setOpen(true)
-                    }}
-                    onChange={(newVal: string) => setLocalValue(newVal)}
-                    onBlur={(newVal: string) => {
-                        // check if value changed before firing event
-                        if (newVal !== value) {
-                            onChange && onChange(newVal)
-                        }
+        <div>
+            <ClickableText
+                showExpand={!hideExpandButton}
+                style={{ ...textStyle }}
+                onClick={() => {
+                    setOpen(true)
+                }}
+                onValueChange={(newVal: string) => setLocalValue(newVal)}
+                onBlur={(newVal: string) => {
+                    // check if value changed before firing event
+                    if (newVal !== value) {
+                        onChange && onChange(newVal)
                     }
-                    }
-                    setOpen={(o:boolean)=>setOpen(o)}
-                    open={open}
-                    placeholder={placeholder}
-                    value={localValue}
-                    readOnly={readOnly}
-                    invalid={props.invalid}
-                    onArrowUp={() => console.log("up")}
-                    onArrowDown={() => console.log("down")}
-                />
-            }
-            <Popper
-                open={open && items.length > 0}
-                anchorEl={props.elRef ? props.elRef.current : localElRef.current}
-                transition disablePortal
-                style={{
+                }
+                }
+                setOpen={(o: boolean) => setOpen(o)}
+                open={open}
+                placeholder={placeholder}
+                textValue={localValue}
+                readOnly={readOnly}
+                invalid={props.invalid}
+                onArrowUp={() => console.log("up")}
+                onArrowDown={() => console.log("down")}
+            />
+            <MyPopper open={open && items.length > 0}>
+                <div style={{
                     zIndex: 1001,
                     backgroundColor: 'lightgray',
                     padding: 2,
@@ -277,19 +275,28 @@ export function ComboBox(props: ComboBoxProps) {
                     overflow: "scroll",
 
                 }}>
-
-                <FixedSizeList
-                    itemCount={items.length}
-                    height={listSize}
-                    width={listWidth || 100}
-                    direction={style?.textAlign === "right" ? "rtl" : "ltr"}
-                    itemSize={itemSize}
-                    initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
-                    {renderItems}
-                </FixedSizeList>
-            </Popper>
+                    <FixedSizeList
+                        itemCount={items.length}
+                        height={listSize}
+                        width={listWidth || 100}
+                        direction={listStyle?.textAlign === "right" ? "rtl" : "ltr"}
+                        itemSize={itemSize}
+                        initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
+                        {renderItems}
+                    </FixedSizeList>
+                </div>
+            </MyPopper>
         </div>
     </ClickAwayListener>
+}
+
+function MyPopper(props: any) {
+    if (props.open) {
+        return <div style={{ position: "absolute", zIndex: 10000 }}>
+            {props.children}
+        </div>
+    }
+    return <div />
 }
 
 export const VBoxC = (props: any) => (<VBox style={{ alignItems: "center", justifyContent: "center", width: "100%", ...props.style }} >{props.children}</VBox>);
@@ -313,7 +320,7 @@ export function Avatar({ size, imageSrc }: { size: number, imageSrc: string | un
         return <PersonOutlined style={style} />
 
     return <img src={imageSrc} style={style}
-        className={"cover"}
+        className="cover"
         alt="" />
 }
 
@@ -477,14 +484,46 @@ export function HourLines({ sliceWidth, height, hours, sliceEachHour, vertical, 
 }
 
 
+function ReactPortal({ children }: any) {
+    const elem = document.getElementById("root");
+    if (elem)
+        return createPortal(children, elem);
+
+    return <div>{children}</div>
+}
+export default ReactPortal;
 
 export function Modal(props: any) {
-    return <div className="modal-outer" onClick={props.onClose}>
-        <div className={props.className} style={{ position: "absolute" }} onClick={(evt) => evt.stopPropagation()}>
-            <div className="modal-close-btn" onClick={props.onClose}><Close /> </div>
-            {props.children}
-        </div>
-    </div>
+    const [atBottom, setAtBottom] = useState<boolean>(false);
+    const elem = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        elem.current?.scroll({ top: 0 });
+    }, [elem.current]);
+
+    const handleScroll = (e: any) => {
+        const el = e?.currentTarget;
+        //console.log("scroll ", el.scrollHeight, el.scrollTop, el.offsetHeight);
+        if (elem && (el.scrollHeight - el.scrollTop - 5 < el.offsetHeight)) {
+            setAtBottom(true);
+        } else {
+            setAtBottom(false);
+        }
+    }
+
+    const needScroll = elem.current && (elem.current.scrollHeight > elem.current.offsetHeight);
+
+    return (
+        <ReactPortal>
+            <div className="modal-outer" onClick={props.onClose}>
+                <div className={"modal-inner " + props.className} onClick={(evt) => evt.stopPropagation()}>
+                    <div className="modal-close-btn" onClick={props.onClose}><Close /> </div>
+                    <div ref={elem} className={"modal-scroll"} onScroll={handleScroll}>
+                        {props.children}
+                    </div>
+                    {needScroll && !atBottom && <div className="modal-more-indicator" ><South /></div>}
+                </div>
+            </div>
+        </ReactPortal>);
 }
 
 export function FloatingAdd(props: any) {
@@ -505,13 +544,3 @@ export function FloatingAdd(props: any) {
         <Add style={{ fontSize: 80 }} onClick={props.onClick} />
     </Fab>
 }
-
-
-
-export const Style = {
-    hidden: {
-        position: "fixed",
-        left: -1000,
-        width: 10
-    } as React.CSSProperties
-};
