@@ -37,7 +37,7 @@ function calcDiff(d: string, newTime: string) {
 export default function NewDatePicker({
     start, end,
     setStart, setEnd,
-    style,
+    fontSize,
     pickTimes, isDateRange, readOnly }: NewDatePickerProps) {
     const [invalidStart, setInvalidStart] = useState(false);
     const [invalidEnd, setInvalidEnd] = useState(false);
@@ -120,7 +120,7 @@ export default function NewDatePicker({
     }
 
     return (
-        <div className="datepicker-container" style={style}>
+        <div className="datepicker-container" >
             <div style={{ width: "100%" }}>
                 <ReactDatePicker
                     className="datepicker-dateinput"
@@ -136,7 +136,7 @@ export default function NewDatePicker({
                     onCalendarClose={() => setStartOpen(false)}
                     customInput={
                         <ClickableText
-                            style={{ textAlign: "center" }}
+                            style={{ textAlign: "center", fontSize }}
                             showExpand={!readOnly}
                             onClick={() => dateStartPicker?.current?.setOpen(true)}
                             readOnly={readOnly}
@@ -155,8 +155,8 @@ export default function NewDatePicker({
             {pickTimes && <div className="datepicker-time-range">
                 <ComboBox
                     hideExpandButton={readOnly}
-                    listStyle={{ textAlign: "left" }}
-                    textStyle={{ textAlign: "center" }}
+                    listStyle={{ textAlign: "left", fontSize }}
+                    textStyle={{ textAlign: "center" , fontSize}}
                     listWidth={100}
                     value={getTime(start)}
                     items={times}
@@ -174,11 +174,11 @@ export default function NewDatePicker({
                 <div className="datepicker-time-range-sep">-</div>
                 <ComboBox
                     hideExpandButton={readOnly}
-                    listStyle={{ textAlign: "left" }}
-                    textStyle={{ textAlign: "center" }}
+                    listStyle={{ textAlign: "left", fontSize }}
+                    textStyle={{ textAlign: "center", fontSize }}
                     listWidth={100}
-                    value={endTimeLocal}
-                    items={getTimes(dayjs(start))}
+                    value={getTime(end)}
+                    items={getTimes(dayjs(end))}
                     onSelect={(newValue: string) => setEndTime(newValue)}
                     onChange={(newValue: string) => setEndTime(newValue)}
                     invalid={invalidEnd}

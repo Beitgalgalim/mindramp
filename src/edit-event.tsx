@@ -176,7 +176,7 @@ export default function EditEvent(
                     <Grid container item xs={10} spacing={2} >
                         <VBox style={{ alignItems: 'flex-start', width:"100%" }}>
                             <NewDatePicker
-                                
+                                fontSize="1em"
                                 start={start} end={end}
                                 setStart={(d) => setStart(d)}
                                 setEnd={(d) => setEnd(d)}

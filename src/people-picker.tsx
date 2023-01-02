@@ -15,7 +15,7 @@ function translate2ComboBoxItems(users: UserInfo[], type: undefined | UserType):
     }));
 }
 
-export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
+export function PeoplePicker({listStyle, textStyle, onSelect, users, type, placeholder }: any) {
     const [items, setItems] = useState<any>(translate2ComboBoxItems(users, type));
 
     useEffect(() => {
@@ -24,12 +24,8 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 
     return <ComboBox
         items={items}
-        listStyle={{
-            width: 150,
-            textAlign: "right",
-            //backgroundColor: "white",
-            //height: 25,
-        }}
+        listStyle={listStyle}
+        textStyle={textStyle}
         itemHeight={35}
         listWidth={150}
         placeholder={placeholder}
@@ -49,7 +45,8 @@ export function PeoplePicker({ onSelect, users, type, placeholder }: any) {
 }
 
 
-export function Person({ name, icon, hover, selected, onRemove, flat, width, available, tooltip }: any) {
+export function Person({ name, icon, hover, selected, onRemove, flat, width, available, tooltip, hideIcon }: any) {
+    const backgroundColor = hover ? "#F5F5F5" : selected ? "#E1E1E1" : "#D9D9D9"
     return <div
         title={tooltip}
         style={{
@@ -59,15 +56,15 @@ export function Person({ name, icon, hover, selected, onRemove, flat, width, ava
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "flex-start",
-            backgroundColor: hover ? "#F5F5F5" : selected ? "#E1E1E1" : "#D9D9D9",
+            backgroundColor,
             height: 25,
             borderRadius: flat ? 0 : 15,
             margin: 2,
         }}>
         <HBoxSB>
-            <HBox style={{position:"relative"}}>
+            <HBox style={{position:"relative", alignItems:"center"}}>
                 <Spacer />
-                <Avatar size={25} imageSrc={icon} />
+                {!hideIcon && <Avatar size={25} imageSrc={icon} />}
                 {available !== undefined && <div style={{position:"absolute", bottom:-4, right:-4, borderRadius:7, width:15, height:15,
                 backgroundColor:available?"green":"red" }}>
                 
@@ -78,12 +75,13 @@ export function Person({ name, icon, hover, selected, onRemove, flat, width, ava
             <Spacer />
             {onRemove && <div style={{
                 display: "flex",
-                //position: "relative", 
                 justifyContent: "center",
+                alignItems:"center",
                 width: 25, height: 25, borderRadius: 12,
-                backgroundColor: "#F5F5F5"
+                backgroundColor,
+                zIndex:100,
             }}
-                onClick={() => onRemove()}>x</div>}
+                onClick={() => onRemove()}><Close style={{fontSize:15}} /></div>}
         </HBoxSB>
     </div>
 }

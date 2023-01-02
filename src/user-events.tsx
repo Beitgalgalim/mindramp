@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, EventFilter, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
+import { AccessibilitySettingsData, EventFilter, LocationInfo, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import Events from './events';
 
@@ -103,6 +103,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
 
     const [media, setMedia] = useState<MediaResource[]>([]);
     const [users, setUsers] = useState<UserInfo[]>([]);
+    const [locations, setLocations] = useState<LocationInfo[]>([]);
+    
     const [reloadMedia, setReloadMedia] = useState<number>(0);
     const [reloadUsers, setReloadUsers] = useState<number>(0);
 
@@ -154,6 +156,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             return;
 
         api.getMedia().then((m: MediaResource[]) => setMedia(m));
+        api.getLocations().then(locs=>setLocations(locs));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connected, roles, reloadMedia]);
 
@@ -259,16 +262,6 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     },
                     (err) => notify.error(err)
                 )
-                // setNickName((prev: any) => {
-                //     let newValue = { ...prev };
-                //     if (kioskMode && user) {
-                //         newValue[user] = { name: newNick };
-                //     } else {
-                //         newValue.name = newNick;
-                //     }
-                //     return newValue;
-                // });
-                // todo - save to db
             }}
             onClose={() => setShowUserSettings(false)}
             notificationOn={notificationOn}
@@ -372,6 +365,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
                     media={media}
                     users={users}
+                    locations={locations}
                     notify={notify}
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}

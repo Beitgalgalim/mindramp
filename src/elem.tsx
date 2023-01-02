@@ -1,12 +1,12 @@
 import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Box, ListItemButton, TextField, Typography, InputAdornment, Fab, IconButton,
+    Box, ListItemButton, TextField, Typography, InputAdornment, Fab, IconButton, Popper, ClickAwayListener
 
 } from '@mui/material';
 import { createPortal } from 'react-dom';
 
 import {
-    ClickAwayListener,
+
     ListItem,
     ListItemText,
 
@@ -66,54 +66,21 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
             type="text"
             ref={ref}
             onClick={onClick}
+            readOnly={readOnly}
             style={{
                 borderWidth: 0,
                 backgroundColor: (invalid ? "red" : "transparent"),
                 ...style,
             }}
 
-            // inputProps={{
-            //     classes:{input: classes.inputCenter}
-            // }}
-            // sx={{
-            //     //width: "80%",
-            //     height: 30,
-            //     borderWidth: 0,
-            //     //borderRadius: 4,
-            //     //backgroundColor: (invalid ? "red" : "transparent"),
-            //     backgroundColor: "green",
-            //     textAlign:"center"
-            // }}
+            
             placeholder={placeholder}
-            // InputProps={{
-            //     disabled: readOnly,
-            //     sx: {
-            //         style: {
-            //             direction: props.style?.textAlign === "right" ? "rtl" : "ltr",
-            //             textAlign: "center", //props.style?.textAlign || "left"
-            //         }
-            //     },
-            //     startAdornment: showExpand && (
-            //         <InputAdornment position="end">
-            //             <IconButton
-            //                 edge="end"
-            //                 onClick={(e) => {
-            //                     if (setOpen) setOpen(!open)
-            //                     e.stopPropagation()
-            //                 }}
-            //             >
-            //                 {open ? <ExpandLess /> : <ExpandMore />}
-            //             </IconButton>
-            //         </InputAdornment >
-            //     ),
-            //}}
+
             onMouseOver={(e) => {
-                if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
-                //e.currentTarget.style.textDecoration = "underline";
+                //if (!invalid) e.currentTarget.style.backgroundColor = 'lightgray';
             }}
             onMouseLeave={(e) => {
-                if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
-                //e.currentTarget.style.textDecoration = "none";
+                //if (!invalid) e.currentTarget.style.backgroundColor = 'transparent'
             }}
             onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
@@ -169,10 +136,10 @@ export function ComboBox(props: ComboBoxProps) {
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
 
     const localElRef = React.useRef<any | null>(null);
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(anchorEl ? null : event.currentTarget);
-    };
+    //const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    // const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    //     setAnchorEl(anchorEl ? null : event.currentTarget);
+    // };
     //const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
     const currentIndex = props.items.findIndex((item: any) => item === props.value || item?.key === props.value);
@@ -183,10 +150,8 @@ export function ComboBox(props: ComboBoxProps) {
         const item = props.items.find((item: any) => item.key === props.value);
         if (item) {
             setLocalValue((item as any).value);
-            console.log("setLocalValue", props.value)
         } else {
             setLocalValue(props.value || "");
-            console.log("setLocalValue free", props.value)
 
         }
     }, [props.value])
@@ -237,9 +202,14 @@ export function ComboBox(props: ComboBoxProps) {
         }
     }
 
-    return <ClickAwayListener onClickAway={() => setOpen(false)} >
+    return <ClickAwayListener
+        mouseEvent="onMouseDown" touchEvent="onTouchStart"
+        onClickAway={() => {
+            setOpen(false)
+        }} >
         <div>
             <ClickableText
+                ref={localElRef}
                 showExpand={!hideExpandButton}
                 style={{ ...textStyle }}
                 onClick={() => {
@@ -262,41 +232,25 @@ export function ComboBox(props: ComboBoxProps) {
                 onArrowUp={() => console.log("up")}
                 onArrowDown={() => console.log("down")}
             />
-            <MyPopper open={open && items.length > 0}>
-                <div style={{
-                    zIndex: 1001,
-                    backgroundColor: 'lightgray',
-                    padding: 2,
-                    borderRadius: 3,
-                    minWidth: 80,
+            <Popper open={open && items.length > 0} className="popper-inner"
+                style={{
                     minHeight: listSize,
-                    scrollbarWidth: "thin",
-                    boxShadow: "0px 18px 22px rgba(44, 85, 102, 0.12)",
-                    overflow: "scroll",
-
-                }}>
-                    <FixedSizeList
-                        itemCount={items.length}
-                        height={listSize}
-                        width={listWidth || 100}
-                        direction={listStyle?.textAlign === "right" ? "rtl" : "ltr"}
-                        itemSize={itemSize}
-                        initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
-                        {renderItems}
-                    </FixedSizeList>
-                </div>
-            </MyPopper>
-        </div>
+                }}
+                anchorEl={localElRef.current}
+                disablePortal={true}
+                nonce={undefined} onResize={undefined} onResizeCapture={undefined} >
+                <FixedSizeList
+                    itemCount={items.length}
+                    height={listSize}
+                    width={listWidth || 100}
+                    direction={listStyle?.textAlign === "right" ? "rtl" : "ltr"}
+                    itemSize={itemSize}
+                    initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
+                    {renderItems}
+                </FixedSizeList>
+            </Popper>
+        </div >
     </ClickAwayListener>
-}
-
-function MyPopper(props: any) {
-    if (props.open) {
-        return <div style={{ position: "absolute", zIndex: 10000 }}>
-            {props.children}
-        </div>
-    }
-    return <div />
 }
 
 export const VBoxC = (props: any) => (<VBox style={{ alignItems: "center", justifyContent: "center", width: "100%", ...props.style }} >{props.children}</VBox>);

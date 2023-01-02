@@ -91,7 +91,7 @@ export interface UserInfo {
     avatar?: AvatarInfo,
     type: UserType,
     showInKiosk?: boolean;
-    nickName?:string;
+    nickName?: string;
     _ref?: DocumentReference
 }
 
@@ -110,9 +110,9 @@ export interface UserDocument {
     email: string,
     phone?: string,
     avatar?: AvatarInfo,
-    nickName?:string,
-    fname:string,
-    lname:string,
+    nickName?: string,
+    fname: string,
+    lname: string,
     type?: UserType;
 }
 
@@ -150,14 +150,14 @@ export interface EditEventArgs {
 }
 
 export interface NotificationViewProps {
-    keyEvents:Event[],
-    messages:MessageInfo[],
-    kioskMode:boolean,
-    onMessageSetRead: (msg:MessageInfo)=>void,
-    onKeyEventSetRead: (keyEvt:Event)=>void,
+    keyEvents: Event[],
+    messages: MessageInfo[],
+    kioskMode: boolean,
+    onMessageSetRead: (msg: MessageInfo) => void,
+    onKeyEventSetRead: (keyEvt: Event) => void,
     accSettings?: AccessibilitySettingsData,
-    audioRef:MutableRefObject<HTMLAudioElement>,
-    refDate:Dayjs,
+    audioRef: MutableRefObject<HTMLAudioElement>,
+    refDate: Dayjs,
 }
 
 export interface MessageInfo {
@@ -212,6 +212,23 @@ export interface Notifying {
     notify: Notify;
 }
 
+export enum InstanceType {
+    Normal = 0,
+    Series = 1,
+    Instance = 2,
+}
+
+
+export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
+    inEvent: Event;
+    onClose: () => void;
+    events: Event[];
+    locations: LocationInfo[];
+    onSave: (eventToSave: Event, instanceType: InstanceType) => void;
+    onDelete: (eventToSave: Event, instanceType: InstanceType) => void;
+    updateInProgress:boolean;
+}
+
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
 
 export interface KioskProps {
@@ -219,7 +236,7 @@ export interface KioskProps {
 }
 
 export interface EventFilter {
-    users:string[],
+    users: string[],
     publicEvents: boolean,
     allPrivateEvents: boolean,
 }
@@ -232,9 +249,10 @@ export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles 
     audioRef: MutableRefObject<HTMLAudioElement>
     onChangeDaysOffset: (newOffet: number) => void,
     onRemoveEvents: (id: string[]) => void,
-    onUpsertEvent: (event: Event, event2?:Event) => void,
-    setFilter: (filter:EventFilter)=>void,
-    filter: EventFilter
+    onUpsertEvent: (event: Event, event2?: Event) => void,
+    setFilter: (filter: EventFilter) => void,
+    filter: EventFilter,
+    locations:LocationInfo[],
 }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying, WithRoles {
     isGuide: boolean,
@@ -244,9 +262,9 @@ export interface UserEventsProps extends Connected, WithUser, WithWindowSize, No
     onPushNotification: onPushNotificationHandler,
     onGoHome: () => void,
     kioskMode: boolean,
-    avatarUrl:string | undefined,
-    nickName:string | undefined,
-    onNickNameUpdate: (newNickName:string)=> void,
+    avatarUrl: string | undefined,
+    nickName: string | undefined,
+    onNickNameUpdate: (newNickName: string) => void,
 }
 export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
@@ -271,8 +289,8 @@ export interface UserSettingsProps extends WithUser, Notifying {
     onBetaChange: (on: boolean) => void,
     onAccessibleCalendar: (on: boolean) => void,
     beta: boolean,
-    accessibleCalendar:boolean,
-    isKioskUser:boolean,
+    accessibleCalendar: boolean,
+    isKioskUser: boolean,
 }
 
 export interface AccessibilitySettingsProps {
@@ -312,7 +330,7 @@ export interface EditEventsProps extends WithMedia, Notifying, WithUsers {
     onCancel: Callback;
     onDelete?: (editEvent: EditEventArgs, id: string) => void;
     events: Event[];
-    updateInProgress:boolean;
+    updateInProgress: boolean;
 }
 
 export interface EditImageProps extends Notifying {
@@ -343,9 +361,9 @@ export interface NewDatePickerProps {
     end: string;
     setStart: setDateFunc;
     setEnd: setDateFunc;
-    style?: any;
+    fontSize: string;
     pickTimes?: boolean;
-    isDateRange?:boolean;
+    isDateRange?: boolean;
     readOnly?: boolean;
 }
 

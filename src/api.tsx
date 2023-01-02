@@ -190,7 +190,7 @@ export function testNotif() {
     return sendNotificationTest(payload);
 }
 
-export function forgotUser(phone:string) {
+export function forgotUser(phone: string) {
     const forgotUserFunc = httpsCallable(functions, 'forgotUser');
     const payload: any = {
         isDev: isDev(),
@@ -406,7 +406,7 @@ export async function deleteEvent(id: string, deleteModifiedInstance: boolean = 
 
 export async function updateMediaInfo(imageInfo: MediaResource) {
     if (imageInfo._ref) {
-       // const keywords = imageInfo.keywords?.toString().split(",");
+        // const keywords = imageInfo.keywords?.toString().split(",");
         return updateDoc(imageInfo._ref, {
             name: imageInfo.name,
             keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
@@ -495,7 +495,7 @@ export async function getUserRoles(email: string) {
 }
 
 
-function updateUser(email: string, userInfo: any, roles:string[] | undefined) {
+function updateUser(email: string, userInfo: any, roles: string[] | undefined) {
     const updateUserFunc = httpsCallable(functions, 'updateUser');
     const payload: any = {
         isDev: isDev(),
@@ -506,11 +506,11 @@ function updateUser(email: string, userInfo: any, roles:string[] | undefined) {
     return updateUserFunc(payload);
 }
 
-export async function updateNickName(email: string, newNickName:string) {
-    return updateUser(email, {nickName:newNickName}, undefined);
+export async function updateNickName(email: string, newNickName: string) {
+    return updateUser(email, { nickName: newNickName }, undefined);
 }
 
-export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles:string[]) {
+export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles: string[]) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g) => {
@@ -580,7 +580,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
 
 }
 
-export async function addUser(userInfo: UserInfo, roles:string[], email: string, pwd: string, pic?: File) {
+export async function addUser(userInfo: UserInfo, roles: string[], email: string, pwd: string, pic?: File) {
 
     const registerUser = httpsCallable(functions, 'registerUser');
 
@@ -629,7 +629,7 @@ export async function addUser(userInfo: UserInfo, roles:string[], email: string,
     });
 }
 
-export async function deleteUser(email:string, userInfo:UserInfo) {
+export async function deleteUser(email: string, userInfo: UserInfo) {
     const deleteUserFunc = httpsCallable(functions, 'deleteUser');
     const payload: any = {
         isDev: isDev(),
