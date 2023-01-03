@@ -140,8 +140,9 @@ export interface MediaResource {
     url: string,
     type: "icon" | "photo" | "audio",
     path: string,
-    _ref?: DocumentReference
-    keywords?: string[]
+    _ref?: DocumentReference,
+    keywords?: string[],
+    origin?:string,
 }
 
 export interface EditEventArgs {

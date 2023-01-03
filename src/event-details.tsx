@@ -18,10 +18,10 @@ import NewDatePicker from './newDatePicker';
 import { useState, useCallback } from 'react';
 import { EventDetailsProps, InstanceType, MediaResource, UserInfo, UserType } from './types';
 import { AddPhotoAlternateOutlined, Close } from '@mui/icons-material';
-import EditEvent from './edit-event';
+import EventsNavigationNew from './events-navigation-new';
 
 const listStyle = { fontSize: "1em" };
-const textStyle = { ...listStyle, width: 120, height: 25, backgroundColor: "lightgray" };
+const textStyle = { ...listStyle, width: 120, height: 25, backgroundColor: "lightgray", borderRadius: 3 };
 
 
 export default function EventDetails({ inEvent, events, onClose, onSave, onDelete, notify, media, users, locations, updateInProgress }: EventDetailsProps) {
@@ -74,7 +74,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
             setInSeries(null);
             setInstanceType(InstanceType.Normal);
         }
-    }, [inEvent]);
+    }, [inEvent, notify, events]);
 
     const isDirty = useCallback(() => {
         if (!editEvent) return false;
@@ -108,9 +108,14 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
             objToSave.clearAudio = true;
         }
 
+        if (objToSave.allDay) {
+            delete objToSave.keyEvent;
+            delete objToSave.reminderMinutes;
+        }
+
         onSave(objToSave, instanceType);
 
-    }, [inSeries, inEvent, editEvent, instanceType]);
+    }, [inSeries, inEvent, editEvent, instanceType, onSave]);
 
     const handleDelete = useCallback(() => {
         const buttons = [];
@@ -137,7 +142,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
         });
 
         notify.ask("האם למחוק אירוע?", "מחיקה", buttons);
-    }, [inEvent]);
+    }, [inEvent, notify, onDelete]);
 
     const getParticipant = (email: string): [string, any] => {
         const selectedUser = users.find((u: UserInfo) => u._ref?.id === email);
@@ -157,7 +162,27 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
         setEditEvent(ee => ee ? { ...ee, [fieldName]: value } as Event : ee);
     }
 
+    const headerButtons = editEvent ?
+        [{ widthPercent: 49, caption: "אירוע" }, { widthPercent: 49, caption: "הודעה יומית" }] :
+        [{
+            widthPercent: 100, caption: (event.allDay ?
+                "הודעה יומית" :
+                "אירוע")
+        }];
+
     return <div className="ev-details">
+        <div className="ev-details-header">
+            <EventsNavigationNew
+                height={"60px"}
+                currentNavigation={event.allDay ? (editEvent? 1 : 0) : 0}
+                onNavigate={(offset: number) => {
+                    updateEvent("allDay", offset === 1);
+                }}
+                buttons={headerButtons}
+                kiosk={false}
+            />
+        </div>
+
         {showAddMedia && <MediaPicker media={media} title={"בחירת תמונה"}
             onSelect={(rm: MediaResource) => {
                 updateEvent("imageUrl", rm.url);
@@ -169,7 +194,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
         <div className="ev-details-line ev-aligntop">
             {event.imageUrl || !editEvent ?
                 <div className="relative">
-                    <img className="ev-details-img" src={event.imageUrl} alt="אין" />
+                    {event.imageUrl ? <img className="ev-details-img" src={event.imageUrl} alt="אין" /> : <div className="ev-details-img">ללא</div>}
                     {editEvent && <div className="ev-details-remove-img" onClick={() => updateEvent("imageUrl", undefined)}><Close /></div>}
                 </div> :
                 <div className="ev-details-img" onClick={() => setShowAddMedia(true)}>
@@ -203,9 +228,10 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                     onChange={(e) => updateEvent("notes", e?.currentTarget?.value)} >{event.notes}</textarea> :
                     event.notes}
             </div>
-
-            <Checkbox checked={event.keyEvent} disabled={!editEvent} onChange={(e) => updateEvent("keyEvent", e.currentTarget.checked)} />
-            אירוע מיוחד
+            {!event.allDay && <div>
+                <Checkbox checked={event.keyEvent} disabled={!editEvent} onChange={(e) => updateEvent("keyEvent", e.currentTarget.checked)} />
+                אירוע מיוחד
+            </div>}
         </div>
 
         {/**Users */}
@@ -229,11 +255,13 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                             updateEvent("participants", newParticipants);
                         }
                     }} />}
+                {editEvent && <Spacer />}
                 <div className="ev-details-users">
                     {event.participants && Object.entries(event.participants).map(([key, value]: any) => (<Person
                         width={150} name={value.displayName} icon={value.icon}
                         onRemove={editEvent ? () => {
                             if (editEvent.participants) {
+                                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                 const { newParticipants, removed: [key] } = editEvent.participants;
                                 updateEvent("participants", newParticipants);
                             }
@@ -253,9 +281,11 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                     textStyle={textStyle}
 
                     onSelect={(person: string) => {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         const [key, participant] = getParticipant(person);
                         updateEvent("guide", participant);
                     }} />}
+                {editEvent && <Spacer />}
                 <div className="ev-details-user">
                     {event.guide && <Person width={150} name={event.guide.displayName} icon={event.guide.icon}
                         onRemove={editEvent ? () => updateEvent("guide", undefined) : undefined} />}
@@ -276,6 +306,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                     onSelect={(newLocation: string) => updateEvent("location", newLocation)}
                     onChange={(newLocation: string) => updateEvent("location", newLocation)}
                 />}
+                {editEvent && <Spacer />}
                 <div className="ev-details-user">
                     {event.location && <Person hideIcon={true} width={150} name={event.location} onRemove={editEvent ? () => updateEvent("location", undefined) : undefined} />}
                 </div>
@@ -311,6 +342,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
             <SunIcon className="ev-details-icon" />
 
             <div className="ev-details-label">חוזר:</div>
+            <Spacer />
             {editEvent ? <ComboBox
                 listStyle={listStyle}
                 textStyle={textStyle}
@@ -330,26 +362,29 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                 readOnly={true}
             /> :
                 <div className="ev-details-label">{event.recurrent ?
-                    RecurrentEventFieldKeyValue.find(f => f.key == event.recurrent?.freq)?.value :
+                    RecurrentEventFieldKeyValue.find(f => f.key === event.recurrent?.freq)?.value :
                     "ללא"}</div>
             }
             <Spacer width={30} />
-            <div className="ev-details-label">תזכורת:</div>
-            {editEvent ? <ComboBox
-                listStyle={listStyle}
-                textStyle={textStyle}
-                listWidth={150}
+            {!event.allDay && <div className="ev-details-label">תזכורת:</div>}
+            <Spacer />
+            {!event.allDay && (
+                editEvent ? <ComboBox
+                    listStyle={listStyle}
+                    textStyle={textStyle}
+                    listWidth={150}
 
-                value={event.reminderMinutes === undefined ? "none" : event.reminderMinutes + ""}
-                items={ReminderFieldKeyValue}
-                onSelect={(newValue: string) => {
-                    const newIntValue = parseInt(newValue);
-                    updateEvent("reminderMinutes", isNaN(newIntValue) ? undefined : newIntValue);
-                }}
-                readOnly={true}
-            /> : <div className="ev-details-label">{event.reminderMinutes ?
-                ReminderFieldKeyValue.find(f => f.key == "" + event.reminderMinutes)?.value :
-                "ללא"}</div>}
+                    value={event.reminderMinutes === undefined ? "none" : event.reminderMinutes + ""}
+                    items={ReminderFieldKeyValue}
+                    onSelect={(newValue: string) => {
+                        const newIntValue = parseInt(newValue);
+                        updateEvent("reminderMinutes", isNaN(newIntValue) ? undefined : newIntValue);
+                    }}
+                    readOnly={true}
+                /> : <div className="ev-details-label">{event.reminderMinutes ?
+                    ReminderFieldKeyValue.find(f => f.key === "" + event.reminderMinutes)?.value :
+                    "ללא"}</div>
+            )}
 
         </div>
 

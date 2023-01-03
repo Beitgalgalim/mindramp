@@ -30,14 +30,7 @@
     overflow-y: auto;
 }
 
-.events-top-seperator {
-    z-index: 1;
-    height: 8px;
-    width: 100vw;
-    margin: 0;
-    padding: 0;
-    background: linear-gradient(180deg, #D9D9D9 0%, rgba(191, 209, 255, 0.6) 25%, rgba(217, 217, 217, 0) 100%);
-}
+
 
 .multiple-events-container {
     display: flex;
@@ -458,6 +451,12 @@
     margin-inline-start: 10px;
     width: calc(100% - 40px);
 }
+
+.ev-details-header {
+    width:100%;
+    height: 60px;
+}
+
 .ev-details-users {
     display: flex;
     flex-direction: row;
@@ -493,6 +492,7 @@
 
 .ev-details-notes {
     margin: 0;
+    resize: none;
     padding: 0;
     width: calc(100% - 140px);
     height: 60px;
@@ -500,7 +500,6 @@
     border: 1px solid #D2D2D2;
     border-radius: 10px;
     background-color: rgba(86, 87, 87, 0.05);
-    
 }
 
 .ev-details-title {

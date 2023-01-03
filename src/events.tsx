@@ -36,6 +36,10 @@ import EventDetails from './event-details';
     "audioUrl":"https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Faudio%2F2022-10-20T11%3A11.129.wav?alt=media&token=b172ab2c-75b9-42e4-ab3a-1ab07ece2ed4","tag":"UO96dfDuLbi7DYrximps"}}
 */
 
+function hasParticipants(ev:EventApi) {
+    return ev?.extendedProps?.participants && Object.entries(ev.extendedProps.participants).length > 0;
+}
+
 function getMarkerIcon(d: string) {
     return (<svg className="event-svg-icon" width="18" height="18" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path d={d} />
@@ -429,6 +433,14 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             //allDayText="הודעה"
             allDayContent={<div />}
 
+            eventOrder={(ev1:any,ev2:any)=>{
+                const p1 = hasParticipants(ev1);
+                const p2 = hasParticipants(ev2);
+                if (p1 && !p2) return 1;
+                if (p2 && !p1) return -1;
+
+                return (ev1.title < ev2.title)?1:-1;
+            }}
             initialView='timeGridDay'
             height={"100%"}
             direction={"rtl"}

@@ -2,14 +2,13 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
     getFirestore, Firestore, collection, getDocs, doc,
     DocumentData,
-    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
+    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, getDoc,
     where,
     WhereFilterOp,
     deleteField
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference } from "firebase/storage";
-import { Tag } from 'react-tag-input';
 import {
     getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
@@ -19,7 +18,7 @@ import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebas
 
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, Roles, RoleRecord } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -326,6 +325,7 @@ export function getMedia(): Promise<MediaResource[]> {
         type: d.type,
         _ref: d._ref,
         keywords: d.keywords,
+        origin: d.origin,
     })));
 }
 
@@ -568,7 +568,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                     });
                 });
         } else {
-            if (existingPic == undefined && old_pic_path) {
+            if (existingPic === undefined && old_pic_path) {
                 //remove pic (without waiting for result)
                 existing_info.avatar = deleteField();
                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));

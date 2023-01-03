@@ -1,14 +1,9 @@
 import { CircularProgress } from "@mui/material";
 import dayjs, { Dayjs } from "dayjs";
-import { LegacyRef, MutableRefObject, useEffect, useRef, useState } from "react";
-import { EventsMain, HBox, Text, VBoxC } from "./elem";
-import { Event } from "./event";
+import {  MutableRefObject, useEffect, useRef, useState } from "react";
+import {  Text, VBoxC } from "./elem";
 import EventElement from "./event-element";
-//import EventElementNew from "./event-element-new";
-import { EventsContainer } from "./events-container";
-import EventsNavigation from "./events-navigation";
 import EventsNavigationNew from "./events-navigation-new";
-import Message from "./message";
 import { Design } from "./theme";
 import { AccessibilitySettingsData } from "./types";
 import { DateFormats, getNiceDay, organizeEventsForDisplay } from "./utils/date";
@@ -138,7 +133,6 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                         kiosk={kioskMode}
                     />
                 }
-                <div className="events-top-seperator" />
 
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
                 {isTV && <div className="events-top-seperator" />}

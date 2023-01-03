@@ -2,7 +2,24 @@
     border: none;
     /* min-height: 8vh; */
     display: flex;
+    flex-direction: column;
+    width:100%;
+}
+
+.event-nav-buttons {
+    border: none;
+    display: flex;
     flex-direction: row;
+    width:100%;
+
+}
+.events-top-seperator {
+    z-index: 1;
+    height: 8px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(180deg, #D9D9D9 0%, rgba(191, 209, 255, 0.6) 25%, rgba(217, 217, 217, 0) 100%);
 }
 
 .event-nav-button2 {

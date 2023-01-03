@@ -1,41 +1,39 @@
-import { Close } from "@mui/icons-material";
-import { Text } from "./elem";
+import { Modal, Spacer } from "./elem";
 import { Design } from "./theme";
 import { MediaResource } from "./types";
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import './css/media-picker.css';
+import { Checkbox } from "@mui/material";
 
 
 export default function MediaPicker({ title, media, onSelect, onCancel }:
-    { title:string, media: MediaResource[], onSelect: CallableFunction, onCancel: CallableFunction }) {
-        const [filter, setFilter] = useState<string>("");
-    return (
-        <div style={{
-            display: "flex", flexWrap: "wrap",
-            position: 'absolute', top: "10vh",
-             right: "15vw", left: "15vw",
-             maxHeight:"75vh",
-            borderRadius: 10,
-            backgroundColor: 'lightgray',
-            zIndex: 501,
-            overflow:"scroll",
-            padding: 10
-        }}>
-            <div className="media-search">
-                <div>חיפוש</div>
-                <input type="search" onChange={(e)=>setFilter(e.target.value)}/>
-            </div>
-            <Text textAlign="center" fontSize={30}>{title}</Text>
-            { media.filter(m=>filter.length == 0 || m.keywords?.find(keyword => keyword.includes(filter)))
-               .map((m, i) => (<img key={i} src={m.url} 
+    { title: string, media: MediaResource[], onSelect: CallableFunction, onCancel: CallableFunction }) {
+    const [filter, setFilter] = useState<string>("");
+    const [showSystemOrigin, setShowSystemOrigin] = useState<boolean>(true);
+
+    const doFilter = useCallback((mr:MediaResource) => {
+        if (showSystemOrigin && mr.origin !== "system") return false;
+
+        if (filter.length === 0 ) return true;
+
+        return mr.name.includes(filter) ||  mr.keywords?.some(keyword => keyword.includes(filter));
+    }, [filter, showSystemOrigin]);
+
+    return (<Modal className="media-search-container" onClose={onCancel}>
+        <div className="media-search-title">{title}</div>
+        <div className="media-search">
+            <div>סינון</div>
+            <Spacer />
+            <input className="media-search-input" autoFocus type="search" onChange={(e) => setFilter(e.target.value)} />
+        </div>
+        <div>
+            <Checkbox checked={showSystemOrigin} onChange={(e) => setShowSystemOrigin(e.currentTarget.checked)} />
+            תמונות מערכת
+        </div>
+        {media.filter(doFilter).map((m, i) => (<img key={i} src={m.url}
                 style={{ width: Design.eventImageSize, height: Design.eventImageSize, padding: 10 }}
                 alt={m.name}
                 onClick={() => onSelect(m)}
             />))}
-            <div style={{ position: 'absolute', top: "1%", left: "1%" }}>
-                <Close onClick={() => onCancel()} style={{fontSize:30}}/>
-            </div>
-        </div>
-
-    );
+    </Modal>);
 }
