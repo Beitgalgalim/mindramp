@@ -1,0 +1,22 @@
+.datepicker-container {
+    display: grid;
+    grid-template-columns: 5fr 9fr ;
+    align-items: center;
+    width:85%;
+}
+
+.datepicker-time-range-sep {
+    margin:5px;
+}
+
+.datepicker-time-range {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-inline-start: 10px;
+}
+
+.datepicker-dateinput {
+    width:150px;
+    background-color: red;
+}

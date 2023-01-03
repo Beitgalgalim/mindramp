@@ -1,12 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { MediaProps, MediaResource } from './types';
 
-import { Text, HBox, HBoxC, Spacer, FloatingAdd } from './elem';
+import { Text, Spacer, FloatingAdd } from './elem';
 import * as api from './api'
 import "./admin.css"
 import EditImage from './edit-image';
-import { Add } from '@mui/icons-material';
-import { Fab } from '@mui/material';
 
 
 export default function Media({ media, notify, reload }: MediaProps) {
@@ -32,7 +30,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
         } else {
             notify.error('חובה לבחור קובץ');
         }
-    }, []);
+    }, [notify, reload ]);
 
     const _delete = useCallback((imageInfo: MediaResource) => {
         if (imageInfo._ref) {
@@ -45,7 +43,7 @@ export default function Media({ media, notify, reload }: MediaProps) {
                 (err: Error) => notify.error(err.message)
             )
         }
-    }, []);
+    }, [notify, reload]);
 
     function getNewImageInfo(): MediaResource {
         return {

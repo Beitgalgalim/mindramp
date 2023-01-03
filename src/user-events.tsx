@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, EventFilter, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
+import { AccessibilitySettingsData, EventFilter, LocationInfo, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import Events from './events';
 
@@ -16,7 +16,6 @@ import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
 import { beep, hasRole } from "./utils/common";
 import { AccessibleView } from "./accessible-day-view";
-//import { CalendarMonth, FilterAlt, FilterAltOff, PeopleAlt, Photo } from "@mui/icons-material";
 import Users from "./users";
 import Media from "./media";
 import NotificationView from "./notification-view";
@@ -24,21 +23,6 @@ import NotificationView from "./notification-view";
 import { ReactComponent as CalBtn } from './icons/cal2.svg'
 import { ReactComponent as UsersBtn } from './icons/users.svg'
 import { ReactComponent as MediaBtn } from './icons/media.svg'
-
-import { Voicemail } from "@mui/icons-material";
-
-// const FilterEvents = ({
-//     onSelect,
-//     on
-// }: any) => (
-//     <div onClick={() => onSelect(!on)}
-//         style={{ position: "absolute", right: 5, bottom: 5, fontSize: 35, width: 35, outline: on ? "2px solid black" : "" }}>
-//         <FilterAlt />
-//     </div>);
-
-function XOR(a: boolean, b: boolean) {
-    return (a || b) && !(a && b);
-}
 
 
 const AdminBtn = ({
@@ -77,16 +61,19 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [events, setEvents] = useState<any[]>([]);
     const [etag, setEtag] = useState<string | undefined>();
     const [reload, setReload] = useState<number>(0);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [refresh, setRefresh] = useState<number>(0);
     const [loadingEvents, setLoadingEvents] = useState<boolean>(false);
     const [initialized, setInitialized] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
     const [messages, setMessages] = useLocalStorageState<MessageInfo[]>("Messages");
-    //const [nickName, setNickName, nickNamesMore] = useLocalStorageState<any>("state");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [beta, setBeta, betaMore] = useLocalStorageState<any>("beta");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [accSettings, setAccSettings, accSettingsMore] = useLocalStorageState<AccessibilitySettingsData>("accessibilitySettings");
     const [showAccessibilitySettings, setShowAccessibilitySettings] = useState<boolean>(false);
     const [daysOffset, setDaysOffset] = useState<number>(0);
@@ -103,13 +90,15 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
 
     const [media, setMedia] = useState<MediaResource[]>([]);
     const [users, setUsers] = useState<UserInfo[]>([]);
+    const [locations, setLocations] = useState<LocationInfo[]>([]);
+    
     const [reloadMedia, setReloadMedia] = useState<number>(0);
     const [reloadUsers, setReloadUsers] = useState<number>(0);
 
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
-    const accessibleCalendarAct = accessibleCalendar || !roles.length || (roles.length == 1 && roles[0].id == Roles.Kiosk);
+    const accessibleCalendarAct = accessibleCalendar || !roles.length || (roles.length === 1 && roles[0].id === Roles.Kiosk);
 
     const location = useLocation();
     let refDate: Dayjs = dayjs();
@@ -147,13 +136,14 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }));
             setRawEvents(evtsWithId);
         }).finally(() => setLoadingEvents(false));
-    }, [connected, startDate, reload]);
+    }, [connected, startDate, reload, etag, user]);
 
     useEffect(() => {
         if (!hasRole(roles, Roles.ContentAdmin) || !connected)
             return;
 
         api.getMedia().then((m: MediaResource[]) => setMedia(m));
+        api.getLocations().then(locs=>setLocations(locs));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connected, roles, reloadMedia]);
 
@@ -172,7 +162,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             const evts = rawEvents
                 // public events
                 .filter(re => {
-                    if (!re.participants || Object.entries(re.participants).length == 0) {
+                    if (!re.participants || Object.entries(re.participants).length === 0) {
                         return filter.publicEvents;
                     }
                     if (filter.allPrivateEvents) return true;
@@ -196,7 +186,9 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                 body: m.notes
             })));
         }
-    }, [rawEvents, initialized, filter, user]);
+        // Not include refDate as it creates a loop of reloads
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rawEvents, initialized, filter, user, setKeyEvents, setMessages, startDate]);
 
     useEffect(() => {
         let intervalId = setInterval(() => {
@@ -259,16 +251,6 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     },
                     (err) => notify.error(err)
                 )
-                // setNickName((prev: any) => {
-                //     let newValue = { ...prev };
-                //     if (kioskMode && user) {
-                //         newValue[user] = { name: newNick };
-                //     } else {
-                //         newValue.name = newNick;
-                //     }
-                //     return newValue;
-                // });
-                // todo - save to db
             }}
             onClose={() => setShowUserSettings(false)}
             notificationOn={notificationOn}
@@ -289,7 +271,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     return <div dir={"rtl"} className="userEventsContainer"
 
         onKeyDown={(e: any) => {
-            if (e.key == "Tab" && !e.shiftKey) {
+            if (e.key === "Tab" && !e.shiftKey) {
                 if (kioskMode) beep(200, 50, 40)
                 if (e.target.getAttribute("tab-marker") === "last") {
                     firstElemRef.current?.focus();
@@ -372,6 +354,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
                     media={media}
                     users={users}
+                    locations={locations}
                     notify={notify}
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}

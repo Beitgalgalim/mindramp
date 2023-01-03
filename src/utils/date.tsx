@@ -6,9 +6,15 @@ export const DateFormats = {
     DATE_TIME: "YYYY-MM-DDTHH:mm",
     DATE_TIME_TS: "YYYY-MM-DDTHH:mm.SSS",
     DATE: "YYYY-MM-DD",
+    DATE_LOCALE:"DD/MM/YYYY",
     TIME_AM_PM: "hh:mma",
     TIME: "HH:mm"
 };
+
+export const DateJSParseFormats = [
+    "D-M-YYYY",
+    "D-M-YY",
+];
 
 
 export interface Time {
@@ -157,12 +163,31 @@ export function replaceDatePreserveTime(origin: string, newDate: Dayjs): string 
     return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
 }
 
-export function replaceDatePreserveTime2(origin: string, newDate: any): string {
+export function replaceDatePreserveTime2(origin: string, newDate: Dayjs): string | undefined {
+
+    let newDatejs = dayjs(newDate);
+    // if (!newDatejs.isValid()) {
+    //     //switch month and day
+    //     const parts = newDate.split(/[//-]+/);
+    //     if (parts.length > 2) {
+    //         newDatejs = dayjs(parts[1] + "/" + parts[0] + "/" + parts[2]);
+    //     }
+    // }
+    if (!newDatejs.isValid()) return undefined;
+
+
     if (origin) {
         const origDate = dayjs(origin);
-        return dayjs(dayjs(newDate).format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME)).format(DateFormats.DATE_TIME);
+        const newDatestr = newDatejs.format(DateFormats.DATE);
+        const timeStr = origDate.format(DateFormats.TIME);
+        const newdt = dayjs(newDatestr + "T" + timeStr);
+        
+        if (!newdt.isValid()) return undefined;
+
+        return newdt.format(DateFormats.DATE_TIME);
     }
-    return dayjs(newDate).format(DateFormats.DATE_TIME);
+    return newDatejs.format(DateFormats.DATE_TIME);
+
 }
 
 export function sortEvents(events: any[]): any[] {
@@ -459,8 +484,8 @@ export const day2shortDayName: { [id: number]: string; } = {
     6: "ש׳",
 };
 
-export function getNiceDay(day:number) {
-    return  " יום " + day2shortDayName[day];
+export function getNiceDay(day: number) {
+    return " יום " + day2shortDayName[day];
 }
 
 

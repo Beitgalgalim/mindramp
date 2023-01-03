@@ -1,13 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import * as api from './api'
-import { Checkbox, CircularProgress, Fab } from '@mui/material'
-import { Add, FilterAlt, NavigateBefore, NavigateNext, Today, VolumeUp } from '@mui/icons-material';
+import { Checkbox, CircularProgress } from '@mui/material'
+import { FilterAlt, NavigateBefore, NavigateNext, Today } from '@mui/icons-material';
 import { Event } from './event';
 
-import EditEvent from './edit-event';
 import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
 import dayjs from 'dayjs';
-import { EditEventArgs, EventsProps, Roles } from './types';
+import { EventsProps, InstanceType, Roles } from './types';
 import { FloatingAdd, Modal, Spacer } from './elem';
 import './css/events.css';
 import { hasRole } from './utils/common';
@@ -15,6 +14,7 @@ import { PeoplePicker, Person } from './people-picker';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction';
 
 import { DateSelectArg, EventApi, EventChangeArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
 import EventDetails from './event-details';
@@ -35,6 +35,10 @@ import EventDetails from './event-details';
     "participants":{},
     "audioUrl":"https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Faudio%2F2022-10-20T11%3A11.129.wav?alt=media&token=b172ab2c-75b9-42e4-ab3a-1ab07ece2ed4","tag":"UO96dfDuLbi7DYrximps"}}
 */
+
+function hasParticipants(ev:EventApi) {
+    return ev?.extendedProps?.participants && Object.entries(ev.extendedProps.participants).length > 0;
+}
 
 function getMarkerIcon(d: string) {
     return (<svg className="event-svg-icon" width="18" height="18" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -89,12 +93,10 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     onUpsertEvent,
     filter,
     setFilter,
-
+    locations
 }: EventsProps) {
-    const [newEvent, setNewEvent] = useState<EditEventArgs | undefined>(undefined);
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
-    // const [explodedEvents, setExplodedEvents] = useState<Event[]>([]);
     const [showEventDetails, setShowEventDetails] = useState<Event | undefined>(undefined);
 
     let calendarRef = useRef<FullCalendar | null>(null);
@@ -126,67 +128,131 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             calendarRef.current.getApi().removeAllEvents();
             events.forEach(evt => calendarRef.current && calendarRef.current.getApi().addEvent(evt))
         }
-    }, [events, calendarRef.current]);
+    }, [events]);
 
     useEffect(() => {
         const newDate = refDate.add(daysOffset, "day");
         calendarApi?.gotoDate(newDate.format(DateFormats.DATE_TIME));
-    }, [calendarApi, daysOffset]);
+    }, [calendarApi, daysOffset, refDate]);
 
     const eventPressed = (evt: Event) => {
         setShowEventDetails(evt);
     }
 
-    const editEvent = (evt: Event) => {
-        if (evt.recurrent?.gid) {
-            if (evt.instanceStatus) {
-                setNewEvent({ event: evt, editAllSeries: false });
-            } else {
-                // ask if editing the whole series or only this instance event
-                notify.ask("האם לערוך את כל הסדרה?", undefined, [
-                    {
-                        caption: "כל הסדרה",
-                        callback: () => {
-                            const evt2 = events.find(e => e.id === evt.recurrent?.gid);
-                            if (evt) {
-                                setShowEventDetails(undefined);
-                                setNewEvent({ event: evt2, editAllSeries: true })
-                            }
-                        }
-                    },
-                    {
-                        caption: "מופע נוכחי",
-                        callback: () => {
-                            setNewEvent({ event: evt, editAllSeries: false });
-                            setShowEventDetails(undefined);
-                        }
-                    },
-                    {
-                        caption: "בטל",
-                        callback: () => { }
-                    },
-                ])
+
+    const handleSave = async (eventToSave: Event, instanceType: InstanceType) => {
+        //Saves new Audio if needed:
+        setUpdateInProgress(true);
+        let audioPathToDelete: string | undefined = undefined;
+        let currentPathIsNew = false;
+        if (eventToSave.audioBlob != null) {
+            // mark previous audio file if existed, for deletion
+            audioPathToDelete = eventToSave.audioPath
+
+            //saves new audio
+            try {
+                const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", eventToSave.audioBlob)
+                eventToSave.audioPath = newMedia.path;
+                eventToSave.audioUrl = newMedia.url;
+                currentPathIsNew = true;
+            } catch (err: any) {
+                notify.error(err);
+                setUpdateInProgress(false);
+                return;
             }
+        } else if (eventToSave.clearAudio) {
+            // Need to delete the current audio file
+            audioPathToDelete = eventToSave.audioPath;
+
+            eventToSave.audioPath = undefined;
+            eventToSave.audioUrl = undefined;
+        }
+
+        if (instanceType === InstanceType.Instance && !eventToSave.instanceStatus && eventToSave.id) {
+            //update instance only
+            api.createEventInstance(eventToSave, eventToSave.id).then(
+                (result) => {
+                    if (audioPathToDelete) {
+                        api.deleteFile(audioPathToDelete);
+                    }
+                    notify.success("נשמר בהצלחה");
+                    onUpsertEvent(result.series, result.instance)
+                    setShowEventDetails(undefined);
+                },
+                (err) => {
+                    notify.error(err);
+                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
+                        //delete the file that was uploaded
+                        api.deleteFile(eventToSave.audioPath);
+                    }
+                }
+            ).finally(stopUpdateInProgress);
         } else {
-            setNewEvent({ event: evt });
-            setShowEventDetails(undefined);
+            // normal or whole series
+            api.upsertEvent(eventToSave, eventToSave.id).then(
+                (evt2) => {
+                    if (audioPathToDelete) {
+                        api.deleteFile(audioPathToDelete);
+                    }
+                    notify.success("נשמר בהצלחה");
+                    onUpsertEvent(evt2);
+                    setShowEventDetails(undefined);
+                },
+                (err) => {
+                    notify.error(err);
+                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
+                        //delete the file that was uploaded
+                        api.deleteFile(eventToSave.audioPath);
+                    }
+                }
+            ).finally(stopUpdateInProgress);
         }
     }
 
+    const handleDelete = (eventToDelete: Event, instanceType: InstanceType) => {
+        if (eventToDelete.id) {
+            setUpdateInProgress(true);
+            if (instanceType === InstanceType.Instance && !eventToDelete.instanceStatus) {
+                api.createEventInstanceAsDeleted(eventToDelete.date, eventToDelete.id).then(
+                    (updatedEventSeries) => {
+                        onUpsertEvent(updatedEventSeries);
+                        setShowEventDetails(undefined);
+                        notify.success("מופע זה נמחק בהצלחה");
+                    },
+                    (err: any) => notify.error(err)
+                ).finally(stopUpdateInProgress)
+            } else {
+                const isSeries = instanceType === InstanceType.Series;
+                const id = isSeries ?
+                    eventToDelete.recurrent?.gid :
+                    eventToDelete.id;
+                if (id) {
+                    api.deleteEvent(id, isSeries).then(
+                        (removedIDs) => {
+                            onRemoveEvents(removedIDs);
+                            setShowEventDetails(undefined);
+                            notify.success("נמחק בהצלחה")
+                        },
+                        (err: any) => notify.error(err)
+                    ).finally(stopUpdateInProgress);
+                }
+            }
+        }
+    }
+
+
     const handleDateSelect = (dateSelectArgs: DateSelectArg) => {
-        console.log("click", dateSelectArgs.startStr);
         if (dateSelectArgs.view.type === 'timeGridDay' || dateSelectArgs.view.type === 'timeGridWeek') {
-            setNewEvent({
-                event: Event.fromAny({
-                    id: "",
-                    title: "",
-                    start: dayjs(dateSelectArgs.start),
-                    end: dayjs(dateSelectArgs.end),
-                    allDay: dateSelectArgs.start.getHours() == 0 && dateSelectArgs.start.getMinutes() === 0 &&
-                        dateSelectArgs.end.getHours() == 0 && dateSelectArgs.end.getMinutes() === 0,
-                    date: dayjs(dateSelectArgs.start).format(DateFormats.DATE)
-                })
-            });
+            const event = Event.fromAny({
+                id: "",
+                title: "",
+                start: dayjs(dateSelectArgs.start),
+                end: dayjs(dateSelectArgs.end),
+                allDay: dateSelectArgs.start.getHours() === 0 && dateSelectArgs.start.getMinutes() === 0 &&
+                    dateSelectArgs.end.getHours() === 0 && dateSelectArgs.end.getMinutes() === 0,
+                date: dayjs(dateSelectArgs.start).format(DateFormats.DATE)
+            })
+            setShowEventDetails(event)
         } else {
             calendarApi && calendarApi.gotoDate(dateSelectArgs.startStr);
         }
@@ -217,7 +283,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                             (result) => {
                                 notify.success("נשמר בהצלחה");
                                 onUpsertEvent(result.series, result.instance);
-                                setNewEvent(undefined);
+                                //setNewEvent(undefined);
                             },
                             (err) => notify.error(err)
                         ).finally(stopUpdateInProgress);
@@ -251,7 +317,6 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
 
     const days = ["א", "ב", "ג", "ד", "ה", "ו", "ש",];
 
-    console.log("render", daysOffset, dayInWeek)
     return (<div className="events-container">
 
         <div className="events-days-header">
@@ -284,7 +349,18 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
 
 
         {showEventDetails && <Modal className="event-details-container" onClose={() => setShowEventDetails(undefined)}>
-            <EventDetails event={showEventDetails} onClose={() => setShowEventDetails(undefined)} onEdit={editEvent} />
+            <EventDetails
+                inEvent={showEventDetails}
+                onClose={() => setShowEventDetails(undefined)}
+                events={events}
+                notify={notify}
+                media={media}
+                users={users}
+                locations={locations}
+                onSave={handleSave}
+                onDelete={handleDelete}
+                updateInProgress={updateInProgress}
+            />
         </Modal>}
 
         {showFilter && <Modal className="filter-container" onClose={() => setShowFilter(false)}>
@@ -295,7 +371,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                 <div className="filter-select-users" >
                     <label>בחר יומנים</label>
                     <PeoplePicker
-                        users={users.filter(user => !filter.users.some(u => u == user._ref?.id))}
+                        users={users.filter(user => !filter.users.some(u => u === user._ref?.id))}
                         placeholder={"הוספת מוזמנים"}
 
                         onSelect={(userId: string) => {
@@ -315,21 +391,20 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
 
                 <div className="filter-selected-users">
                     {filter.users.map((userId, i) => {
-                        const user = users.find(user => user._ref?.id == userId);
-                        if (user) {
-                            return (<Person
-                                key={i}
-                                width={170}
-                                icon={user.avatar?.url}
-                                name={user.displayName}
-                                onRemove={() => {
-                                    setFilter({
-                                        ...filter,
-                                        users: filter.users.filter(u => u !== userId),
-                                    })
-                                }}
-                            />)
-                        }
+                        const user = users.find(user => user._ref?.id === userId);
+                        return (user && <Person
+                            key={i}
+                            width={170}
+                            icon={user.avatar?.url}
+                            name={user.displayName}
+                            onRemove={() => {
+                                setFilter({
+                                    ...filter,
+                                    users: filter.users.filter(u => u !== userId),
+                                })
+                            }}
+                        />)
+
                     })}
 
                 </div>
@@ -340,12 +415,12 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!newEvent && !showEventDetails && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setNewEvent({ event: getNewEvent() })} />}
+        {!showEventDetails && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setShowEventDetails(getNewEvent())} />}
 
         <FullCalendar
 
             ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin]}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             headerToolbar={false}
             dayHeaders={false}
             buttonText={{
@@ -358,13 +433,18 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             //allDayText="הודעה"
             allDayContent={<div />}
 
+            eventOrder={(ev1:any,ev2:any)=>{
+                const p1 = hasParticipants(ev1);
+                const p2 = hasParticipants(ev2);
+                if (p1 && !p2) return 1;
+                if (p2 && !p1) return -1;
+
+                return (ev1.title < ev2.title)?1:-1;
+            }}
             initialView='timeGridDay'
             height={"100%"}
-            editable={true}
             direction={"rtl"}
             locale={"he"}
-            selectable={true}
-            selectMirror={true}
             dayMaxEvents={true}
             weekends={true}
             weekText={"שבוע"}
@@ -373,7 +453,13 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             scrollTime={"07:00:00"}
             initialEvents={[]}
             handleWindowResize={true}
+            editable={true}
+            selectable={true}
+            selectMirror={true}
+            //selectAllow={(span: DateSpanApi, movingEvent: EventImpl | null) => true}
             select={handleDateSelect}
+
+
             selectLongPressDelay={300}
             eventChange={eventChanged}
             eventClick={(args: EventClickArg) => eventPressed(Event.fromEventAny(args.event))}
@@ -388,92 +474,16 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                 if (participantsArr.length > 1) {
                     return "multi-user-event";
                 }
-                if (participantsArr.length == 1) {
+                if (participantsArr.length === 1) {
                     const hash = hashUser((participantsArr[0][1] as any).email);
                     return "p" + hash;
                 }
                 return "public-event";
             }}
         />
-        {
-            newEvent && <EditEvent
-                notify={notify}
-                media={media}
-                users={users}
-                events={events}
-                inEvent={newEvent}
-                updateInProgress={updateInProgress}
-                onCancel={() => setNewEvent(undefined)}
-                onSave={async (editEvent: EditEventArgs, id?: string) => {
 
-                    //Saves new Audio if needed:
-                    setUpdateInProgress(true);
-                    let audioPathToDelete: string | undefined = undefined;
-                    let currentPathIsNew = false;
-                    if (editEvent.event.audioBlob != null) {
-                        // mark previous audio file if existed, for deletion
-                        audioPathToDelete = editEvent.event.audioPath
 
-                        //saves new audio
-                        try {
-                            const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", editEvent.event.audioBlob)
-                            editEvent.event.audioPath = newMedia.path;
-                            editEvent.event.audioUrl = newMedia.url;
-                            currentPathIsNew = true;
-                        } catch (err: any) {
-                            notify.error(err);
-                            setUpdateInProgress(false);
-                            return;
-                        }
-                    } else if (editEvent.event.clearAudio) {
-                        // Need to delete the current audio file
-                        audioPathToDelete = editEvent.event.audioPath;
-
-                        editEvent.event.audioPath = undefined;
-                        editEvent.event.audioUrl = undefined;
-                    }
-
-                    if (editEvent.editAllSeries === false && !editEvent.event.instanceStatus && id) {
-                        //update instance only
-                        api.createEventInstance(editEvent.event, id).then(
-                            (result) => {
-                                if (audioPathToDelete) {
-                                    api.deleteFile(audioPathToDelete);
-                                }
-                                notify.success("נשמר בהצלחה");
-                                onUpsertEvent(result.series, result.instance)
-                                setNewEvent(undefined);
-                            },
-                            (err) => {
-                                notify.error(err);
-                                if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
-                                    //delete the file that was uploaded
-                                    api.deleteFile(editEvent.event.audioPath);
-                                }
-                            }
-                        ).finally(stopUpdateInProgress);
-                    } else {
-                        api.upsertEvent(editEvent.event, id).then(
-                            (evt2) => {
-                                if (audioPathToDelete) {
-                                    api.deleteFile(audioPathToDelete);
-                                }
-                                notify.success("נשמר בהצלחה");
-                                onUpsertEvent(evt2);
-                                setNewEvent(undefined);
-                            },
-                            (err) => {
-                                notify.error(err);
-                                if (currentPathIsNew && editEvent.event.audioPath !== undefined) {
-                                    //delete the file that was uploaded
-                                    api.deleteFile(editEvent.event.audioPath);
-                                }
-                            }
-                        ).finally(stopUpdateInProgress);
-                    }
-                }}
-
-                onDelete={(editEvent: EditEventArgs, id: string) => {
+        {/* onDelete={(editEvent: EditEventArgs, id: string) => {
                     notify.ask("האם למחוק אירוע?", "מחיקה",
                         [
                             {
@@ -511,7 +521,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                     )
 
                 }}
-            />
-        }
+            /> */}
+
     </div>)
 }

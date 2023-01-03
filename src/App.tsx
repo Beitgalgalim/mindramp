@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {  useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './css/App.css';
-import { Alert, AlertTitle } from '@mui/material'
+import { Alert, AlertTitle, Collapse } from '@mui/material'
 import { Text, Spacer, HBoxC } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import { Collapse } from '@material-ui/core';
-import { Button, LinearProgress } from '@mui/material';
+import { Button } from '@mui/material';
 
-import { MessageInfo, MsgButton, NotificationMessage, NotificationToken, Role, UserType } from './types';
+import { MsgButton, NotificationMessage, NotificationToken, Role, UserType } from './types';
 import UserEvents from './user-events';
 import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
 import About from './about';
 import Kiosk from './kiosk';
-const logo = require("./logo-small.png");
 let gNotificationTimeout: any = undefined;
 
 function App(props: any) {
@@ -91,12 +89,12 @@ function App(props: any) {
     //   unread:true,
     // }
     // setNotifications(curr=>curr?[...curr, newNotif]:[newNotif]);
-    const greeting = new Notification(msgPayload.notification?.title, {
-      body: msgPayload.notification.body,
-      icon: logo,
-      badge: logo,
-      dir: "ltr",
-    });
+    // const greeting = new Notification(msgPayload.notification?.title, {
+    //   body: msgPayload.notification.body,
+    //   icon: logo,
+    //   badge: logo,
+    //   dir: "ltr",
+    // });
 
     // greeting.onclick = () => {
     //   alert("test");
@@ -110,11 +108,8 @@ function App(props: any) {
         if (userDocument) {
           setUser(userDocument.email);
           setNickName(userDocument.nickName || (userDocument.fname))
-          // setDesiredNotificationOn(userPersonalInfo.notificationOn === true);
-          // setActualNotificationOn(userPersonalInfo.notificationOn === true)
-          // setServerPersistedNotificationTokens(userPersonalInfo.tokens);
-          setGuide(userDocument.type == UserType.GUIDE);
-          setKiosk(userDocument.type == UserType.KIOSK)
+          setGuide(userDocument.type === UserType.GUIDE);
+          setKiosk(userDocument.type === UserType.KIOSK)
           api.getUserRoles(userDocument.email).then((roles) => {
             setRoles(roles);
           })
@@ -173,17 +168,15 @@ function App(props: any) {
       }, 1000);
     }
 
-  }, [serverPersistedNotificationTokens, desiredNotificationOn,
+  }, [serverPersistedNotificationTokens, desiredNotificationOn, setLocalNotificationToken,
     actualtNotificationOn, deviceProvidedNotificationToken,
     localNotificationToken, notificationReady]);
-
-
   return (
     <div className="App" dir="rtl">
-      {msg && <Collapse in={msg.open} timeout={500} style={{
+      {msg && <Collapse in={true} timeout={500} sx={{
         position: 'fixed',
-        display: "flex", justifyContent: "center",
-        top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 1000
+        display: "flex", justifyContent: "center", alignItems:"center",
+        top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 10000
       }} >
         <Alert style={{
           fontSize: 22,
@@ -193,6 +186,7 @@ function App(props: any) {
           borderWidth: 1,
           borderColor: "gray",
           justifyContent: "center",
+          alignItems:"center",
         }} severity={msg.severity}>
           {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => notify.clear()} /></div>}
           {msg.title ? <AlertTitle>{msg.title}</AlertTitle> : null}
@@ -245,7 +239,7 @@ function App(props: any) {
             avatarUrl={avatarUrl}
             nickName={nickName}
             onNickNameUpdate={(newNick=>setNickName(newNick))}
-            kioskMode={delagatedUser != undefined}
+            kioskMode={delagatedUser !== undefined}
             onGoHome={()=>setDelegatedUser(undefined)}
             notify={notify} />}
           />

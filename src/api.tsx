@@ -2,14 +2,13 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
     getFirestore, Firestore, collection, getDocs, doc,
     DocumentData,
-    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, writeBatch, getDoc,
+    query, orderBy, setDoc, updateDoc, DocumentReference, deleteDoc, getDoc,
     where,
     WhereFilterOp,
     deleteField
     //, limit, startAfter, getDoc, 
 } from 'firebase/firestore/lite';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getMetadata, StorageReference } from "firebase/storage";
-import { Tag } from 'react-tag-input';
 import {
     getAuth, onAuthStateChanged, Auth,
     signInWithEmailAndPassword, signOut,
@@ -19,7 +18,7 @@ import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebas
 
 
 import { firebaseConfig } from './config';
-import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, Roles, RoleRecord } from './types';
+import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
 
@@ -190,7 +189,7 @@ export function testNotif() {
     return sendNotificationTest(payload);
 }
 
-export function forgotUser(phone:string) {
+export function forgotUser(phone: string) {
     const forgotUserFunc = httpsCallable(functions, 'forgotUser');
     const payload: any = {
         isDev: isDev(),
@@ -326,6 +325,7 @@ export function getMedia(): Promise<MediaResource[]> {
         type: d.type,
         _ref: d._ref,
         keywords: d.keywords,
+        origin: d.origin,
     })));
 }
 
@@ -406,7 +406,7 @@ export async function deleteEvent(id: string, deleteModifiedInstance: boolean = 
 
 export async function updateMediaInfo(imageInfo: MediaResource) {
     if (imageInfo._ref) {
-       // const keywords = imageInfo.keywords?.toString().split(",");
+        // const keywords = imageInfo.keywords?.toString().split(",");
         return updateDoc(imageInfo._ref, {
             name: imageInfo.name,
             keywords: imageInfo.keywords ? imageInfo.keywords : deleteField(),
@@ -495,7 +495,7 @@ export async function getUserRoles(email: string) {
 }
 
 
-function updateUser(email: string, userInfo: any, roles:string[] | undefined) {
+function updateUser(email: string, userInfo: any, roles: string[] | undefined) {
     const updateUserFunc = httpsCallable(functions, 'updateUser');
     const payload: any = {
         isDev: isDev(),
@@ -506,11 +506,11 @@ function updateUser(email: string, userInfo: any, roles:string[] | undefined) {
     return updateUserFunc(payload);
 }
 
-export async function updateNickName(email: string, newNickName:string) {
-    return updateUser(email, {nickName:newNickName}, undefined);
+export async function updateNickName(email: string, newNickName: string) {
+    return updateUser(email, { nickName: newNickName }, undefined);
 }
 
-export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles:string[]) {
+export async function editUser(_ref: DocumentReference, pic: File | null, existingPic: string | undefined, userInfo: UserInfo, roles: string[]) {
     console.log("we got ref need to update " + userInfo.fname + " " + userInfo.lname + " , " + (pic ? pic.name : "NULL") + " , " + _ref.id);
 
     return getDoc(_ref).then((g) => {
@@ -568,7 +568,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
                     });
                 });
         } else {
-            if (existingPic == undefined && old_pic_path) {
+            if (existingPic === undefined && old_pic_path) {
                 //remove pic (without waiting for result)
                 existing_info.avatar = deleteField();
                 deleteFile(old_pic_path).catch((err) => console.log("Failed deleted old image", err));
@@ -580,7 +580,7 @@ export async function editUser(_ref: DocumentReference, pic: File | null, existi
 
 }
 
-export async function addUser(userInfo: UserInfo, roles:string[], email: string, pwd: string, pic?: File) {
+export async function addUser(userInfo: UserInfo, roles: string[], email: string, pwd: string, pic?: File) {
 
     const registerUser = httpsCallable(functions, 'registerUser');
 
@@ -629,7 +629,7 @@ export async function addUser(userInfo: UserInfo, roles:string[], email: string,
     });
 }
 
-export async function deleteUser(email:string, userInfo:UserInfo) {
+export async function deleteUser(email: string, userInfo: UserInfo) {
     const deleteUserFunc = httpsCallable(functions, 'deleteUser');
     const payload: any = {
         isDev: isDev(),
