@@ -178,7 +178,7 @@ export default function NewDatePicker({
                     textStyle={{ textAlign: "center", fontSize }}
                     listWidth={100}
                     value={getTime(end)}
-                    items={getTimes(dayjs(end))}
+                    items={getTimes(dayjs(start))}
                     onSelect={(newValue: string) => setEndTime(newValue)}
                     onChange={(newValue: string) => setEndTime(newValue)}
                     invalid={invalidEnd}

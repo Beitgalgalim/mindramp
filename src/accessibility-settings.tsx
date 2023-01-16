@@ -1,3 +1,5 @@
+import {  useCallback } from 'react';
+
 import { Close } from "@mui/icons-material";
 import { HBox } from "./elem";
 import { AccessibilitySettingsData, AccessibilitySettingsProps } from "./types";
@@ -27,6 +29,14 @@ export default function AccessibilitySettings({
 }: AccessibilitySettingsProps) {
 
 
+    const updateSettings = useCallback((fieldName:string, inc:number, initialValue:number) => {
+        const newVal = accSettings ? (accSettings as any)[fieldName] + inc : initialValue + inc;
+        onSettingsChange({
+            ...getData(accSettings),
+            [fieldName]: (newVal as number),
+        })
+    },[accSettings]);
+
 
     return <div className="userEventsContainer mainBG">
         <HBox style={{ justifyContent: "flex-end" }}>
@@ -43,6 +53,8 @@ export default function AccessibilitySettings({
                 תמונה
             </div>
             <div className="slider">
+            <button onClick={()=>updateSettings("imageSize", -0.1, 1)}>-</button>
+
                 <Slider
                     min={1}
                     max={1.9}
@@ -56,13 +68,16 @@ export default function AccessibilitySettings({
                             imageSize: (value as number),
                         })
                     }}
+                    
                 />
+                <button onClick={()=>updateSettings("imageSize", 0.1, 1)}>+</button>
 
             </div>
             <div>
                 נושא
             </div>
             <div className="slider">
+                <button onClick={()=>updateSettings("titleSize", -0.1, 1)}>-</button>
                 <Slider
                     min={1}
                     max={2}
@@ -75,17 +90,20 @@ export default function AccessibilitySettings({
                             titleSize: (value as number),
                         })
                     }}
+                    
                 />
+                <button onClick={()=>updateSettings("titleSize", 0.1, 1)}>+</button>
             </div>
 
             <div>
                 שעה
             </div>
             <div className="slider">
+            <button onClick={()=>updateSettings("hoursSize", -0.1, 1)}>-</button>
+
                 <Slider
                     defaultValue={30}
                     marks
-
 
                     min={1}
                     max={2}
@@ -98,7 +116,9 @@ export default function AccessibilitySettings({
                             hoursSize: (value as number),
                         })
                     }}
+                    
                 />
+            <button onClick={()=>updateSettings("hoursSize", 0.1, 1)}>+</button>
 
             </div>
         </div>

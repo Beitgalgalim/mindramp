@@ -316,6 +316,7 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     onGoHome: () => void,
     firstElemRef: any,
     avatarUrl: string | undefined,
+    isTV:boolean,
 }
 
 

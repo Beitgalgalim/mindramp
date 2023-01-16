@@ -13,4 +13,10 @@
 
 .slider {
     margin-left: 10%;
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.slider > button {
+    margin: 5px;
 }

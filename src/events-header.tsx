@@ -48,6 +48,7 @@ export default function EventsHeader({ user,
     notificationOn,
     onNotificationClick, showingNotifications, newNotificationCount,
     firstElemRef,
+    isTV,
 }: EventsHeaderProps) {
     const navigate = useNavigate();
 
@@ -69,6 +70,10 @@ export default function EventsHeader({ user,
         undefined, 350);
 
     let headerMsg = "הי " + (nickName && nickName.length > 0 ? nickName : "אורח.ת");
+
+    if (isTV && !(nickName && nickName.length > 0)) {
+        headerMsg = "";
+    }
 
     if (showDateTime) {
         const h = showDateTime.hour();

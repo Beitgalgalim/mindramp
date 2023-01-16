@@ -213,7 +213,7 @@ export function ComboBox(props: ComboBoxProps) {
                 showExpand={!hideExpandButton}
                 style={{ ...textStyle }}
                 onClick={() => {
-                    setOpen(true)
+                    if (!readOnly) setOpen(true)
                 }}
                 onValueChange={(newVal: string) => setLocalValue(newVal)}
                 onBlur={(newVal: string) => {
@@ -223,7 +223,7 @@ export function ComboBox(props: ComboBoxProps) {
                     }
                 }
                 }
-                setOpen={(o: boolean) => setOpen(o)}
+                setOpen={(o: boolean) => !readOnly? setOpen(o):{}}
                 open={open}
                 placeholder={placeholder}
                 textValue={localValue}

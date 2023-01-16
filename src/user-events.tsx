@@ -298,6 +298,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             avatarUrl={avatarUrl}
             onGoHome={onGoHome}
             firstElemRef={firstElemRef}
+            isTV={isTV}
         />
 
         <div style={{ height: admin ? "82vh" : "88vh" }}>
