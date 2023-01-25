@@ -133,6 +133,7 @@ export interface UserElementProps {
     tabMarker?: string,
     kioskMode: boolean,
     groupIndex: number,
+    isTv: boolean,
 }
 
 export interface MediaResource {
@@ -142,7 +143,7 @@ export interface MediaResource {
     path: string,
     _ref?: DocumentReference,
     keywords?: string[],
-    origin?:string,
+    origin?: string,
 }
 
 export interface EditEventArgs {
@@ -219,15 +220,19 @@ export enum InstanceType {
     Instance = 2,
 }
 
+export interface AskBeforeCloseContainer {
+    askBeforeClose: undefined | (() => boolean)
+}
 
 export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
     inEvent: Event;
+    eventDetailsBeforeClose: AskBeforeCloseContainer,
     onClose: () => void;
     events: Event[];
     locations: LocationInfo[];
     onSave: (eventToSave: Event, instanceType: InstanceType) => void;
     onDelete: (eventToSave: Event, instanceType: InstanceType) => void;
-    updateInProgress:boolean;
+    updateInProgress: boolean;
 }
 
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
@@ -253,7 +258,7 @@ export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles 
     onUpsertEvent: (event: Event, event2?: Event) => void,
     setFilter: (filter: EventFilter) => void,
     filter: EventFilter,
-    locations:LocationInfo[],
+    locations: LocationInfo[],
 }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying, WithRoles {
     isGuide: boolean,
@@ -316,7 +321,7 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     onGoHome: () => void,
     firstElemRef: any,
     avatarUrl: string | undefined,
-    isTV:boolean,
+    isTV: boolean,
 }
 
 

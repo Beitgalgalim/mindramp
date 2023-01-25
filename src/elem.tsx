@@ -158,6 +158,8 @@ export function ComboBox(props: ComboBoxProps) {
 
     const items = filterItem ? props.items.filter((item: any) => filterItem(item, localValue)) : props.items;
 
+    //items.forEach(i=>console.log("item", i))
+
     const renderItems = (renderProps: any) => {
         let key: string, txtValue: string;
         if (typeof items[renderProps.index] == "string") {
@@ -470,7 +472,7 @@ export function Modal(props: any) {
         <ReactPortal>
             <div className="modal-outer" onClick={props.onClose}>
                 <div className={"modal-inner " + props.className} onClick={(evt) => evt.stopPropagation()}>
-                    <div className="modal-close-btn" onClick={props.onClose}><Close /> </div>
+                    {!props.hideCloseButton && <div className="modal-close-btn" onClick={props.onClose}><Close /> </div>}
                     <div ref={elem} className={"modal-scroll"} onScroll={handleScroll}>
                         {props.children}
                     </div>
@@ -488,8 +490,8 @@ export function FloatingAdd(props: any) {
             position: "fixed",
             bottom: 100,
             left: 30,
-            width: 80,
-            height: 80,
+            width: 70,
+            height: 70,
             zIndex: 1000,
             borderRadius: '50%',
             backgroundColor: '#1AA7D4'

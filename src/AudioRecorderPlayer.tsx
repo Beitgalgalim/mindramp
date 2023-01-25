@@ -1,4 +1,4 @@
-import { Clear, Mic, Pause, PlayArrow, Stop } from "@mui/icons-material";
+import { Clear, Delete, Mic, Pause, PlayArrow, Stop } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { HBoxC, HBox, Spacer } from "./elem";
 import { RecorderProps } from './types'
@@ -242,7 +242,7 @@ export default function AudioPlayerRecorder({
             {showClearButton && !recording && !paused &&
                 [<Spacer key={2} />,
                 <Button key={1} bg={recColor} size={size}>
-                    <Clear style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
+                    <Delete style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
                 </Button>
                 ]
             }

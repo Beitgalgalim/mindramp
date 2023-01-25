@@ -1,4 +1,4 @@
-import { Home, NotificationsActive, NotificationsNone } from '@mui/icons-material';
+import { Home, Notifications, NotificationsActive, NotificationsActiveRounded, NotificationsNone } from '@mui/icons-material';
 import { Button } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Spacer, Text } from './elem';
@@ -93,7 +93,7 @@ export default function EventsHeader({ user,
     const NotificationIcon = showingNotifications ?
         Home : (
             notificationOn ?
-                NotificationsActive : NotificationsNone);
+                Notifications : Notifications);
 
     return <div className="main-header">
 

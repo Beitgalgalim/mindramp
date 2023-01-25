@@ -11,14 +11,14 @@ import genericEventImg from './icons/generic-event.png';
 import personalEventImg from './icons/personal-event.png';
 
 
-import { AccessTime, MicOutlined, PeopleAlt, VolumeUp } from "@mui/icons-material";
+import { AccessTime, MicOutlined, PeopleAlt, PlayArrow, VolumeUp } from "@mui/icons-material";
 //const myEvent = require('./icons/myEvent.svg');
 import myEvent from './icons/myEvent.png'
 import { AccessibilitySettingsData, UserElementProps } from "./types";
 export default function EventElement({
     accessibilitySettings,
     event, single, firstInGroup,
-    now, width, audioRef, showingKeyEvent, onSetRead, tabMarker, kioskMode }: UserElementProps
+    now, width, audioRef, showingKeyEvent, onSetRead, tabMarker, kioskMode, isTv }: UserElementProps
 
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
@@ -101,9 +101,7 @@ export default function EventElement({
             style={{
                 width: (isSingle ? widthPixels : widthPixels * 0.5),
                 height: single ? Design.singleEventHeight : Design.multiEventHeight,
-                background: playProgress >= 0 ?
-                    `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
-                    "white",
+                
                 //marginRight: firstInGroup ? 24 : 0,
             }}
             onClick={() => {
@@ -147,6 +145,14 @@ export default function EventElement({
             }}
 
         >
+            <div style={{
+                width:"100%", height:"100%",
+                marginBottom:10,
+                display:"flex",
+                background: playProgress >= 0 ?
+                `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
+                "white",
+            }}>
             {showingKeyEvent && event.unread && <UnRead onSetRead={onSetRead} />}
 
 
@@ -162,7 +168,7 @@ export default function EventElement({
 
 
                 <div className="event-text">
-                    <div style={{ fontSize: titleSize * 1.6 + "em", lineHeight: titleSize * 1.6 + "rem" }}>{event.title}</div>
+                    <div style={{ fontSize: titleSize * 1.6 + "em", lineHeight: titleSize * 1.9 + "rem" }}>{event.title}</div>
                     <Spacer height={15} />
                     <div style={{ fontSize: hourSize * 1.1 + "em", lineHeight: hourSize * 1.1 + "rem" }}>{dateTime}</div>
                     <Spacer height={5} />
@@ -193,11 +199,13 @@ export default function EventElement({
                 <Spacer />
                 {eventAudioLoading && <CircularProgress size={Design.buttonSize} />}
                 {
-                    event.audioUrl &&
-
-                    <VolumeUp style={{
-                        fontSize: Design.buttonSize,
-                    }} />
+                    event.audioUrl && !isTv && !eventAudioLoading && (playProgress > 1
+                        ? <PlayArrow style={{
+                            fontSize: Design.buttonSize,
+                        }} /> :
+                        < VolumeUp style={{
+                            fontSize: Design.buttonSize,
+                        }} />)
                 }
                 {event.participants && Object.entries(event.participants).length > 0 &&
                     <PeopleAlt style={{
@@ -209,9 +217,10 @@ export default function EventElement({
 
             {
                 minutesBefore > 0 && minutesBefore < 120 && <div className="event-time-before">
-                    <Text>{getBeforeTimeText(minutesBefore)}</Text>
+                    <Text color="white">{getBeforeTimeText(minutesBefore)}</Text>
                 </div>
             }
+            </div>
             {!single && firstInGroup && <div className="event-left-seperator" />}
             <div className="event-seperator" />
         </button >

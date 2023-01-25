@@ -1,4 +1,4 @@
-import {  useCallback } from 'react';
+import { useCallback } from 'react';
 
 import { Close } from "@mui/icons-material";
 import { HBox } from "./elem";
@@ -29,13 +29,13 @@ export default function AccessibilitySettings({
 }: AccessibilitySettingsProps) {
 
 
-    const updateSettings = useCallback((fieldName:string, inc:number, initialValue:number) => {
+    const updateSettings = useCallback((fieldName: string, inc: number, initialValue: number) => {
         const newVal = accSettings ? (accSettings as any)[fieldName] + inc : initialValue + inc;
         onSettingsChange({
             ...getData(accSettings),
             [fieldName]: (newVal as number),
         })
-    },[accSettings]);
+    }, [accSettings]);
 
 
     return <div className="userEventsContainer mainBG">
@@ -53,7 +53,7 @@ export default function AccessibilitySettings({
                 תמונה
             </div>
             <div className="slider">
-            <button onClick={()=>updateSettings("imageSize", -0.1, 1)}>-</button>
+                <button onClick={() => updateSettings("imageSize", -0.1, 1)}>-</button>
 
                 <Slider
                     min={1}
@@ -68,16 +68,16 @@ export default function AccessibilitySettings({
                             imageSize: (value as number),
                         })
                     }}
-                    
+
                 />
-                <button onClick={()=>updateSettings("imageSize", 0.1, 1)}>+</button>
+                <button onClick={() => updateSettings("imageSize", 0.1, 1)}>+</button>
 
             </div>
             <div>
                 נושא
             </div>
             <div className="slider">
-                <button onClick={()=>updateSettings("titleSize", -0.1, 1)}>-</button>
+                <button onClick={() => updateSettings("titleSize", -0.1, 1)}>-</button>
                 <Slider
                     min={1}
                     max={2}
@@ -90,16 +90,16 @@ export default function AccessibilitySettings({
                             titleSize: (value as number),
                         })
                     }}
-                    
+
                 />
-                <button onClick={()=>updateSettings("titleSize", 0.1, 1)}>+</button>
+                <button onClick={() => updateSettings("titleSize", 0.1, 1)}>+</button>
             </div>
 
             <div>
                 שעה
             </div>
             <div className="slider">
-            <button onClick={()=>updateSettings("hoursSize", -0.1, 1)}>-</button>
+                <button onClick={() => updateSettings("hoursSize", -0.1, 1)}>-</button>
 
                 <Slider
                     defaultValue={30}
@@ -116,14 +116,15 @@ export default function AccessibilitySettings({
                             hoursSize: (value as number),
                         })
                     }}
-                    
+
                 />
-            <button onClick={()=>updateSettings("hoursSize", 0.1, 1)}>+</button>
+                <button onClick={() => updateSettings("hoursSize", 0.1, 1)}>+</button>
 
             </div>
         </div>
         <div className="preview-events">
             <EventElement
+                isTv={false}
                 groupIndex={1}
                 kioskMode={false}
                 event={Event.fromDbObj({
@@ -145,6 +146,7 @@ export default function AccessibilitySettings({
             />
 
             <EventElement
+                isTv={false}
                 groupIndex={1}
                 kioskMode={false}
                 event={Event.fromDbObj({

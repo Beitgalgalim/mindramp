@@ -17,14 +17,17 @@ import MediaPicker from './media-picker';
 import NewDatePicker from './newDatePicker';
 import { useState, useCallback } from 'react';
 import { EventDetailsProps, InstanceType, MediaResource, UserInfo, UserType } from './types';
-import { AddPhotoAlternateOutlined, Close } from '@mui/icons-material';
+import { AddPhotoAlternateOutlined, Close, Delete } from '@mui/icons-material';
 import EventsNavigationNew from './events-navigation-new';
 
-const listStyle = { fontSize: "1em" };
+const listStyle = { fontSize: "1em", textAlign: "right" };
 const textStyle = { ...listStyle, width: 120, height: 25, backgroundColor: "lightgray", borderRadius: 3 };
 
 
-export default function EventDetails({ inEvent, events, onClose, onSave, onDelete, notify, media, users, locations, updateInProgress }: EventDetailsProps) {
+export default function EventDetails({
+    inEvent, events, eventDetailsBeforeClose, onClose, onSave, onDelete,
+    notify, media, users, locations, updateInProgress
+}: EventDetailsProps) {
 
     const [editEvent, setEditEvent] = useState<Event | null>(inEvent.id ? null : inEvent);
     const [inSeries, setInSeries] = useState<Event | null>(null);
@@ -32,7 +35,6 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
     const [showAddMedia, setShowAddMedia] = useState<boolean>(false);
 
     const event = editEvent || inEvent;
-
 
 
     const handleEdit = useCallback(() => {
@@ -79,8 +81,8 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
     const isDirty = useCallback(() => {
         if (!editEvent) return false;
         if (inEvent?.id === undefined) {
-            // new event - alway dirty
-            return true;
+            // new event - dirty if anything other than date is set:
+            return (Object.entries(editEvent).length > 3 || editEvent.title != "");
         }
         const compareTo = inSeries || inEvent;
 
@@ -92,6 +94,10 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
         return false;
 
     }, [inSeries, inEvent, editEvent]);
+
+    eventDetailsBeforeClose.askBeforeClose = () => {
+        return isDirty();
+    }
 
     const handleSave = useCallback(() => {
         if (!editEvent) return;
@@ -174,7 +180,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
         <div className="ev-details-header">
             <EventsNavigationNew
                 height={"60px"}
-                currentNavigation={event.allDay ? (editEvent? 1 : 0) : 0}
+                currentNavigation={event.allDay ? (editEvent ? 1 : 0) : 0}
                 onNavigate={(offset: number) => {
                     updateEvent("allDay", offset === 1);
                 }}
@@ -195,7 +201,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
             {event.imageUrl || !editEvent ?
                 <div className="relative">
                     {event.imageUrl ? <img className="ev-details-img" src={event.imageUrl} alt="אין" /> : <div className="ev-details-img">ללא</div>}
-                    {editEvent && <div className="ev-details-remove-img" onClick={() => updateEvent("imageUrl", undefined)}><Close /></div>}
+                    {editEvent && <div className="ev-details-remove-img" onClick={() => updateEvent("imageUrl", undefined)}><Delete /></div>}
                 </div> :
                 <div className="ev-details-img" onClick={() => setShowAddMedia(true)}>
                     <AddPhotoAlternateOutlined style={{ fontSize: 35 }} />
@@ -257,17 +263,21 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                     }} />}
                 {editEvent && <Spacer />}
                 <div className="ev-details-users">
-                    {event.participants && Object.entries(event.participants).map(([key, value]: any) => (<Person
-                        width={150} name={value.displayName} icon={value.icon}
-                        onRemove={editEvent ? () => {
-                            if (editEvent.participants) {
-                                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                                const { newParticipants, removed: [key] } = editEvent.participants;
-                                updateEvent("participants", newParticipants);
-                            }
+                    {event.participants && Object.entries(event.participants).map(([key, value]: any) => {
+                        console.log("part:", key, value)
+                        return <Person
+                            width={150} name={value.displayName} icon={value.icon}
+                            onRemove={editEvent ? () => {
+                                if (editEvent.participants) {
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    const { newParticipants, [key]: _ } = editEvent.participants;
+                                    updateEvent("participants", newParticipants);
+                                }
 
-                        } : undefined}
-                    />))}
+                            } : undefined}
+
+                        />
+                    })}
                 </div>
             </div>
 
@@ -299,6 +309,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                 {editEvent && <ComboBox
                     listStyle={listStyle}
                     textStyle={textStyle}
+                    listWidth={150}
                     hideExpandButton={!editEvent}
                     placeholder={"בחירת מיקום"}
                     items={locations.map(l => l.name)}
@@ -359,7 +370,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                         updateEvent("recurrent", { ...event.recurrent, freq: newValue as EventFrequency });
                     }
                 }}
-                readOnly={true}
+
             /> :
                 <div className="ev-details-label">{event.recurrent ?
                     RecurrentEventFieldKeyValue.find(f => f.key === event.recurrent?.freq)?.value :
@@ -380,7 +391,7 @@ export default function EventDetails({ inEvent, events, onClose, onSave, onDelet
                         const newIntValue = parseInt(newValue);
                         updateEvent("reminderMinutes", isNaN(newIntValue) ? undefined : newIntValue);
                     }}
-                    readOnly={true}
+
                 /> : <div className="ev-details-label">{event.reminderMinutes ?
                     ReminderFieldKeyValue.find(f => f.key === "" + event.reminderMinutes)?.value :
                     "ללא"}</div>

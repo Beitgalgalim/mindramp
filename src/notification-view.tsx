@@ -54,6 +54,7 @@ export default function NotificationView({
                 :
                 // Key Events
                 keyEvents.map((keyEvt, i) => (<EventElement key={keyEvt.tag}
+                    isTv={false}
                     groupIndex={0}
                     kioskMode={kioskMode}
                     tabMarker={i == keyEvents.length - 1 ? "last" : ""}

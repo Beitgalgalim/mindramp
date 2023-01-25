@@ -6,7 +6,7 @@ import { Event } from './event';
 
 import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
 import dayjs from 'dayjs';
-import { EventsProps, InstanceType, Roles } from './types';
+import { AskBeforeCloseContainer, EventsProps, InstanceType, Roles } from './types';
 import { FloatingAdd, Modal, Spacer } from './elem';
 import './css/events.css';
 import { hasRole } from './utils/common';
@@ -36,7 +36,7 @@ import EventDetails from './event-details';
     "audioUrl":"https://firebasestorage.googleapis.com/v0/b/mindramp-58e89.appspot.com/o/media%2Faudio%2F2022-10-20T11%3A11.129.wav?alt=media&token=b172ab2c-75b9-42e4-ab3a-1ab07ece2ed4","tag":"UO96dfDuLbi7DYrximps"}}
 */
 
-function hasParticipants(ev:EventApi) {
+function hasParticipants(ev: EventApi) {
     return ev?.extendedProps?.participants && Object.entries(ev.extendedProps.participants).length > 0;
 }
 
@@ -316,6 +316,20 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     const dayInWeek = currDate.day();
 
     const days = ["א", "ב", "ג", "ד", "ה", "ו", "ש",];
+    const eventDetailsBeforeClose: AskBeforeCloseContainer = { askBeforeClose: undefined };
+
+    const eventDetailsClose = () => {
+        if (eventDetailsBeforeClose.askBeforeClose &&
+            eventDetailsBeforeClose.askBeforeClose()) {
+            notify.ask("האם לצאת ולהתעלם מהשינויים שבוצעו?", undefined, [
+                { caption: "המשך עריכה", callback: () => { } },
+                { caption: "יציאה ללא שמירה", callback: () => setShowEventDetails(undefined) }
+            ])
+        } else {
+            setShowEventDetails(undefined);
+        }
+    }
+
 
     return (<div className="events-container">
 
@@ -348,10 +362,13 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         </div>
 
 
-        {showEventDetails && <Modal className="event-details-container" onClose={() => setShowEventDetails(undefined)}>
+        {showEventDetails && <Modal className="event-details-container"
+            onClose={eventDetailsClose}
+            hideCloseButton={true}>
             <EventDetails
                 inEvent={showEventDetails}
-                onClose={() => setShowEventDetails(undefined)}
+                eventDetailsBeforeClose={eventDetailsBeforeClose}
+                onClose={eventDetailsClose}
                 events={events}
                 notify={notify}
                 media={media}
@@ -433,13 +450,13 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             //allDayText="הודעה"
             allDayContent={<div />}
 
-            eventOrder={(ev1:any,ev2:any)=>{
+            eventOrder={(ev1: any, ev2: any) => {
                 const p1 = hasParticipants(ev1);
                 const p2 = hasParticipants(ev2);
                 if (p1 && !p2) return 1;
                 if (p2 && !p1) return -1;
 
-                return (ev1.title < ev2.title)?1:-1;
+                return (ev1.title < ev2.title) ? 1 : -1;
             }}
             initialView='timeGridDay'
             height={"100%"}
