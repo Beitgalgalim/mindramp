@@ -60,6 +60,14 @@ export default function EventElement({
     const titleSize = accessibilitySettings ? accessibilitySettings.titleSize : 1;
     const hourSize = accessibilitySettings ? accessibilitySettings.hoursSize : 1;
     const imageSize = accessibilitySettings ? accessibilitySettings.imageSize : 1;
+    const heightSingle = accessibilitySettings && accessibilitySettings.imageSize > 1 ? 7 : 9.375;
+    const heightDouble = accessibilitySettings && accessibilitySettings.imageSize > 1 ? 11 : 15.625;
+    let height = single ? heightSingle + "rem" : heightDouble + "rem"
+    if ( accessibilitySettings && accessibilitySettings.imageSize > 1 )
+    {
+        height = single ? heightSingle * imageSize + "rem" : heightDouble * imageSize + "rem"
+    }
+     
 
     const t1 = dayjs(event.start).format(DateFormats.TIME)
     const t2 = dayjs(event.end).format(DateFormats.TIME)
@@ -100,7 +108,7 @@ export default function EventElement({
             aria-label={getAccessibleEventText(event)}
             style={{
                 width: (isSingle ? widthPixels : widthPixels * 0.5),
-                height: single ? Design.singleEventHeight : Design.multiEventHeight,
+                height: height,//single ? heightSingle * titleSize + "rem" : heightDouble * titleSize + "rem", // Design.singleEventHeight : Design.multiEventHeight,
                 background: playProgress >= 0 ?
                     `linear-gradient(to left,#D1DADD ${playProgress}%, white ${playProgress}% 100%)` :
                     "white",
