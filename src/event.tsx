@@ -38,7 +38,6 @@ export const RecurrentEventFieldKeyValue = [
     { key: "weekly", value: "שבועי" },
     { key: "biWeekly", value: "אחת לשבועיים" },
     { key: "weekdays", value: "ימות השבוע (א-ה)" },
-    //    { key: "custom", value: "מותאם" },
     { key: "none", value: "ללא" },
 ];
 

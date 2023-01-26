@@ -84,11 +84,16 @@ export default function NewDatePicker({
         }
     }
 
-    const setDate = (newDate: string) => {
-        setStartLocal(newDate);
+    const setDate = (newDate: string, fromPicker: boolean) => {
         const newDatejs = dayjs(newDate, DateJSParseFormats);
         setInvalidStartDate(newDatejs.isValid() ? undefined : newDate);
         if (newDatejs.isValid()) {
+            if (fromPicker) {
+                setStartLocal(dayjs(newDate).format(DateFormats.DATE_LOCALE));
+            } else {
+                setStartLocal(newDate);
+            }
+
             console.log("valid date", newDate)
 
             const newStart = replaceDatePreserveTime2(start, newDatejs)
@@ -103,6 +108,8 @@ export default function NewDatePicker({
             } else {
                 setInvalidEndDate(newEnd);
             }
+        } else {
+            setStartLocal(newDate);
         }
     }
 
@@ -129,7 +136,7 @@ export default function NewDatePicker({
                     selected={dayjs(start).toDate()}
                     onChange={(d: Date) => {
                         console.log("picker change")
-                        setDate(dayjs(d).format(DateFormats.DATE))
+                        setDate(dayjs(d).format(DateFormats.DATE), true)
                     }}
                     shouldCloseOnSelect={true}
                     onCalendarOpen={() => setStartOpen(true)}
@@ -142,7 +149,7 @@ export default function NewDatePicker({
                             readOnly={readOnly}
                             setOpen={(o: boolean) => dateStartPicker?.current?.setOpen(o)}
                             onValueChange={(val: string) => {
-                                setDate(val)
+                                setDate(val, false)
                             }}
                             open={startOpen}
                             invalid={invalidStartDate != undefined}

@@ -1,7 +1,7 @@
 import { CircularProgress } from "@mui/material";
 import dayjs, { Dayjs } from "dayjs";
-import {  MutableRefObject, useEffect, useRef, useState } from "react";
-import {  Text, VBoxC } from "./elem";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { Text, VBoxC } from "./elem";
 import EventElement from "./event-element";
 import EventsNavigationNew from "./events-navigation-new";
 import { Design } from "./theme";
@@ -128,7 +128,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                             }
                             onChangeDaysOffset(offset);
                         }}
-                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent:26, caption: "מחר" }, { widthPercent:30, caption: "מחרתיים" }]}
+                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent: 26, caption: "מחר" }, { widthPercent: 30, caption: "מחרתיים" }]}
                         tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
                         kiosk={kioskMode}
                     />
@@ -149,6 +149,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                             <div className={evGroup.length > 1 ? "multiple-events-container" : ""}>
                                 {
                                     evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                        isTv={isTV}
                                         groupIndex={i}
                                         kioskMode={kioskMode}
                                         tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
@@ -164,8 +165,8 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                                 }
                             </div>))
                     }
+                    {isTV && <div className="event-day-seperator" />}
                 </div>
-                {isTV && <div className="event-day-seperator" />}
                 {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
                     <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
                     {loading && <CircularProgress size={Design.buttonSize} />}
