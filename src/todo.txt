@@ -12,23 +12,23 @@ V- add button 70px
 - edit event: 
   - move icons 5 px to the right
   V- feature: if dirty - ask before close
-  - in edit mode, combo box same color as text box
-  - text box with input not one on the other
-  - remove icon - change to trush icon
+  V- in edit mode, combo box same color as text box
+  V- text box with input not one on the other
+  V- remove icon - change to trush icon
   V- remove x from the modal
   V- bug:cannot remove participants
   V- bug: cannot open חוזר and תזכורת
   V- changing date, the format changes
   - bug: combo box not opening first time by lick on exapnd
-  - bug: press play on existing audio, few times do not reset the running playback
-  - change "X" of audio to trush-icon
-  - description: same font, same color as other text and have margin
-  - title, combo: margin for text
+  V- bug: press play on existing audio, few times do not reset the running playback
+  V- change "X" of audio to trush-icon
+  V- description: same font, same color as other text and have margin
+  V- title, combo: margin for text
   V- combo: exapnd icon a bit to the right
   V- מיקום: align right and wider list
-  - event/message tabs - keep anchored when scrolling
+  V- event/message tabs - keep anchored when scrolling
 tv:
-- bug? auto scroll - re-test
+V- bug? auto scroll - re-test
 V- vertical sep are to high
 V- remove audio indication
 

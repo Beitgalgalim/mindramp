@@ -13,7 +13,7 @@ import "./css/event.css";
 
 
 const scrollInterval = 600;
-const scrollIncrement = 30;
+const scrollIncrement = 10;
 
 export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, beta, accSettings,
     audioRef,
@@ -44,6 +44,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
             let intervalId = setInterval(() => {
                 // do interval logic
                 if (scrollElem.current) {
+                    console.log("scroll tv mode")
                     const h = scrollElem.current.scrollHeight;
                     scrollElem.current.scrollBy({ behavior: "smooth", top: scrollIncrement });
                     setScroll(old => {
@@ -137,10 +138,11 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
                 {isTV && <div className="events-top-seperator" />}
 
-                <div className="events-scroll-container">
+                <div className="events-scroll-container" 
+                ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}>
                     {/* <EventsContainer
                     backgroundColor={beta?"white": "#EBF0F2"}
-                    ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}
+                    
                     vhHeight={height - 8}
 
                 > */}

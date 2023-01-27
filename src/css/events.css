@@ -97,7 +97,7 @@
     width: 90vw;
     background-color: white;
     z-index: 500;
-    overflow-y: visible;
+    /* overflow-y: visible; */
 }
 
 .filter-container {

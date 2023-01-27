@@ -55,8 +55,10 @@ export default function AudioPlayerRecorder({
     const [mediaStreamSource, setMediaStreamSource] = useState<MediaStreamAudioSourceNode>();
     const [audioContext, setAudioContext] = useState<AudioContext>();
     const [recording, setRecording] = useState<boolean>(false);
+    const [playing, setPlaying] = useState<boolean>(false);
     const [paused, setPaused] = useState<boolean>(false);
     const [recData, setRecData] = useState<any>();
+    const [player, setPlayer] = useState<HTMLAudioElement | undefined>(undefined);
 
     useEffect(() => {
         if (recording && navigator.mediaDevices) {
@@ -108,13 +110,14 @@ export default function AudioPlayerRecorder({
         }
     }, [recording]);
 
-    const start = () => {
+    const startRec = () => {
         setRecording(true);
         setPaused(false);
+        setPlaying(false);
     }
 
     const play = () => {
-        if (!recording && !paused && (audioBlob || audioUrl)) {
+        if (!recording && !paused && !playing && (audioBlob || audioUrl)) {
             const player = new Audio();
 
             if (audioBlob) {
@@ -122,22 +125,36 @@ export default function AudioPlayerRecorder({
                 //player.volume = 0
                 player.onended = (e) => {
                     console.log("done")
+                    setPlaying(false);
+                    setPaused(false);
                 }
+                player.onpause = (e) => {
+                    console.log("pause")
+                    setPlaying(false);
+                    setPaused(true);
+                }
+
                 player.play();
+                setPlaying(true);
             } else if (audioUrl) {
                 player.src = audioUrl;
                 player.play();
+                setPlaying(true);
+                setPaused(true);
             }
 
-
-
+            setPlayer(player);
+        } else if (playing) {
+            player?.pause();
+        } else if (paused) {
+            player?.play();
         }
     }
 
-    const stop = () => {
+    const stopRec = () => {
+        setPaused(false);
         if (recording && recorder && mediaStreamSource && audioContext && mediaStream) {
             setRecording(false);
-            setPaused(false);
 
             recorder.disconnect(audioContext.destination);
             mediaStreamSource.disconnect(recorder);
@@ -196,14 +213,14 @@ export default function AudioPlayerRecorder({
         }
     }
 
-    const resume = () => {
+    const resumeRec = () => {
         if (paused) {
             audioContext?.resume();
             setPaused(false);
         }
     }
 
-    const pause = () => {
+    const pauseRec = () => {
         if (recording && !paused) {
             audioContext?.suspend();
             setPaused(true);
@@ -213,10 +230,10 @@ export default function AudioPlayerRecorder({
     return (<div>
         <HBox style={{ width: '100%', height: '100%', alignItems: "flex-end" }}>
 
-            {showRecordButton && !recording && !paused &&
+            {showRecordButton && !recording && (!audioBlob && !audioUrl) &&
                 [<Spacer key={2} />,
                 <Button key={1} bg={recColor} size={size}>
-                    <Mic style={{ color: 'white', fontSize: 25 }} onClick={() => start()} />
+                    <Mic style={{ color: 'white', fontSize: 25 }} onClick={() => startRec()} />
                 </Button>,
                 ]
             }
@@ -224,22 +241,24 @@ export default function AudioPlayerRecorder({
                 <HBoxC>
                     <Spacer />
                     <Button bg={recColor} size={size}>
-                        <Stop style={{ color: 'white' }} onClick={() => stop()} />
+                        <Stop style={{ color: 'white' }} onClick={() => stopRec()} />
                     </Button>
                     <Spacer />
-                    {!paused && <Button size={size} bg={recColor}><Pause style={{ color: 'white' }} onClick={() => pause()} /></Button>}
-                    {paused && <Button size={size} bg={recColor}><PlayArrow style={{ color: 'white' }} onClick={() => resume()} /></Button>}
+                    {!paused && <Button size={size} bg={recColor}><Pause style={{ color: 'white' }} onClick={() => pauseRec()} /></Button>}
+                    {paused && <Button size={size} bg={recColor}><Mic style={{ color: 'white' }} onClick={() => resumeRec()} /></Button>}
                 </HBoxC>
             }
 
-            {showPlayButton && !recording && !paused &&
+            {showPlayButton && !recording &&
                 [<Spacer key={2} />,
                 <Button key={1} size={size} bg={playColor}>
-                    <PlayArrow style={{ color: 'white', fontSize: size / 1.3 }} onClick={() => play()} />
+                    {playing ?
+                        <Pause style={{ color: 'white', fontSize: size / 1.3 }} onClick={() => play()} /> :
+                        <PlayArrow style={{ color: 'white', fontSize: size / 1.3 }} onClick={() => play()} />}
                 </Button>,
                 ]
             }
-            {showClearButton && !recording && !paused &&
+            {showClearButton && !recording && 
                 [<Spacer key={2} />,
                 <Button key={1} bg={recColor} size={size}>
                     <Delete style={{ color: 'white', fontSize: 25 }} onClick={() => onClear && onClear()} />
