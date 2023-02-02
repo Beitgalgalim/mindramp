@@ -71,7 +71,7 @@ export default function EventsHeader({ user,
 
     let headerMsg = "הי " + (nickName && nickName.length > 0 ? nickName : "אורח.ת");
 
-    if (isTV && !(nickName && nickName.length > 0)) {
+    if (isTV) {
         headerMsg = "";
     }
 

@@ -118,6 +118,7 @@ export interface ComboBoxProps {
     listStyle?: any,
     textStyle?: any,
     readOnly?: boolean,
+    allowFreeText?:boolean,
     invalid?: boolean,
     filterItem?: (item: ComboBoxItem, txtValue: string) => boolean,
     renderItem?: (item: ComboBoxItem, hoover: boolean, selected: boolean) => ReactElement,
@@ -130,7 +131,9 @@ export interface ComboBoxProps {
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { listStyle, textStyle, filterItem, itemHeight, listHeight, onSelect, onChange, placeholder, hideExpandButton, listWidth, readOnly } = props;
+    const { listStyle, textStyle, filterItem, itemHeight, 
+        listHeight, onSelect, onChange, placeholder, 
+        hideExpandButton, listWidth, readOnly, allowFreeText } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
     const [hoverItem, setHoverItem] = React.useState<number>(-1);
@@ -229,7 +232,7 @@ export function ComboBox(props: ComboBoxProps) {
                 open={open}
                 placeholder={placeholder}
                 textValue={localValue}
-                readOnly={readOnly}
+                readOnly={!allowFreeText || readOnly}
                 invalid={props.invalid}
                 onArrowUp={() => console.log("up")}
                 onArrowDown={() => console.log("down")}

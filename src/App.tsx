@@ -1,4 +1,4 @@
-import {  useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './css/App.css';
@@ -171,14 +171,17 @@ function App(props: any) {
   }, [serverPersistedNotificationTokens, desiredNotificationOn, setLocalNotificationToken,
     actualtNotificationOn, deviceProvidedNotificationToken,
     localNotificationToken, notificationReady]);
+
   return (
     <div className="App" dir="rtl">
       {msg && <Collapse in={true} timeout={500} sx={{
         position: 'fixed',
-        display: "flex", justifyContent: "center", alignItems:"center",
-        top: msg.top || 0, left: 0, right: 0, fontSize: 15, zIndex: 10000
+        display: "flex", justifyContent: "center", alignItems: "center",
+        top: msg.top || 10, width: "100vw", fontSize: 15, zIndex: 10000
       }} >
         <Alert style={{
+          position: "absolute",
+          left: "15vw",
           fontSize: 22,
           width: "70vw",
           borderRadius: 15,
@@ -186,9 +189,9 @@ function App(props: any) {
           borderWidth: 1,
           borderColor: "gray",
           justifyContent: "center",
-          alignItems:"center",
+          alignItems: "center",
         }} severity={msg.severity}>
-          {!msg.buttons && <div style={{ position: "absolute", left: "14vw", top: "1vh" }}><Close onClick={() => notify.clear()} /></div>}
+          {!msg.buttons && <div style={{ position: "absolute", left: 10, top: "1vh" }}><Close onClick={() => notify.clear()} /></div>}
           {msg.title ? <AlertTitle>{msg.title}</AlertTitle> : null}
           <Text>{msg.body}</Text>
           {msg.details ? msg.details.split("\n").map(d => <Text fontSize={15}>{d}</Text>) : null}
@@ -213,35 +216,35 @@ function App(props: any) {
 
           <Route path="/*" element={
             kiosk && !delagatedUser ?
-              <Kiosk onSelectUser={(userN:string|undefined, nickN:string|undefined, avatarUrl?:string)=>{
+              <Kiosk onSelectUser={(userN: string | undefined, nickN: string | undefined, avatarUrl?: string) => {
                 console.log("kiosk open: ", userN);
                 setDelegatedUser(userN);
                 setNickName(nickN);
                 setAvatarUrl(avatarUrl);
 
-              }} />:
+              }} /> :
 
-          <UserEvents
-            roles={roles}
-            isGuide={guide}
-            notificationOn={actualtNotificationOn === true}
-            onNotificationToken={(notifToken) => {
-              setDeviceProvidedNotificationToken(notifToken);
-            }}
-            onPushNotification={onPushNotification}
-            onNotificationOnChange={(on) => {
-              setDesiredNotificationOn(on);
-            }}
+              <UserEvents
+                roles={roles}
+                isGuide={guide}
+                notificationOn={actualtNotificationOn === true}
+                onNotificationToken={(notifToken) => {
+                  setDeviceProvidedNotificationToken(notifToken);
+                }}
+                onPushNotification={onPushNotification}
+                onNotificationOnChange={(on) => {
+                  setDesiredNotificationOn(on);
+                }}
 
-            windowSize={windowSize}
-            connected={connected}
-            user={delagatedUser || user}
-            avatarUrl={avatarUrl}
-            nickName={nickName}
-            onNickNameUpdate={(newNick=>setNickName(newNick))}
-            kioskMode={delagatedUser !== undefined}
-            onGoHome={()=>setDelegatedUser(undefined)}
-            notify={notify} />}
+                windowSize={windowSize}
+                connected={connected}
+                user={delagatedUser || user}
+                avatarUrl={avatarUrl}
+                nickName={nickName}
+                onNickNameUpdate={(newNick => setNickName(newNick))}
+                kioskMode={delagatedUser !== undefined}
+                onGoHome={() => setDelegatedUser(undefined)}
+                notify={notify} />}
           />
         </Routes>
       </BrowserRouter>

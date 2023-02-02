@@ -28,6 +28,7 @@ export function PeoplePicker({listStyle, textStyle, onSelect, users, type, place
         textStyle={textStyle}
         itemHeight={35}
         listWidth={150}
+        allowFreeText={false}
         placeholder={placeholder}
         hideExpandButton={false}
         onSelect={(key: string) => {

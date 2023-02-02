@@ -1,11 +1,10 @@
-import { Colors, Design } from './theme';
-import { Button, TextField, Checkbox, FormControlLabel, Grid, Badge } from '@mui/material';
-import { Avatar, ComboBox, HBox, HBoxSB, Spacer, Text, } from './elem';
-import { EditUserProps, Role, RoleRecord, Roles } from './types';
-import { useEffect, useRef, useState, Fragment } from 'react';
+import { Button, TextField, Checkbox, FormControlLabel, Grid } from '@mui/material';
+import { Avatar, ComboBox, HBox, Spacer } from './elem';
+import { EditUserProps, Roles } from './types';
+import { useEffect, useRef, useState } from 'react';
 import { UserType, UserInfo } from './types';
 import * as api from "./api";
-import { BadgeOutlined, ContactMail, ContactMailOutlined, Email, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
+import { BadgeOutlined, ContactMailOutlined, Password, PersonAddOutlined, PersonOff, PersonOutlined, PersonRemoveAlt1Outlined, Phone } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { hasRole } from './utils/common';
 
@@ -74,6 +73,9 @@ export default function EditUser({ user, userInfo, afterSaved, notify, roles, ro
         // if this is a technical user to be a kiosk user, assigns the role kiosk to it.
         handleRoleChange(Roles.Kiosk, parseInt(key) === UserType.KIOSK);
 
+        // if this is a technical user to be a shared-screen user, assigns the role shared-screen to it.
+        handleRoleChange(Roles.SharedScreen, parseInt(key) === UserType.SHAREDSCREEN);
+
         setDirty(true);
     }
 
@@ -85,25 +87,21 @@ export default function EditUser({ user, userInfo, afterSaved, notify, roles, ro
             setPreview(objectUrl);
         }
         setDirty(true);
-
     }
 
     function onEmailChange(n: any) {
         setEmail(n.currentTarget.value.toLowerCase());
         setDirty(true);
-
     }
 
     function onPhoneChange(n: any) {
         setPhone(n.currentTarget.value);
         setDirty(true);
-
     }
 
     function onFNameChange(n: any) {
         setFName(n.currentTarget.value);
         setDirty(true);
-
     }
 
     function onLNameChange(n: any) {
@@ -309,11 +307,13 @@ export default function EditUser({ user, userInfo, afterSaved, notify, roles, ro
                         items={[
                             { value: "משתתף.ת", key: UserType.PARTICIPANT.toString() },
                             { value: "מדריך.ה", key: UserType.GUIDE.toString() },
-                            { value: "עמדה משותפת", key: UserType.KIOSK.toString() }
+                            { value: "עמדה משותפת", key: UserType.KIOSK.toString() },
+                            { value: "מסך משותף", key: UserType.SHAREDSCREEN.toString() }
                         ]}
                         value={type.toString()}
                         onSelect={handleTypeChange}
-                        readOnly={true}
+                        readOnly={false}
+                        allowFreeText={false}
                     //onChange={(locationKey: string) => setSelectedLocation(locationKey)}
                     />
                 </Grid>
@@ -322,7 +322,7 @@ export default function EditUser({ user, userInfo, afterSaved, notify, roles, ro
             <div className="permission-container">
                 <div >הרשאות</div>
                 {
-                    roleRecords.filter(rr => rr.id !== Roles.Kiosk).map(rr => {
+                    roleRecords.filter(rr => rr.id !== Roles.Kiosk && rr.id != Roles.SharedScreen).map(rr => {
                         let checked = localRoles.includes(rr.id) || implicitRoles.includes(rr.id);
                         let disabled = implicitRoles.includes(rr.id) && !localRoles.includes(rr.id);
 

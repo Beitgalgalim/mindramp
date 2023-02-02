@@ -177,6 +177,7 @@ export default function NewDatePicker({
                     }}
                     invalid={invalidStart}
                     readOnly={readOnly}
+                    allowFreeText={true}
                 />
                 <div className="datepicker-time-range-sep">-</div>
                 <ComboBox
@@ -190,6 +191,7 @@ export default function NewDatePicker({
                     onChange={(newValue: string) => setEndTime(newValue)}
                     invalid={invalidEnd}
                     readOnly={readOnly}
+                    allowFreeText={true}
                 />
             </div>}
 

@@ -48,6 +48,7 @@ const Roles = {
     ContentAdmin: "content-admin",
     Editor: "editor",
     Kiosk: "kiosk",
+    SharedScreen: "shared-screen",
 };
 
 // exports.houseKeeping = functions.region("europe-west1").pubsub
@@ -356,7 +357,7 @@ function handleParticipantAdded(isDev, change, context) {
     if (change.after.exists) {
         if (eventsUtil.inThePast(change.after.data().end)) {
             // if the event ends in the past
-            functions.logger.info("change event in the past")
+            functions.logger.info("change event in the past");
             return false;
         }
 
@@ -985,6 +986,7 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
         roles.includes(Roles.ContentAdmin) || // content-admin loads all
         entry.event.participants === undefined || // public event
         Object.entries(entry.event.participants).length === 0 ||
+        roles.includes(Roles.SharedScreen) && entry.event.showOnSharedScreen || // Showing on shared screen
         (participantKey && entry.event.participants && entry.event.participants[participantKey]) || // The user is a participant
         entry.event.guide && entry.event.guide.email === effectiveEmail); // the user is a guide
     return {
@@ -1131,7 +1133,7 @@ function archiveData() {
 - To send a whatsApp message, simply insert a record into "notifications" collection. It has to have a template if this is
   business initiated message, so a template must be prepared and approved in facebook
 - free text (not template based), are to respond to users messages. One the business responds, it is allowed to send anything.
- 
+
 - Message we plan to send/recieve:
   - you are invited to a meeting (done)
     - approval of meeting invite (todo)

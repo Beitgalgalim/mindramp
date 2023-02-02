@@ -194,7 +194,7 @@ export default function EventDetails({
     }
 
     const needScroll = scrollElem.current && (scrollElem.current.scrollHeight > scrollElem.current.offsetHeight);
-
+    const participants = event.participants ? Object.entries(event.participants) : [];
 
     return <div className="ev-details">
         <div className="ev-details-header">
@@ -252,13 +252,20 @@ export default function EventDetails({
             </div>
 
             <div className="ev-details-line">
-                <textarea className="ev-details-notes" 
+                <textarea className="ev-details-notes"
                     readOnly={!editEvent}
                     onChange={(e) => updateEvent("notes", e?.currentTarget?.value)} >{event.notes}</textarea>
-                {!event.allDay && <div>
-                    <Checkbox checked={event.keyEvent} disabled={!editEvent} onChange={(e) => updateEvent("keyEvent", e.currentTarget.checked)} />
-                    אירוע מיוחד
-                </div>}
+                <div className="ev-details-check-boxes-list">
+                    {!event.allDay && <div className="ev-details-check-box">
+                        <Checkbox checked={event.keyEvent} disabled={!editEvent} onChange={(e) => updateEvent("keyEvent", e.currentTarget.checked)} />
+                        <div >אירוע מיוחד</div>
+                    </div>}
+
+                    <div className="ev-details-check-box">
+                        <Checkbox checked={event.showOnSharedScreen} disabled={!editEvent || participants.length === 0} onChange={(e) => updateEvent("showOnSharedScreen", e.currentTarget.checked)} />
+                        <div>הצג במסך משותף</div>
+                    </div>
+                </div>
             </div>
 
             {/**Users */}
@@ -284,7 +291,7 @@ export default function EventDetails({
                         }} />}
                     {editEvent && <Spacer />}
                     <div className="ev-details-users">
-                        {event.participants && Object.entries(event.participants).map(([key, value]: any) => {
+                        {event.participants && participants.map(([key, value]: any) => {
                             console.log("part:", key, value)
                             return <Person
                                 width={150} name={value.displayName} icon={value.icon}
@@ -330,6 +337,7 @@ export default function EventDetails({
                     {editEvent && <ComboBox
                         listStyle={listStyle}
                         textStyle={textStyle}
+                        allowFreeText={true}
                         listWidth={150}
                         hideExpandButton={!editEvent}
                         placeholder={"בחירת מיקום"}
@@ -379,7 +387,7 @@ export default function EventDetails({
                     listStyle={listStyle}
                     textStyle={textStyle}
                     listWidth={150}
-
+                    allowFreeText={false}
                     value={event.recurrent ? event.recurrent.freq : "none"}
                     items={RecurrentEventFieldKeyValue}
                     onSelect={(newValue: string) => {
@@ -405,7 +413,7 @@ export default function EventDetails({
                         listStyle={listStyle}
                         textStyle={textStyle}
                         listWidth={150}
-
+                        allowFreeText={false}
                         value={event.reminderMinutes === undefined ? "none" : event.reminderMinutes + ""}
                         items={ReminderFieldKeyValue}
                         onSelect={(newValue: string) => {

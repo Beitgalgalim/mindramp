@@ -60,6 +60,7 @@ export enum UserType {
     PARTICIPANT = 1,
     GUIDE = 2,
     KIOSK = 3,
+    SHAREDSCREEN = 4,
 }
 
 export interface Role {
@@ -81,6 +82,7 @@ export const Roles = {
     ContentAdmin: "content-admin",
     Editor: "editor",
     Kiosk: "kiosk",
+    SharedScreen: "shared-screen",
 };
 
 export interface UserInfo {

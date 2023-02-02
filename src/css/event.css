@@ -421,6 +421,20 @@
     width: 90%;
 }
 
+.ev-details-check-boxes-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: start;
+}
+
+.ev-details-check-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+
+}
 .ev-details-date-picker {
     font-size: 2em;
 }

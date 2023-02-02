@@ -59,6 +59,7 @@ export class Event {
     start: string = "";
     end: string = "";
     keyEvent?: boolean;
+    showOnSharedScreen?: boolean;
     allDay?: boolean;
     notes?: string;
     imageUrl?: string;
@@ -80,7 +81,7 @@ export class Event {
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
-
+    
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
         if ("toPlainObject" in eventApi) {
@@ -120,6 +121,7 @@ export class Event {
         assignIfExists(evt, "participants", doc);
         assignIfExists(evt, "guide", doc);
         assignIfExists(evt, "keyEvent", doc);
+        assignIfExists(evt, "showOnSharedScreen", doc);
         assignIfExists(evt, "allDay", doc);
         assignIfExists(evt, "reminderMinutes", doc);
         assignIfExists(evt, "modifiedAt", doc);
@@ -206,6 +208,8 @@ export class Event {
 
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
+        clearFieldIfEmpty("showOnSharedScreen");
+        
         clearFieldIfEmpty("allDay");
         clearFieldIfEmpty("reminderMinutes");
 
