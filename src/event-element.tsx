@@ -24,6 +24,19 @@ export default function EventElement({
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
     const intervalRef = useRef<NodeJS.Timer>();
+    const intervalFoucsRef = useRef<NodeJS.Timer>();
+    
+    const playAudioInKisokMode = () => {
+        if (intervalFoucsRef.current) {
+            clearInterval(intervalFoucsRef.current);
+        }
+        intervalFoucsRef.current = setInterval(() => {
+            if (audioRef && audioRef.current &&  event.audioUrl && playProgress == -1 ) {
+                playAudio()
+            }   
+            stopFoucsTimer();
+        }, 2000);
+    }
 
     const startTimer = () => {
         // Clear any timers already running
@@ -46,6 +59,53 @@ export default function EventElement({
                 setPlayProgress(-1);
             }
         }, 200);
+    }
+
+    const playAudio = () => {
+        if (event.unread === true && onSetRead) {
+            console.log("onSetRead")
+            onSetRead();
+        }
+        // plays the audio if exists
+        if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {  
+            // console.log(e.detail)
+            if (audioRef.current.src === event.audioUrl) {
+                console.log("avoid multiple clicks")
+                // avoid multiple clicks
+                if (eventAudioLoading) {
+                    console.log("audio is still loading - ignore click")
+                    return;
+                }
+                if (audioRef.current.paused) {
+                    audioRef.current.play().then(() => startTimer());
+                } else {
+                    audioRef.current.pause();
+                    stopTimer();
+                    setEventAudioLoading(false);
+                    console.log("audio loading off 2")
+                }
+
+                return;
+            }
+
+            setEventAudioLoading(true);
+            console.log("audio start loading")
+            audioRef.current.src = event.audioUrl;
+            audioRef.current.onended = () => {
+                stopTimer();
+                console.log("ended")
+                setEventAudioLoading(false);
+                setPlayProgress(-1);
+            }
+            audioRef.current.play().then(() => startTimer());
+        }
+
+    }
+
+    const stopFoucsTimer = () => {
+        if (intervalFoucsRef.current)
+            clearInterval(intervalFoucsRef.current);
+        intervalFoucsRef.current = undefined;
     }
 
     const stopTimer = () => {
@@ -105,43 +165,11 @@ export default function EventElement({
                 //marginRight: firstInGroup ? 24 : 0,
             }}
             onClick={() => {
-                if (event.unread === true && onSetRead) {
-                    onSetRead();
-                }
-
-                // plays the audio if exists
-                if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {
-                    // console.log(e.detail)
-                    if (audioRef.current.src === event.audioUrl) {
-                        // avoid multiple clicks
-                        if (eventAudioLoading) {
-                            console.log("audio is still loading - ignore click")
-                            return;
-                        }
-
-                        if (audioRef.current.paused) {
-                            audioRef.current.play().then(() => startTimer());
-                        } else {
-                            audioRef.current.pause();
-                            stopTimer();
-                            setEventAudioLoading(false);
-                            console.log("audio loading off 2")
-                        }
-
-                        return;
-                    }
-
-                    setEventAudioLoading(true);
-                    console.log("audio start loading")
-                    audioRef.current.src = event.audioUrl;
-                    audioRef.current.onended = () => {
-                        stopTimer();
-                        console.log("ended")
-                        setEventAudioLoading(false);
-                        setPlayProgress(-1);
-                    }
-                    audioRef.current.play().then(() => startTimer());
-                }
+                playAudio()
+            }}
+            onFocus={() =>{
+                if (kioskMode)
+                    playAudioInKisokMode()
             }}
 
         >
