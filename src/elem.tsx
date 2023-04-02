@@ -73,7 +73,7 @@ export const ClickableText = React.forwardRef((props: any, ref: any) => {
                 ...style,
             }}
 
-            
+
             placeholder={placeholder}
 
             onMouseOver={(e) => {
@@ -118,7 +118,7 @@ export interface ComboBoxProps {
     listStyle?: any,
     textStyle?: any,
     readOnly?: boolean,
-    allowFreeText?:boolean,
+    allowFreeText?: boolean,
     invalid?: boolean,
     filterItem?: (item: ComboBoxItem, txtValue: string) => boolean,
     renderItem?: (item: ComboBoxItem, hoover: boolean, selected: boolean) => ReactElement,
@@ -131,8 +131,8 @@ export interface ComboBoxProps {
 
 
 export function ComboBox(props: ComboBoxProps) {
-    const { listStyle, textStyle, filterItem, itemHeight, 
-        listHeight, onSelect, onChange, placeholder, 
+    const { listStyle, textStyle, filterItem, itemHeight,
+        listHeight, onSelect, onChange, placeholder,
         hideExpandButton, listWidth, readOnly, allowFreeText } = props;
     const [open, setOpen] = React.useState(false);
     const [localValue, setLocalValue] = React.useState<string>("");
@@ -164,6 +164,7 @@ export function ComboBox(props: ComboBoxProps) {
     //items.forEach(i=>console.log("item", i))
 
     const renderItems = (renderProps: any) => {
+        //console.log("CB item", renderProps)
         let key: string, txtValue: string;
         if (typeof items[renderProps.index] == "string") {
             key = items[renderProps.index] as string;
@@ -187,9 +188,10 @@ export function ComboBox(props: ComboBoxProps) {
                     primary={
                         props.renderItem ?
                             props.renderItem(items[renderProps.index], hoverItem === renderProps.index, false) :
-                            <div style={{ fontSize: 12, textAlign: listStyle?.textAlign || "left" }}>
+                            <div key={key} style={{ fontSize: 12, textAlign: listStyle?.textAlign || "left" }}>
                                 {txtValue}
                             </div>
+
                     }
                 />
             </ListItemButton>
@@ -228,7 +230,7 @@ export function ComboBox(props: ComboBoxProps) {
                     }
                 }
                 }
-                setOpen={(o: boolean) => !readOnly? setOpen(o):{}}
+                setOpen={(o: boolean) => !readOnly ? setOpen(o) : {}}
                 open={open}
                 placeholder={placeholder}
                 textValue={localValue}
@@ -250,7 +252,9 @@ export function ComboBox(props: ComboBoxProps) {
                     width={listWidth || 100}
                     direction={listStyle?.textAlign === "right" ? "rtl" : "ltr"}
                     itemSize={itemSize}
-                    initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}>
+                    //initialScrollOffset={0}
+                    //initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}
+                    >
                     {renderItems}
                 </FixedSizeList>
             </Popper>

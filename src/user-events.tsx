@@ -98,7 +98,6 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
-    const accessibleCalendarAct = accessibleCalendar || !roles.length || (roles.length === 1 && roles[0].id === Roles.Kiosk);
 
     const location = useLocation();
     let refDate: Dayjs = dayjs();
@@ -116,6 +115,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [searchParams] = useSearchParams();
     const isTV = searchParams.get("isTv") === "true";
     isTV && console.log("TV mode")
+    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && roles[0].id === Roles.Kiosk);
+
     useEffect(() => {
         setEtag(undefined);
         setReload(old => old + 1);
@@ -264,6 +265,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             notify={notify}
             nickName={nickName}
             isKioskUser={kioskMode}
+            isTV={isTV}
         />
     }
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);

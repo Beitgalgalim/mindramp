@@ -25,7 +25,8 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
     onAccessibleCalendar,
     accessibleCalendar,
     beta,
-    isKioskUser
+    isKioskUser,
+    isTV
 }: UserSettingsProps) {
     const [editName, setEditName] = useState<string>(nickName || "");
 
@@ -114,7 +115,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
             </HBoxC>}
 
             <Spacer height={20} />
-            <HBox style={{ alignItems: "center" }}>
+            {/* <HBox style={{ alignItems: "center" }}>
                 <Checkbox onChange={() => {
                     onBetaChange(!beta)
                 }} checked={beta}
@@ -122,9 +123,9 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 <Text fontSize={13}>השתתפות בבטא</Text>
                 <Spacer />
 
-            </HBox>
-            <Spacer height={20} />
-            <HBox style={{ alignItems: "center" }}>
+            </HBox> */}
+            {/* <Spacer height={20} /> */}
+            {!isTV && <HBox style={{ alignItems: "center" }}>
                 <Checkbox onChange={() => {
                     onAccessibleCalendar(!accessibleCalendar)
                 }} checked={!accessibleCalendar}
@@ -132,7 +133,7 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 <Text fontSize={13}>תצוגת יומן שאינה מונגשת</Text>
                 <Spacer />
 
-            </HBox>
+            </HBox>}
 
             <Spacer height={20} />
             <HBoxC>

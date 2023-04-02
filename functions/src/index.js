@@ -51,6 +51,11 @@ const Roles = {
     SharedScreen: "shared-screen",
 };
 
+const allowedElevateRoles = [
+    Role.SharedScreen,
+    Role.Kiosk,
+]
+
 // exports.houseKeeping = functions.region("europe-west1").pubsub
 //     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
 //     .schedule("00 10 * * *")
@@ -539,7 +544,7 @@ exports.registerUser = functions.region("europe-west1").https.onCall(async (data
 
                         roles.forEach(role => {
                             // only assign roles that the current user has (cannot elevate roles)
-                            if (userRoles.includes(role)) {
+                            if (userRoles.includes(role) || allowedElevateRoles.includes(role)) {
                                 const docRoleRef = db.collection(isDev ? "role_dev" : "role").doc(role);
                                 batch.update(docRoleRef, { members: FieldValue.arrayUnion(data.email) });
                             }
@@ -647,6 +652,8 @@ exports.updateUser = functions.region("europe-west1").https.onCall(async (data, 
             newRoles.forEach(newRole => {
                 batch.update(roleColl.doc(newRole), { members: FieldValue.arrayUnion(email) });
             });
+
+            // todo - check for role ellevation
 
             rolesChanged = removedRoles.length > 0 || newRoles.length > 0;
         }

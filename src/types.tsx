@@ -299,6 +299,7 @@ export interface UserSettingsProps extends WithUser, Notifying {
     beta: boolean,
     accessibleCalendar: boolean,
     isKioskUser: boolean,
+    isTV: boolean,
 }
 
 export interface AccessibilitySettingsProps {
