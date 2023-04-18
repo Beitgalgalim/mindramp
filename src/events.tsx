@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import * as api from './api'
 import { Checkbox, CircularProgress } from '@mui/material'
-import { FilterAlt, NavigateBefore, NavigateNext, Today } from '@mui/icons-material';
+import { FilterAlt, NavigateBefore, NavigateNext, Today, VolumeOff, VolumeUp } from '@mui/icons-material';
 import { Event } from './event';
 
 import { DateFormats, getDayDesc, getNiceDate } from './utils/date';
@@ -81,7 +81,7 @@ function renderOneEvent(event: EventApi): any {
                     "M21 12V6c0-1.1-.9-2-2-2h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V10h14v2h2zm-5.36 8c.43 1.45 1.77 2.5 3.36 2.5 1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5c-.95 0-1.82.38-2.45 1H18V18h-4v-4h1.5v1.43c.9-.88 2.14-1.43 3.5-1.43 2.76 0 5 2.24 5 5s-2.24 5-5 5c-2.42 0-4.44-1.72-4.9-4h1.54z")
             }
             {/* {hasParticipants && getMarkerIcon("M 16.5 13 c -1.2 0 -3.07 0.34 -4.5 1 c -1.43 -0.67 -3.3 -1 -4.5 -1 C 5.33 13 1 14.08 1 16.25 V 19 h 22 v -2.75 c 0 -2.17 -4.33 -3.25 -6.5 -3.25 Z m -4 4.5 h -10 v -1.25 c 0 -0.54 2.56 -1.75 5 -1.75 s 5 1.21 5 1.75 v 1.25 Z m 9 0 H 14 v -1.25 c 0 -0.46 -0.2 -0.86 -0.52 -1.22 c 0.88 -0.3 1.96 -0.53 3.02 -0.53 c 2.44 0 5 1.21 5 1.75 v 1.25 Z M 7.5 12 c 1.93 0 3.5 -1.57 3.5 -3.5 S 9.43 5 7.5 5 S 4 6.57 4 8.5 S 5.57 12 7.5 12 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z m 9 5.5 c 1.93 0 3.5 -1.57 3.5 -3.5 S 18.43 5 16.5 5 S 13 6.57 13 8.5 s 1.57 3.5 3.5 3.5 Z m 0 -5.5 c 1.1 0 2 0.9 2 2 s -0.9 2 -2 2 s -2 -0.9 -2 -2 s 0.9 -2 2 -2 Z")} */}
-            {/* {event.extendedProps.audioUrl && <VolumeUp />} */}
+            {event.extendedProps.audioUrl ? <VolumeUp /> : <VolumeOff/>}
             {/* {event.extendedProps.imageUrl && <img src={event.extendedProps.imageUrl} />} */}
         </div>
     </div>;

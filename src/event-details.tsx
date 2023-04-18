@@ -121,9 +121,24 @@ export default function EventDetails({
             objToSave.clearAudio = true;
         }
 
+        
+
         if (objToSave.allDay) {
             delete objToSave.keyEvent;
             delete objToSave.reminderMinutes;
+        }
+
+        // Check if Audio exists and if not - warn
+        if (!objToSave.audioUrl && !objToSave.audioBlob) {
+            notify.ask(
+                "בפגישה אין הקלטה המתארת את התוכן. האם לשמור בכל זאת?",
+                "שמירה ללא הקלטה",
+            [
+                {caption: "המשך שמירה", callback: ()=>onSave(objToSave, instanceType)},
+                {caption: "המשך עריכה", callback:()=>{}}
+                
+            ]);
+            return;
         }
 
         onSave(objToSave, instanceType);
