@@ -15,7 +15,7 @@ export const NavButton = ({ caption, isLast, selected, widthPercent, onPress, ta
             tab-marker={tabMarker}
             onClick={(e) => onPress(e)}>
 
-            <div className="day-nav-button">
+            <div className={selected? " day-nav-button-selected":"day-nav-button"}>
                 {caption}
             </div>
             {selected && <div className="nav-underline" />}

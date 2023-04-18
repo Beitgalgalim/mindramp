@@ -47,18 +47,28 @@
   
 
 .nav-underline {
-    background-color: #16A5D2;
+    /* background-color: #16A5D2;
     min-height: 5px;
     border-radius: 2px;
-    width: 60%;
+    width: 60%; */
 }
+
 
 .day-nav-button {
     display: flex;
     flex-direction: column;
     margin: 0;
-    font-size: 1.5em;
+    font-size: 1.2em;
+    line-height:2.4em;
+}
+
+.day-nav-button-selected {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-size: 1.7em;
     line-height:1.7em;
+    border-bottom: solid 5px #16A5D2;
 }
 
 .horiz-seperator {
