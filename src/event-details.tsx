@@ -287,7 +287,8 @@ export default function EventDetails({
             <div className="ev-details-line">
                 <UsersIcon className="ev-details-icon" />
                 <div className="ev-details-users-container">
-                    {editEvent && <PeoplePicker users={users}
+                    {editEvent && <PeoplePicker 
+                        users={users}
                         listStyle={listStyle}
                         textStyle={textStyle}
                         type={UserType.PARTICIPANT}
@@ -329,7 +330,7 @@ export default function EventDetails({
             <div className="ev-details-line">
                 <GuideIcon className="ev-details-icon" />
                 <div className="ev-details-users-container">
-                    {editEvent && <PeoplePicker users={users} type={UserType.PARTICIPANT} placeholder="בחר מדריך"
+                    {editEvent && <PeoplePicker users={users} type={UserType.GUIDE} placeholder="בחר מדריך"
                         listStyle={listStyle}
                         textStyle={textStyle}
 

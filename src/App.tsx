@@ -60,9 +60,9 @@ function App(props: any) {
     }
   }
   const notify = {
-    success: (body: string, title?: string) => {
+    success: (body: string, title?: string, duration?: number) => {
       setMsg({ open: true, severity: "success", title, body, progress: false });
-      msgTimerRef.current = setTimeout(clearMsg, 5000);
+      msgTimerRef.current = setTimeout(clearMsg, duration || 5000);
     },
     error: (body: string, title?: string) => {
 

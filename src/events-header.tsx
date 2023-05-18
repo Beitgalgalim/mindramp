@@ -1,5 +1,4 @@
-import { Home, Notifications, NotificationsActive, NotificationsActiveRounded, NotificationsNone } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { Home, Menu, Notifications, NotificationsActive, NotificationsActiveRounded, NotificationsNone } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { Spacer, Text } from './elem';
 import { EventsHeaderProps } from './types';
@@ -44,29 +43,24 @@ export default function EventsHeader({ user,
     roles,
     isGuide,
     kioskMode,
-    onGoHome,
-    notificationOn,
-    onNotificationClick, showingNotifications, newNotificationCount,
+    onHome,
+    onMenuClick,
+    showHome,
+    newNotificationCount,
     firstElemRef,
     isTV,
 }: EventsHeaderProps) {
     const navigate = useNavigate();
 
     const handleLongPress = useLongPress(() => {
-        onLogoDoubleClicked();
+        onLogoDoubleClicked && onLogoDoubleClicked();
     });
 
     const handleClick = useSingleAndDoubleClick(
         // Double click
-        () => {
-            onLogoDoubleClicked()
-        },
+        () => onLogoDoubleClicked && onLogoDoubleClicked(),
         // Triple click
-        () => {
-            if (onLogoTripleClicked) {
-                onLogoTripleClicked();
-            }
-        },
+        () => onLogoTripleClicked && onLogoTripleClicked(),
         undefined, 350);
 
     let headerMsg = "הי " + (nickName && nickName.length > 0 ? nickName : "אורח.ת");
@@ -90,11 +84,7 @@ export default function EventsHeader({ user,
         }
     }
 
-    const NotificationIcon = showingNotifications ?
-        Home : (
-            notificationOn ?
-                Notifications : Notifications);
-
+    console.log("show home", showHome)
     return <div className="main-header">
 
         {/* {
@@ -106,39 +96,19 @@ export default function EventsHeader({ user,
         } */}
 
 
-        {/** Notifications */}
+
+
+        {/** Menu Button */}
         <button
-            className="event-notification-btn"
+            className="event-menu-btn"
             ref={!kioskMode ? firstElemRef : undefined}
-            onClick={onNotificationClick}
+            onClick={showHome ? onHome : onMenuClick}
             tabIndex={kioskMode ? -1 : 0}
         >
-            {newNotificationCount > 0 && !showingNotifications &&
-                <div style={{
-                    position: "absolute",
-                    top: 3,
-                    right: 4,
-                    backgroundColor: "#D00C0C",
-                    color:"white",
-                    fontSize: "15px",
-                    lineHeight: "18px",
-                    fontWeight: 700,
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
-                    zIndex: 1000,
-                }}
-                >{newNotificationCount}</div>
+            {newNotificationCount > 0 &&
+                <div className="notification-badge">{newNotificationCount}</div>
             }
-            <NotificationIcon
-                style={{
-                    width: 36, height: 36,
-                    borderRadius: 18,
-                    padding: 2,
-
-                    color: "white",
-                    //backgroundColor: showingNotifications ? "gray" : "transparent"
-                }} />
+            {showHome ? <Home /> : <Menu />}
 
         </button>
 
@@ -148,7 +118,7 @@ export default function EventsHeader({ user,
                 ref={kioskMode && firstElemRef}
                 className={"event-home-btn2 kiosk-nav"}
                 aria-label="חזרה למסך בחירת משתמשים"
-                onClick={() => onGoHome()}>
+                onClick={() => onHome()}>
                 <Home
                     style={{ fontSize: "inherit" }}
                 /></button>}

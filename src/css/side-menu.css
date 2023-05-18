@@ -1,0 +1,104 @@
+.menu-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: white;
+    transition: all 800ms;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.menu-close {
+    position: absolute;
+    left: 0px;
+    top: 17px;
+    width: 75px;
+    height: 75;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.menu-header-container {
+    width: 100%;
+    height: 22%;
+    background: linear-gradient(180deg, #54c1e3 20%, #13a4d2 92%, #0b8cb5);
+}
+
+.menu-header-name {
+    color: white;
+    font-size: 28px;
+}
+
+.menu-all-items {
+    width: 100%;
+    height: 78%;
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-top-items {
+    height: 50%;
+}
+
+.menu-bottom-items {
+    height: 50%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.menu-item-container {
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    text-align: start;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 20% 55% 25%;
+    flex-direction: row;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.menu-top-items .menu-item-container {
+    border-bottom: gainsboro;
+    border-bottom-style: solid;
+    border-bottom-width: 3px;
+}
+
+.menu-bottom-items .menu-item-container {
+    border-top: gainsboro;
+    border-top-style: solid;
+    border-top-width: 3px;
+}
+
+.menu-item-container>svg {
+    justify-self: center;
+    font-size: 35px;
+}
+
+
+.menu-item-caption {
+    color: black;
+    font-size: 23;
+    display: flex;
+    flex-direction: row;
+}
+
+.menu-item-3col {
+    color: black;
+    font-size: 20;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+.menu-item-3col>svg {
+    font-size: 30px;
+}

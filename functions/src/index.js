@@ -52,9 +52,9 @@ const Roles = {
 };
 
 const allowedElevateRoles = [
-    Role.SharedScreen,
-    Role.Kiosk,
-]
+    Roles.SharedScreen,
+    Roles.Kiosk,
+];
 
 // exports.houseKeeping = functions.region("europe-west1").pubsub
 //     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
@@ -204,6 +204,15 @@ exports.forgotUser = functions.region("europe-west1").https.onCall((data, contex
         }
     });
 });
+
+exports.forgotPwd = functions.region("europe-west1").https.onCall((data, context) => {
+    // const { isDev } = data;
+    const phoneNumber = functions.config().whatsapp.phonenumber;
+    return {
+        phone: phoneNumber,
+    };
+});
+
 
 exports.notifications = functions.region("europe-west1").pubsub
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
@@ -1404,3 +1413,5 @@ exports.notificationAdded = functions.region("europe-west1").firestore
             }
         });
     });
+
+

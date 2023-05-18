@@ -23,6 +23,9 @@ import NotificationView from "./notification-view";
 import { ReactComponent as CalBtn } from './icons/cal2.svg'
 import { ReactComponent as UsersBtn } from './icons/users.svg'
 import { ReactComponent as MediaBtn } from './icons/media.svg'
+import SideMenu from "./side-menu";
+import Login from "./login";
+import { User } from "@firebase/auth";
 
 
 const AdminBtn = ({
@@ -58,6 +61,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     notificationOn, onNotificationOnChange, onNotificationToken,
     onPushNotification, onGoHome, nickName, onNickNameUpdate }: UserEventsProps) {
     const [rawEvents, setRawEvents] = useState<any[]>([]);
+    const [showMenu, setShowMenu] = useState<boolean>(false);
     const [events, setEvents] = useState<any[]>([]);
     const [etag, setEtag] = useState<string | undefined>();
     const [reload, setReload] = useState<number>(0);
@@ -67,6 +71,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [initialized, setInitialized] = useState<boolean>(false);
     const [startDate, setStartDate] = useState<string>("");
     const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
+    const [showLogin, setShowLogin] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [keyEvents, setKeyEvents, keyEventsMore] = useLocalStorageState<Event[]>("keyEvents");
@@ -91,7 +96,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [media, setMedia] = useState<MediaResource[]>([]);
     const [users, setUsers] = useState<UserInfo[]>([]);
     const [locations, setLocations] = useState<LocationInfo[]>([]);
-    
+
     const [reloadMedia, setReloadMedia] = useState<number>(0);
     const [reloadUsers, setReloadUsers] = useState<number>(0);
 
@@ -144,7 +149,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             return;
 
         api.getMedia().then((m: MediaResource[]) => setMedia(m));
-        api.getLocations().then(locs=>setLocations(locs));
+        api.getLocations().then(locs => setLocations(locs));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connected, roles, reloadMedia]);
 
@@ -237,6 +242,22 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         });
     }
 
+    if (showLogin) {
+        return <Login
+            notify={notify}
+            onLogin={(u: User) => setShowLogin(false)}
+            onError={(err: Error) => notify.error(err.toString())}
+            onForgotPwd={() => {
+                api.forgotPwd().then((info: any) => {
+                    notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ למספר: " +
+                        info.phone +
+                        ". דוגמא: 'סיסמא myNewPassword' להחלפה לסיסמא myNewPassword. יש לבחור סיסמא לפחות בת 6 תווים."
+                        , undefined, 10000);
+                })
+            }}
+            onCancel={()=>setShowLogin(false)}
+        />
+    }
 
     if (showUserSettings) {
         return <UserSettings
@@ -269,7 +290,6 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         />
     }
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
-
     return <div dir={"rtl"} className="userEventsContainer"
 
         onKeyDown={(e: any) => {
@@ -282,6 +302,43 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }
         }}
     >
+
+        <SideMenu
+            open={showMenu}
+            onClose={() => setShowMenu(false)}
+            user={user}
+            nickName={nickName}
+            setNickName={(newNick:string) => {
+                user && api.updateNickName(user, newNick).then(
+                    () => {
+                        notify.success("כינוי עודכן בהצלחה");
+                        onNickNameUpdate(newNick);
+                    },
+                    (err) => notify.error(err)
+                )
+            }}
+            avatarUrl={avatarUrl}
+            onNotifications={() => {
+                setShowNotifications(true);
+                setShowMenu(false);
+            }}
+            onAccessibilitySettings={() => {
+                setShowAccessibilitySettings(true);
+                setShowMenu(false);
+            }}
+            onShowLogin={() => {
+                setShowLogin(true);
+                setShowMenu(false);
+            }}
+            isAdmin={admin}
+            adminView={!accessibleCalendar}
+            setAdminView={(isAdmin:boolean)=>setAccessibleCalendar(!isAdmin)}
+            notify={notify}
+            newNotificationCount={newNotificationCount}
+        />
+
+
+
         <EventsHeader
             centered={isTV}
             height={"12vh"}
@@ -289,16 +346,18 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             nickName={nickName}
             roles={roles}
             isGuide={isGuide}
-            onLogoDoubleClicked={() => setShowUserSettings(true)}
-            onLogoTripleClicked={() => setShowAccessibilitySettings(true)}
-            notificationOn={notificationOn}
-            onNotificationClick={() => setShowNotifications(prev => !prev)}
-            showingNotifications={showNotifications}
+            // onLogoDoubleClicked={() => setShowUserSettings(true)}
+            // onLogoTripleClicked={() => setShowAccessibilitySettings(true)}
+            //notificationOn={notificationOn}
+            //onNotificationClick={() => setShowNotifications(prev => !prev)}
+            //showingNotifications={showNotifications}
+            onMenuClick={() => setShowMenu(true)}
             newNotificationCount={newNotificationCount}
             user={user}
             kioskMode={kioskMode}
             avatarUrl={avatarUrl}
-            onGoHome={onGoHome}
+            onHome={() => setShowNotifications(false)}
+            showHome={showNotifications}
             firstElemRef={firstElemRef}
             isTV={isTV}
         />
@@ -369,7 +428,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }
         </div>
 
-        {admin && <div>
+        {admin && !accessibleCalendar && <div>
             <div className="admin-pane-btn-seperator" />
             <div className="admin-pane-btn-container">
                 <AdminBtn
@@ -380,7 +439,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     }}
                     //icon={<img src={calPng} />}
                     //style={{backgroundImage:`url(${calPng})`}}
-                    icon={<CalBtn/>}
+                    icon={<CalBtn />}
                     selected={!manageMedia && !manageUsers}
                     caption="יומן"
                 />
@@ -391,7 +450,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                         setShowNotifications(false);
                     }}
                     //icon={<img src={usersPng} />}
-                    icon={<UsersBtn/>}
+                    icon={<UsersBtn />}
                     selected={manageUsers}
                     caption="משתמשים"
                 />
@@ -401,7 +460,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                         setManageUsers(false)
                         setShowNotifications(false);
                     }}
-                    icon={<MediaBtn/>}
+                    icon={<MediaBtn />}
                     selected={manageMedia}
                     caption="מדיה"
                 />

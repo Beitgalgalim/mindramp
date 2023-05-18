@@ -198,6 +198,14 @@ export function forgotUser(phone: string) {
     return forgotUserFunc(payload);
 }
 
+export function forgotPwd() {
+    const forgotPwdFunc = httpsCallable(functions, 'forgotPwd');
+    const payload: any = {
+        isDev: isDev()
+    };
+    return forgotPwdFunc(payload);
+}
+
 export async function getUserInfo(user: string, pwd: string) {
     return signInWithEmailAndPassword(auth, user, pwd)
         .then((userCredential) => {

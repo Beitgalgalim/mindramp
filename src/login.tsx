@@ -1,11 +1,12 @@
 import { useCallback, useState, useEffect } from 'react';
-import { ConstructionOutlined, LockOutlined } from '@mui/icons-material';
+import { Close, ConstructionOutlined, LockOutlined } from '@mui/icons-material';
 
 import * as api from './api'
 import { LoginProps } from './types';
 import { HBox, Spacer, VBoxC } from './elem';
-import { Checkbox, FormControlLabel, Link , Button, TextField, Typography, Avatar} from '@mui/material';
+import { Checkbox, FormControlLabel, Link, Button, TextField, Typography, Avatar } from '@mui/material';
 //import SelfRegistration from './self-registeration';
+import "./css/login.css";
 
 
 
@@ -68,10 +69,10 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel, notify 
                         onChange={(e) => setPhone(e.currentTarget.value)}
                     />
                 </div>
-                <div style={{display:"flex", justifyContent:"center"}}>
+                <div style={{ display: "flex", justifyContent: "center" }}>
                     <Button
 
-                        
+
                         variant="contained"
                         color="primary"
                         onClick={() => ok()}
@@ -81,7 +82,7 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel, notify 
                     <Spacer />
                     <Button
 
-                        
+
                         variant="contained"
                         color="primary"
                         onClick={() => setForgotUser(false)}
@@ -96,6 +97,11 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel, notify 
 
     return (
         <VBoxC>
+            <div className="login-close-btn"
+                onClick={onCancel}
+            >
+                <Close />
+            </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: 15, minWidth: 250, maxWidth: 500 }}>
                 <Avatar >
                     <LockOutlined />
@@ -148,9 +154,6 @@ export default function Login({ onForgotPwd, onLogin, onError, onCancel, notify 
                         שכחתי סיסמא?
                     </Link>
                     <Spacer width={20} />
-                    {onCancel && <Link variant="body2" onClick={() => onCancel && onCancel()}>
-                        הישאר אנונימי
-                    </Link>}
                 </HBox>
             </div>
         </VBoxC>

@@ -205,7 +205,7 @@ export interface WithWindowSize {
 };
 
 interface Notify {
-    success(body: string, title?: string): void;
+    success(body: string, title?: string, duration?:number): void;
     error(body: string, title?: string): void;
     ask(body: string, title: string | undefined, buttons: MsgButton[], details?: string): void;
     clear(): void;
@@ -224,6 +224,21 @@ export enum InstanceType {
 
 export interface AskBeforeCloseContainer {
     askBeforeClose: undefined | (() => boolean)
+}
+
+export interface SideMenuProps extends WithUser, Notifying {
+    open: boolean,
+    onClose: Callback,
+    avatarUrl?: string,
+    nickName?: string,
+    onNotifications:Callback,
+    onAccessibilitySettings:Callback,
+    onShowLogin: Callback,
+    isAdmin: boolean,
+    adminView: boolean,
+    setAdminView: (isAdminView: boolean)=>void,
+    setNickName: (newValue:string)=>void,
+    newNotificationCount: number,
 }
 
 export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
@@ -309,19 +324,19 @@ export interface AccessibilitySettingsProps {
 }
 
 export interface EventsHeaderProps extends WithUser, WithRoles {
-    onLogoDoubleClicked: Callback,
+    onLogoDoubleClicked?: Callback,
     onLogoTripleClicked?: Callback,
     nickName: string | undefined,
     isGuide: boolean,
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
-    notificationOn: boolean,
-    onNotificationClick: Callback,
-    showingNotifications: boolean,
+    onMenuClick:Callback,
+            
     newNotificationCount: number,
     kioskMode: boolean,
-    onGoHome: () => void,
+    showHome: boolean,
+    onHome: () => void,
     firstElemRef: any,
     avatarUrl: string | undefined,
     isTV: boolean,

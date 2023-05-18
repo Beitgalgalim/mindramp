@@ -1,0 +1,14 @@
+.login-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top:0px;
+    left:0px;
+    width: 100px;
+    height: 100px;
+}
+
+.login-close-btn > svg {
+    font-size:35px;
+}

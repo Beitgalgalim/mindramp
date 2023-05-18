@@ -181,7 +181,12 @@ export default function UserSettings({ onSaveNickName, onClose, user, notify, ni
                 onLogin={(u: User) => { }}
                 onError={(err: Error) => notify.error(err.toString())}
                 onForgotPwd={() => {
-                    notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ. דוגמא: 'סיסמא new123' להחלפה לסיסמא new123");
+                    api.forgotPwd().then((info:any)=>{
+                        notify.success("להחלפת סיסמא, יש לשלוח הודעת ווטסאפ למספר: " +
+                        info.phone +
+                        ". דוגמא: 'סיסמא myNewPassword' להחלפה לסיסמא myNewPassword. יש לבחור סיסמא לפחות בת 6 תווים."
+                        , undefined, 10000);
+                    })
                 }}
             />
         }

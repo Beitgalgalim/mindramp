@@ -188,15 +188,23 @@
     text-align: center;
 }
 
-.event-notification-btn {
+.event-menu-btn {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
     position: absolute;
     right: 0;
     top: 0;
-    width: 50;
-    height: 50;
+    width: 70px;
+    height: 70px;
     background-color: transparent;
     border: 0;
+    padding-right:10px;
 }
+.event-menu-btn > svg {
+    font-size: 36px;
+    color: white;
+} 
 
 
 .kiosk-nav {
