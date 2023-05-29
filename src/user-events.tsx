@@ -357,6 +357,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             kioskMode={kioskMode}
             avatarUrl={avatarUrl}
             onHome={() => setShowNotifications(false)}
+            onKioskHome={onGoHome}
             showHome={showNotifications}
             firstElemRef={firstElemRef}
             isTV={isTV}

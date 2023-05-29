@@ -337,6 +337,7 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     kioskMode: boolean,
     showHome: boolean,
     onHome: () => void,
+    onKioskHome: () => void,
     firstElemRef: any,
     avatarUrl: string | undefined,
     isTV: boolean,

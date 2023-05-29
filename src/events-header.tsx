@@ -44,6 +44,7 @@ export default function EventsHeader({ user,
     isGuide,
     kioskMode,
     onHome,
+    onKioskHome,
     onMenuClick,
     showHome,
     newNotificationCount,
@@ -118,7 +119,7 @@ export default function EventsHeader({ user,
                 ref={kioskMode && firstElemRef}
                 className={"event-home-btn2 kiosk-nav"}
                 aria-label="חזרה למסך בחירת משתמשים"
-                onClick={() => onHome()}>
+                onClick={() => onKioskHome()}>
                 <Home
                     style={{ fontSize: "inherit" }}
                 /></button>}
