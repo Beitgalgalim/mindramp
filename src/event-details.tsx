@@ -32,7 +32,7 @@ const textStyle = {
 
 export default function EventDetails({
     inEvent, events, eventDetailsBeforeClose, onClose, onSave, onDelete,
-    notify, media, users, locations, updateInProgress
+    notify, media, users, locations, updateInProgress, isPersonalMeeting
 }: EventDetailsProps) {
     const scrollElem = useRef<HTMLDivElement | null>(null);
     const [atBottom, setAtBottom] = useState<boolean>(false);
@@ -121,7 +121,7 @@ export default function EventDetails({
             objToSave.clearAudio = true;
         }
 
-        
+
 
         if (objToSave.allDay) {
             delete objToSave.keyEvent;
@@ -133,15 +133,15 @@ export default function EventDetails({
             notify.ask(
                 "בפגישה אין הקלטה המתארת את התוכן. האם לשמור בכל זאת?",
                 "שמירה ללא הקלטה",
-            [
-                {caption: "המשך שמירה", callback: ()=>onSave(objToSave, instanceType)},
-                {caption: "המשך עריכה", callback:()=>{}}
-                
-            ]);
+                [
+                    { caption: "המשך שמירה", callback: () => onSave(objToSave, instanceType, isPersonalMeeting) },
+                    { caption: "המשך עריכה", callback: () => { } }
+
+                ]);
             return;
         }
 
-        onSave(objToSave, instanceType);
+        onSave(objToSave, instanceType, isPersonalMeeting);
 
     }, [inSeries, inEvent, editEvent, instanceType, onSave]);
 
@@ -190,13 +190,15 @@ export default function EventDetails({
         setEditEvent(ee => ee ? { ...ee, [fieldName]: value } as Event : ee);
     }
 
-    const headerButtons = editEvent ?
-        [{ widthPercent: 49, caption: "אירוע" }, { widthPercent: 49, caption: "הודעה יומית" }] :
-        [{
-            widthPercent: 100, caption: (event.allDay ?
-                "הודעה יומית" :
-                "אירוע")
-        }];
+    const headerButtons = isPersonalMeeting ?
+        [{ widthPercent: 100, caption: "אירוע אישי" }] :
+        (editEvent ?
+            [{ widthPercent: 49, caption: "אירוע" }, { widthPercent: 49, caption: "הודעה יומית" }] :
+            [{
+                widthPercent: 100, caption: (event.allDay ?
+                    "הודעה יומית" :
+                    "אירוע")
+            }]);
 
     const handleScroll = (e: any) => {
         const el = e?.currentTarget;
@@ -270,7 +272,7 @@ export default function EventDetails({
                 <textarea className="ev-details-notes"
                     readOnly={!editEvent}
                     onChange={(e) => updateEvent("notes", e?.currentTarget?.value)} >{event.notes}</textarea>
-                <div className="ev-details-check-boxes-list">
+                {!isPersonalMeeting && <div className="ev-details-check-boxes-list">
                     {!event.allDay && <div className="ev-details-check-box">
                         <Checkbox checked={event.keyEvent} disabled={!editEvent} onChange={(e) => updateEvent("keyEvent", e.currentTarget.checked)} />
                         <div >אירוע מיוחד</div>
@@ -281,13 +283,14 @@ export default function EventDetails({
                         <div>הצג במסך משותף</div>
                     </div>
                 </div>
+                }
             </div>
 
             {/**Users */}
-            <div className="ev-details-line">
+            {!isPersonalMeeting && <div className="ev-details-line">
                 <UsersIcon className="ev-details-icon" />
                 <div className="ev-details-users-container">
-                    {editEvent && <PeoplePicker 
+                    {editEvent && <PeoplePicker
                         users={users}
                         listStyle={listStyle}
                         textStyle={textStyle}
@@ -326,8 +329,9 @@ export default function EventDetails({
                 </div>
 
             </div>
+            }
             {/**Guide */}
-            <div className="ev-details-line">
+            {!isPersonalMeeting && <div className="ev-details-line">
                 <GuideIcon className="ev-details-icon" />
                 <div className="ev-details-users-container">
                     {editEvent && <PeoplePicker users={users} type={UserType.GUIDE} placeholder="בחר מדריך"
@@ -346,6 +350,7 @@ export default function EventDetails({
                     </div>
                 </div>
             </div>
+            }
             {/**Location */}
             <div className="ev-details-line">
                 <LocationIcon className="ev-details-icon" />

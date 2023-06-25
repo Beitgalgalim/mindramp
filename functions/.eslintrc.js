@@ -9,7 +9,6 @@ module.exports = {
   },
   extends: [
     "eslint:recommended",
-    "google",
   ],
   rules: {
     "object-curly-spacing": ["error", "always"],

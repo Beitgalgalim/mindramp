@@ -81,7 +81,7 @@ const allowedElevateRoles = [
 //             });
 //     });
 
-const getParticipantKey = (email) => (email?.replace(/\./g, "")?.replace("@", ""));
+// const getParticipantKey = (email) => (email?.replace(/\./g, "")?.replace("@", ""));
 
 
 exports.updateNotification = functions.region("europe-west1").https.onCall((data, context) => {
@@ -190,7 +190,7 @@ exports.sendNotificationTest = functions.region("europe-west1").https.onCall((da
     // });
 });
 
-exports.forgotUser = functions.region("europe-west1").https.onCall((data, context) => {
+exports.forgotUser = functions.region("europe-west1").https.onCall((data) => {
     const { isDev, phone } = data;
     const phoneNumber = phone.replace(/[^\d]+/g, "");
 
@@ -205,7 +205,7 @@ exports.forgotUser = functions.region("europe-west1").https.onCall((data, contex
     });
 });
 
-exports.forgotPwd = functions.region("europe-west1").https.onCall((data, context) => {
+exports.forgotPwd = functions.region("europe-west1").https.onCall(() => {
     // const { isDev } = data;
     const phoneNumber = functions.config().whatsapp.phonenumber;
     return {
@@ -218,7 +218,7 @@ exports.notifications = functions.region("europe-west1").pubsub
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
     .schedule("every 1 minutes")
     .timeZone(JERUSALEM)
-    .onRun(async (context) => {
+    .onRun(async () => {
         const now = dayjs().utc().tz(JERUSALEM);
 
         async function handleReminders(isDev) {
@@ -351,7 +351,7 @@ function getParticipantsAsArray(participants) {
 }
 
 
-function handleParticipantAdded(isDev, change, context) {
+function handleParticipantAdded(isDev, change) {
     const added = [];
     let removed = [];
     let previousParticipants = [];
@@ -725,35 +725,42 @@ function getEventCollection(isDev) {
 }
 
 
-async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing) {
+async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing, isPersonal) {
     const roles = await getUserRoles(isDev, context);
+    const email = context.auth.token.email;
 
     if (!roles.includes(Roles.ContentAdmin)) {
         if (!roles.includes(Roles.Editor)) {
             throwNoEditPermission();
         } else {
-            const email = context.auth.token.email;
             functions.logger.info("Editor only", email);
-            const participantKey = getParticipantKey(email);
-            if (!eventObj.participants[participantKey]) {
-                if (!addIfMissing) {
-                    throwNoEditPermission();
-                }
-                // Since the user is only "editor", we add him/her as participant
-                const user = await db.collection(isDev ? "users_dev" : "users").doc(email).get();
-                if (!user.exists) {
-                    functions.logger.info("Editor only - cannot find user info", email);
-                    throwNoEditPermission();
-                }
-                eventObj.participants[participantKey] = {
-                    email,
-                    displayName: user.data().fname + " " + user.data().lname,
-                };
-
-                if (user.data().avatar) {
-                    eventObj.participants[participantKey].icon = user.data().avatar.url;
-                }
+            if (!isPersonal && eventObj.owner !== email) {
+                throwNoEditPermission();
             }
+            if (addIfMissing) {
+                eventObj.owner = email;
+            }
+
+            // const participantKey = getParticipantKey(email);
+            // if (!eventObj.participants[participantKey]) {
+            //     if (!addIfMissing) {
+            //         throwNoEditPermission();
+            //     }
+            //     // Since the user is only "editor", we add him/her as participant
+            //     const user = await db.collection(isDev ? "users_dev" : "users").doc(email).get();
+            //     if (!user.exists) {
+            //         functions.logger.info("Editor only - cannot find user info", email);
+            //         throwNoEditPermission();
+            //     }
+            //     eventObj.participants[participantKey] = {
+            //         email,
+            //         displayName: user.data().fname + " " + user.data().lname,
+            //     };
+
+            //     if (user.data().avatar) {
+            //         eventObj.participants[participantKey].icon = user.data().avatar.url;
+            // }
+            // }
         }
     }
 }
@@ -767,7 +774,7 @@ async function verifyDeleteEventPermission(isDev, context, eventID) {
         }
         const email = context.auth.token.email;
         const event = await getEventCollection(isDev).doc(eventID).get();
-        if (!event.exists || !event.data().participants[getParticipantKey(email)]) {
+        if (!event.exists || event.data().owner !== email) {
             throwNoEditPermission();
         }
     }
@@ -777,8 +784,9 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall(async (data,
     const isDev = data.isDev;
     const eventObj = data.event;
     const id = data.id;
+    const isPersonal = data.isPersonal;
 
-    await verifyEditEventPermission(isDev, context, eventObj, true);
+    await verifyEditEventPermission(isDev, context, eventObj, true, isPersonal);
 
     const collection = getEventCollection(isDev);
     const returnEvent = {};
@@ -1002,6 +1010,7 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
         roles.includes(Roles.ContentAdmin) || // content-admin loads all
         entry.event.participants === undefined || // public event
         Object.entries(entry.event.participants).length === 0 ||
+        entry.event.owner === effectiveEmail || // User owns the meeting
         roles.includes(Roles.SharedScreen) && entry.event.showOnSharedScreen || // Showing on shared screen
         (participantKey && entry.event.participants && entry.event.participants[participantKey]) || // The user is a participant
         entry.event.guide && entry.event.guide.email === effectiveEmail); // the user is a guide
@@ -1031,7 +1040,7 @@ exports.BackupDB = functions.region("europe-west1").pubsub
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
     .schedule("00 01 * * *") // Every day at 01:00
     .timeZone("Asia/Jerusalem")
-    .onRun((context) => {
+    .onRun(() => {
         const zipName = "backup|" + dayjs().format("YYYY-MM-DD HH:mm") + ".zip";
         const output = fs.createWriteStream("/tmp/" + zipName);
         const archive = archiver("zip", {
@@ -1376,7 +1385,7 @@ exports.httpApp = functions.region("us-central1").https.onRequest(app);
 
 exports.notificationAdded = functions.region("europe-west1").firestore
     .document("notifications/{notifID}")
-    .onCreate((snapshot, context) => {
+    .onCreate((snapshot) => {
         const isDev = snapshot.data().isDev;
 
         const usersRef = db.collection(isDev ? "users_dev" : USERS_COLLECTION);

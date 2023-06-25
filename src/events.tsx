@@ -91,35 +91,22 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     onChangeDaysOffset,
     onRemoveEvents,
     onUpsertEvent,
+    onEditEvent,
     filter,
     setFilter,
-    locations
+    locations,
+    onAddEvent,
+    showAdd,
 }: EventsProps) {
     const [showFilter, setShowFilter] = useState<boolean>(false);
     const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
-    const [showEventDetails, setShowEventDetails] = useState<Event | undefined>(undefined);
 
     let calendarRef = useRef<FullCalendar | null>(null);
 
-    const stopUpdateInProgress = () => setUpdateInProgress(false);
 
     const calendarApi = calendarRef?.current?.getApi();
 
-    function getNewEvent(): any {
-        let d = calendarApi ? dayjs(calendarApi.getDate()) : dayjs(dayjs().format(DateFormats.DATE) + " 08:00 AM");
-        if (d.hour() === 0) {
-            d = d.add(8, "hours");
-        }
-        if (d.minute() !== 0 && d.minute() !== 30) {
-            d = d.subtract(d.minute(), "minutes");
-        }
-
-        return {
-            title: "",
-            start: d.format(DateFormats.DATE_TIME),
-            end: d.add(30, "minutes").format(DateFormats.DATE_TIME),
-        }
-    }
+    
 
 
     useEffect(() => {
@@ -136,110 +123,8 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     }, [calendarApi, daysOffset, refDate]);
 
     const eventPressed = (evt: Event) => {
-        setShowEventDetails(evt);
+        onEditEvent(evt);
     }
-
-
-    const handleSave = async (eventToSave: Event, instanceType: InstanceType) => {
-        //Saves new Audio if needed:
-        setUpdateInProgress(true);
-        let audioPathToDelete: string | undefined = undefined;
-        let currentPathIsNew = false;
-        if (eventToSave.audioBlob != null) {
-            // mark previous audio file if existed, for deletion
-            audioPathToDelete = eventToSave.audioPath
-
-            //saves new audio
-            try {
-                const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", eventToSave.audioBlob)
-                eventToSave.audioPath = newMedia.path;
-                eventToSave.audioUrl = newMedia.url;
-                currentPathIsNew = true;
-            } catch (err: any) {
-                notify.error(err);
-                setUpdateInProgress(false);
-                return;
-            }
-        } else if (eventToSave.clearAudio) {
-            // Need to delete the current audio file
-            audioPathToDelete = eventToSave.audioPath;
-
-            eventToSave.audioPath = undefined;
-            eventToSave.audioUrl = undefined;
-        }
-
-        if (instanceType === InstanceType.Instance && !eventToSave.instanceStatus && eventToSave.id) {
-            //update instance only
-            api.createEventInstance(eventToSave, eventToSave.id).then(
-                (result) => {
-                    if (audioPathToDelete) {
-                        api.deleteFile(audioPathToDelete);
-                    }
-                    notify.success("נשמר בהצלחה");
-                    onUpsertEvent(result.series, result.instance)
-                    setShowEventDetails(undefined);
-                },
-                (err) => {
-                    notify.error(err);
-                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
-                        //delete the file that was uploaded
-                        api.deleteFile(eventToSave.audioPath);
-                    }
-                }
-            ).finally(stopUpdateInProgress);
-        } else {
-            // normal or whole series
-            api.upsertEvent(eventToSave, eventToSave.id).then(
-                (evt2) => {
-                    if (audioPathToDelete) {
-                        api.deleteFile(audioPathToDelete);
-                    }
-                    notify.success("נשמר בהצלחה");
-                    onUpsertEvent(evt2);
-                    setShowEventDetails(undefined);
-                },
-                (err) => {
-                    notify.error(err);
-                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
-                        //delete the file that was uploaded
-                        api.deleteFile(eventToSave.audioPath);
-                    }
-                }
-            ).finally(stopUpdateInProgress);
-        }
-    }
-
-    const handleDelete = (eventToDelete: Event, instanceType: InstanceType) => {
-        if (eventToDelete.id) {
-            setUpdateInProgress(true);
-            if (instanceType === InstanceType.Instance && !eventToDelete.instanceStatus) {
-                api.createEventInstanceAsDeleted(eventToDelete.date, eventToDelete.id).then(
-                    (updatedEventSeries) => {
-                        onUpsertEvent(updatedEventSeries);
-                        setShowEventDetails(undefined);
-                        notify.success("מופע זה נמחק בהצלחה");
-                    },
-                    (err: any) => notify.error(err)
-                ).finally(stopUpdateInProgress)
-            } else {
-                const isSeries = instanceType === InstanceType.Series;
-                const id = isSeries ?
-                    eventToDelete.recurrent?.gid :
-                    eventToDelete.id;
-                if (id) {
-                    api.deleteEvent(id, isSeries).then(
-                        (removedIDs) => {
-                            onRemoveEvents(removedIDs);
-                            setShowEventDetails(undefined);
-                            notify.success("נמחק בהצלחה")
-                        },
-                        (err: any) => notify.error(err)
-                    ).finally(stopUpdateInProgress);
-                }
-            }
-        }
-    }
-
 
     const handleDateSelect = (dateSelectArgs: DateSelectArg) => {
         if (dateSelectArgs.view.type === 'timeGridDay' || dateSelectArgs.view.type === 'timeGridWeek') {
@@ -252,7 +137,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                     dateSelectArgs.end.getHours() === 0 && dateSelectArgs.end.getMinutes() === 0,
                 date: dayjs(dateSelectArgs.start).format(DateFormats.DATE)
             })
-            setShowEventDetails(event)
+            onEditEvent(event)
         } else {
             calendarApi && calendarApi.gotoDate(dateSelectArgs.startStr);
         }
@@ -286,7 +171,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                                 //setNewEvent(undefined);
                             },
                             (err) => notify.error(err)
-                        ).finally(stopUpdateInProgress);
+                        ).finally(()=>setUpdateInProgress(false));
 
                     }
                 },
@@ -308,7 +193,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
                     notify.error(err);
                     eventChangedArg.revert();
                 }
-            ).finally(stopUpdateInProgress);
+            ).finally(()=>setUpdateInProgress(false));
         }
     }
 
@@ -316,20 +201,6 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
     const dayInWeek = currDate.day();
 
     const days = ["א", "ב", "ג", "ד", "ה", "ו", "ש",];
-    const eventDetailsBeforeClose: AskBeforeCloseContainer = { askBeforeClose: undefined };
-
-    const eventDetailsClose = () => {
-        if (eventDetailsBeforeClose.askBeforeClose &&
-            eventDetailsBeforeClose.askBeforeClose()) {
-            notify.ask("האם לצאת ולהתעלם מהשינויים שבוצעו?", undefined, [
-                { caption: "המשך עריכה", callback: () => { } },
-                { caption: "יציאה ללא שמירה", callback: () => setShowEventDetails(undefined) }
-            ])
-        } else {
-            setShowEventDetails(undefined);
-        }
-    }
-
 
     return (<div className="events-container">
 
@@ -362,23 +233,7 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
         </div>
 
 
-        {showEventDetails && <Modal className="event-details-container"
-            onClose={eventDetailsClose}
-            hideCloseButton={true}>
-            <EventDetails
-                inEvent={showEventDetails}
-                eventDetailsBeforeClose={eventDetailsBeforeClose}
-                onClose={eventDetailsClose}
-                events={events}
-                notify={notify}
-                media={media}
-                users={users}
-                locations={locations}
-                onSave={handleSave}
-                onDelete={handleDelete}
-                updateInProgress={updateInProgress}
-            />
-        </Modal>}
+        
 
         {showFilter && <Modal className="filter-container" onClose={() => setShowFilter(false)}>
             <div className="filter-title">סינון</div>
@@ -428,11 +283,11 @@ export default function Events({ notify, media, users, events, refDate, daysOffs
             </div>}
         </Modal>}
 
-
         {updateInProgress && <div className="event-center-progress">
             <CircularProgress />
         </div>}
-        {!showEventDetails && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => setShowEventDetails(getNewEvent())} />}
+        
+        {showAdd && hasRole(roles, Roles.Editor) && <FloatingAdd onClick={() => onAddEvent()} />}
 
         <FullCalendar
 

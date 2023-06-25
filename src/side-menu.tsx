@@ -8,9 +8,10 @@ import { TextField } from "@mui/material";
 
 
 
-export default function SideMenu({ open, onClose, avatarUrl, nickName,
+export default function SideMenu({ open, onClose, avatarUrl, nickName, showAddEvent, 
     onNotifications, onAccessibilitySettings, onShowLogin, user, isAdmin,
-    adminView, setAdminView, notify, setNickName, newNotificationCount }: SideMenuProps) {
+    adminView, setAdminView, notify, setNickName, newNotificationCount,
+    onAddEvent }: SideMenuProps) {
     const [showNickEditor, setShowNickEditor] = useState<boolean>(false);
     const [editedNickName, setEditedNickName] = useState<string | undefined>(undefined);
 
@@ -22,15 +23,16 @@ export default function SideMenu({ open, onClose, avatarUrl, nickName,
         </div>
         <div className="menu-all-items">
             <div className="menu-top-items">
-                {/* <div className="menu-item-container">
+                {user && showAddEvent && <div className="menu-item-container" onClick={onAddEvent}>
                     <AddCard />
                     <div className="menu-item-caption">{isAdmin ?
                         "יצירת אירוע אישי" :
                         "יצירת אירוע"}</div>
-                </div> */}
+                </div>
+                }
 
                 <div className="menu-item-container" onClick={onNotifications}>
-                    {newNotificationCount > 0 && <div className="notification-badge" style={{right:13, top:9}}>{newNotificationCount}</div>}
+                    {newNotificationCount > 0 && <div className="notification-badge" style={{ right: 13, top: 9 }}>{newNotificationCount}</div>}
                     <Notifications />
                     <div className="menu-item-caption">הודעות ואירועים</div>
                 </div>
@@ -82,7 +84,7 @@ export default function SideMenu({ open, onClose, avatarUrl, nickName,
                     <Logout />
                     <div className="menu-item-caption">התנתק</div>
                     <div className="menu-item-3col" onClick={(event: any) => {
-                        api.testNotif().then(()=>notify.success("בקשה לבדיקת הודעות נקלטה"));
+                        api.testNotif().then(() => notify.success("בקשה לבדיקת הודעות נקלטה"));
                         event.stopPropagation();
                     }}><Notifications />בדיקה</div>
                 </div>}

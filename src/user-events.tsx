@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import * as api from './api'
 import { DateFormats, explodeEvents, sortEvents, toMidNight } from "./utils/date";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AccessibilitySettingsData, EventFilter, LocationInfo, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
+import { AccessibilitySettingsData, AskBeforeCloseContainer, EventFilter, InstanceType, LocationInfo, MediaResource, MessageInfo, Roles, UserEventsProps, UserInfo } from "./types";
 import EventsHeader from "./events-header";
 import Events from './events';
 
@@ -26,6 +26,9 @@ import { ReactComponent as MediaBtn } from './icons/media.svg'
 import SideMenu from "./side-menu";
 import Login from "./login";
 import { User } from "@firebase/auth";
+import { CircularProgress } from "@mui/material";
+import { Modal } from "./elem";
+import EventDetails from "./event-details";
 
 
 const AdminBtn = ({
@@ -100,6 +103,11 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [reloadMedia, setReloadMedia] = useState<number>(0);
     const [reloadUsers, setReloadUsers] = useState<number>(0);
 
+    const [updateInProgress, setUpdateInProgress] = useState<boolean>(false);
+    const [showEventDetails, setShowEventDetails] = useState<Event | undefined>(undefined);
+
+    const stopUpdateInProgress = () => setUpdateInProgress(false);
+
 
     const audioRef = useRef<HTMLAudioElement>(new Audio());
     const firstElemRef = useRef<HTMLButtonElement>(null);
@@ -120,7 +128,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [searchParams] = useSearchParams();
     const isTV = searchParams.get("isTv") === "true";
     isTV && console.log("TV mode")
-    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && roles[0].id === Roles.Kiosk);
+    const accessibleCalendarAct = isTV || accessibleCalendar || hasRole(roles, Roles.Kiosk) || 
+        !hasRole(roles, Roles.ContentAdmin) && !hasRole(roles, Roles.UserAdmin);
 
     useEffect(() => {
         setEtag(undefined);
@@ -242,6 +251,136 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         });
     }
 
+    const eventDetailsBeforeClose: AskBeforeCloseContainer = { askBeforeClose: undefined };
+
+
+    const eventDetailsClose = () => {
+        if (eventDetailsBeforeClose.askBeforeClose &&
+            eventDetailsBeforeClose.askBeforeClose()) {
+            notify.ask("האם לצאת ולהתעלם מהשינויים שבוצעו?", undefined, [
+                { caption: "המשך עריכה", callback: () => { } },
+                { caption: "יציאה ללא שמירה", callback: () => setShowEventDetails(undefined) }
+            ])
+        } else {
+            setShowEventDetails(undefined);
+        }
+    }
+
+    const handleSave = async (eventToSave: Event, instanceType: InstanceType, isPersonal: boolean) => {
+        //Saves new Audio if needed:
+        setUpdateInProgress(true);
+        let audioPathToDelete: string | undefined = undefined;
+        let currentPathIsNew = false;
+        if (eventToSave.audioBlob != null) {
+            // mark previous audio file if existed, for deletion
+            audioPathToDelete = eventToSave.audioPath
+
+            //saves new audio
+            try {
+                const newMedia = await api.addAudio(dayjs().format(DateFormats.DATE_TIME_TS) + ".wav", eventToSave.audioBlob)
+                eventToSave.audioPath = newMedia.path;
+                eventToSave.audioUrl = newMedia.url;
+                currentPathIsNew = true;
+            } catch (err: any) {
+                notify.error(err);
+                setUpdateInProgress(false);
+                return;
+            }
+        } else if (eventToSave.clearAudio) {
+            // Need to delete the current audio file
+            audioPathToDelete = eventToSave.audioPath;
+
+            eventToSave.audioPath = undefined;
+            eventToSave.audioUrl = undefined;
+        }
+
+        if (instanceType === InstanceType.Instance && !eventToSave.instanceStatus && eventToSave.id) {
+            //update instance only
+            api.createEventInstance(eventToSave, eventToSave.id).then(
+                (result) => {
+                    if (audioPathToDelete) {
+                        api.deleteFile(audioPathToDelete);
+                    }
+                    notify.success("נשמר בהצלחה");
+                    upsertEvent(result.series, result.instance)
+                    setShowEventDetails(undefined);
+                },
+                (err) => {
+                    notify.error(err);
+                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
+                        //delete the file that was uploaded
+                        api.deleteFile(eventToSave.audioPath);
+                    }
+                }
+            ).finally(stopUpdateInProgress);
+        } else {
+            // normal or whole series
+            api.upsertEvent(eventToSave, eventToSave.id, isPersonal).then(
+                (evt2) => {
+                    if (audioPathToDelete) {
+                        api.deleteFile(audioPathToDelete);
+                    }
+                    notify.success("נשמר בהצלחה");
+                    upsertEvent(evt2);
+                    setShowEventDetails(undefined);
+                },
+                (err) => {
+                    notify.error(err);
+                    if (currentPathIsNew && eventToSave.audioPath !== undefined) {
+                        //delete the file that was uploaded
+                        api.deleteFile(eventToSave.audioPath);
+                    }
+                }
+            ).finally(stopUpdateInProgress);
+        }
+    }
+
+    const handleDelete = (eventToDelete: Event, instanceType: InstanceType) => {
+        if (eventToDelete.id) {
+            setUpdateInProgress(true);
+            if (instanceType === InstanceType.Instance && !eventToDelete.instanceStatus) {
+                api.createEventInstanceAsDeleted(eventToDelete.date, eventToDelete.id).then(
+                    (updatedEventSeries) => {
+                        upsertEvent(updatedEventSeries);
+                        setShowEventDetails(undefined);
+                        notify.success("מופע זה נמחק בהצלחה");
+                    },
+                    (err: any) => notify.error(err)
+                ).finally(stopUpdateInProgress)
+            } else {
+                const isSeries = instanceType === InstanceType.Series;
+                const id = isSeries ?
+                    eventToDelete.recurrent?.gid :
+                    eventToDelete.id;
+                if (id) {
+                    api.deleteEvent(id, isSeries).then(
+                        (removedIDs) => {
+                            removeEvents(removedIDs);
+                            setShowEventDetails(undefined);
+                            notify.success("נמחק בהצלחה")
+                        },
+                        (err: any) => notify.error(err)
+                    ).finally(stopUpdateInProgress);
+                }
+            }
+        }
+    }
+
+    function getNewEvent(): any {
+        // todo check from selection
+        let d  = refDate.add(daysOffset, "days");
+        if (d.hour() === 0) {
+            d = d.add(8, "hours");
+        }
+
+        return {
+            title: "",
+            start: d.format(DateFormats.DATE_TIME),
+            end: d.add(30, "minutes").format(DateFormats.DATE_TIME),
+        }
+    }
+
+
     if (showLogin) {
         return <Login
             notify={notify}
@@ -255,7 +394,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                         , undefined, 10000);
                 })
             }}
-            onCancel={()=>setShowLogin(false)}
+            onCancel={() => setShowLogin(false)}
         />
     }
 
@@ -290,6 +429,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         />
     }
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
+    console.log("isAdmin", admin)
     return <div dir={"rtl"} className="userEventsContainer"
 
         onKeyDown={(e: any) => {
@@ -303,12 +443,35 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         }}
     >
 
+        {updateInProgress && <div className="event-center-progress">
+            <CircularProgress />
+        </div>}
+
+        {showEventDetails && <Modal className="event-details-container"
+            onClose={eventDetailsClose}
+            hideCloseButton={true}>
+            <EventDetails
+                inEvent={showEventDetails}
+                isPersonalMeeting={!hasRole(roles, Roles.ContentAdmin)}
+                eventDetailsBeforeClose={eventDetailsBeforeClose}
+                onClose={eventDetailsClose}
+                events={events}
+                notify={notify}
+                media={media}
+                users={users}
+                locations={locations}
+                onSave={handleSave}
+                onDelete={handleDelete}
+                updateInProgress={updateInProgress}
+            />
+        </Modal>}
+
         <SideMenu
             open={showMenu}
             onClose={() => setShowMenu(false)}
             user={user}
             nickName={nickName}
-            setNickName={(newNick:string) => {
+            setNickName={(newNick: string) => {
                 user && api.updateNickName(user, newNick).then(
                     () => {
                         notify.success("כינוי עודכן בהצלחה");
@@ -332,9 +495,14 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }}
             isAdmin={admin}
             adminView={!accessibleCalendar}
-            setAdminView={(isAdmin:boolean)=>setAccessibleCalendar(!isAdmin)}
+            setAdminView={(isAdmin: boolean) => setAccessibleCalendar(!isAdmin)}
             notify={notify}
             newNotificationCount={newNotificationCount}
+            onAddEvent={() => {
+                setShowEventDetails(getNewEvent());
+                setShowMenu(false);
+            }}
+            showAddEvent={hasRole(roles, Roles.Editor)}
         />
 
 
@@ -421,6 +589,9 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     notify={notify}
                     onRemoveEvents={removeEvents}
                     onUpsertEvent={upsertEvent}
+                    onAddEvent={() =>setShowEventDetails(getNewEvent())}
+                    showAdd={showEventDetails === undefined}
+                    onEditEvent={(event: Event) =>setShowEventDetails(event)}
                     roles={roles}
                     filter={filter}
                     setFilter={setFilter}

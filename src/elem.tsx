@@ -483,7 +483,7 @@ export function Modal(props: any) {
                     <div ref={elem} className={"modal-scroll"} onScroll={handleScroll}>
                         {props.children}
                     </div>
-                    {needScroll && !atBottom && <div className="modal-more-indicator" ><South /></div>}
+                    {/* {needScroll && !atBottom && <div className="modal-more-indicator" ><South /></div>} */}
                 </div>
             </div>
         </ReactPortal>);

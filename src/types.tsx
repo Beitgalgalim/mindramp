@@ -205,7 +205,7 @@ export interface WithWindowSize {
 };
 
 interface Notify {
-    success(body: string, title?: string, duration?:number): void;
+    success(body: string, title?: string, duration?: number): void;
     error(body: string, title?: string): void;
     ask(body: string, title: string | undefined, buttons: MsgButton[], details?: string): void;
     clear(): void;
@@ -231,14 +231,16 @@ export interface SideMenuProps extends WithUser, Notifying {
     onClose: Callback,
     avatarUrl?: string,
     nickName?: string,
-    onNotifications:Callback,
-    onAccessibilitySettings:Callback,
+    onNotifications: Callback,
+    onAddEvent: Callback,
+    onAccessibilitySettings: Callback,
     onShowLogin: Callback,
     isAdmin: boolean,
     adminView: boolean,
-    setAdminView: (isAdminView: boolean)=>void,
-    setNickName: (newValue:string)=>void,
+    setAdminView: (isAdminView: boolean) => void,
+    setNickName: (newValue: string) => void,
     newNotificationCount: number,
+    showAddEvent: boolean,
 }
 
 export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
@@ -247,9 +249,10 @@ export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
     onClose: () => void;
     events: Event[];
     locations: LocationInfo[];
-    onSave: (eventToSave: Event, instanceType: InstanceType) => void;
+    onSave: (eventToSave: Event, instanceType: InstanceType, isPersonal: boolean) => void;
     onDelete: (eventToSave: Event, instanceType: InstanceType) => void;
     updateInProgress: boolean;
+    isPersonalMeeting: boolean;
 }
 
 export type onPushNotificationHandler = (msgPayload: MessagePayload) => void
@@ -273,9 +276,12 @@ export interface EventsProps extends Notifying, WithMedia, WithUsers, WithRoles 
     onChangeDaysOffset: (newOffet: number) => void,
     onRemoveEvents: (id: string[]) => void,
     onUpsertEvent: (event: Event, event2?: Event) => void,
+    onEditEvent: (event: Event) => void,
     setFilter: (filter: EventFilter) => void,
     filter: EventFilter,
     locations: LocationInfo[],
+    onAddEvent: () => void,
+    showAdd: boolean,
 }
 export interface UserEventsProps extends Connected, WithUser, WithWindowSize, Notifying, WithRoles {
     isGuide: boolean,
@@ -331,8 +337,8 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
-    onMenuClick:Callback,
-            
+    onMenuClick: Callback,
+
     newNotificationCount: number,
     kioskMode: boolean,
     showHome: boolean,

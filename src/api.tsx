@@ -337,7 +337,7 @@ export function getMedia(): Promise<MediaResource[]> {
     })));
 }
 
-export async function upsertEvent(event: Event, id?: string): Promise<Event> {
+export async function upsertEvent(event: Event, id?: string, isPersonal?: boolean): Promise<Event> {
 
     const dbEventObj = event.toDbObj(id === undefined || id === "");
 
@@ -346,6 +346,7 @@ export async function upsertEvent(event: Event, id?: string): Promise<Event> {
         isDev: isDev(),
         id,
         event: dbEventObj,
+        isPersonal,
     };
 
     return upsertEventFunc(payload).then((res: any) => {
