@@ -91,23 +91,24 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
 
     if (isTV) {
         // Also calculate tomorrow and 2 days ahead
-        const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
-            e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
+        if (showDateTime.add(1, "day").day() < 5) {
+            const tomorrow = events.filter(e => e.start >= showDateTime.add(1, "day").format(DateFormats.DATE) &&
+                e.start < showDateTime.add(2, "day").format(DateFormats.DATE));
 
-        days.push({
-            caption: "מחר",
-            emptyMsg: NoEventsMsg,
-            eventGroup: organizeEventsForDisplay(tomorrow),
-        })
+            days.push({
+                caption: "מחר",
+                emptyMsg: NoEventsMsg,
+                eventGroup: organizeEventsForDisplay(tomorrow),
+            })
+        }
+        // const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
+        //     e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
 
-        const dayAfterTomorrow = events.filter(e => e.start >= showDateTime.add(2, "day").format(DateFormats.DATE) &&
-            e.start < showDateTime.add(3, "day").format(DateFormats.DATE));
-
-        days.push({
-            caption: "מחרתיים",
-            emptyMsg: NoEventsMsg,
-            eventGroup: organizeEventsForDisplay(dayAfterTomorrow),
-        })
+        // days.push({
+        //     caption: "מחרתיים",
+        //     emptyMsg: NoEventsMsg,
+        //     eventGroup: organizeEventsForDisplay(dayAfterTomorrow),
+        // })
     }
 
     const columnWidth = 100 / days.length;
@@ -138,8 +139,8 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
                 {isTV && <div className="events-top-seperator" />}
 
-                <div className="events-scroll-container" 
-                ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}>
+                <div className="events-scroll-container"
+                    ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}>
                     {/* <EventsContainer
                     backgroundColor={beta?"white": "#EBF0F2"}
                     

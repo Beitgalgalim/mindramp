@@ -24,18 +24,24 @@ export default function EventElement({
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
     const intervalRef = useRef<NodeJS.Timer>();
-    const intervalFoucsRef = useRef<NodeJS.Timer>();
+    const timerFoucsRef = useRef<NodeJS.Timer>();
     
     const playAudioInKisokMode = () => {
-        if (intervalFoucsRef.current) {
-            clearInterval(intervalFoucsRef.current);
+        if (timerFoucsRef.current) {
+            clearTimeout(timerFoucsRef.current);
         }
-        intervalFoucsRef.current = setInterval(() => {
+        timerFoucsRef.current = setTimeout(() => {
             if (audioRef && audioRef.current &&  event.audioUrl && playProgress == -1 ) {
                 playAudio()
             }   
-            stopFoucsTimer();
-        }, 2000);
+        }, 1500);
+    }
+
+    const stopKioskTimer = () => {
+        if (timerFoucsRef.current) {
+            clearTimeout(timerFoucsRef.current);
+            timerFoucsRef.current = undefined;
+        }
     }
 
     const startTimer = () => {
@@ -61,6 +67,7 @@ export default function EventElement({
         }, 200);
     }
 
+
     const playAudio = () => {
         if (event.unread === true && onSetRead) {
             console.log("onSetRead")
@@ -68,7 +75,7 @@ export default function EventElement({
         }
         // plays the audio if exists
         if (event.audioUrl && event.audioUrl !== "" && audioRef && audioRef.current) {  
-            // console.log(e.detail)
+            setPlayProgress(0);
             if (audioRef.current.src === event.audioUrl) {
                 console.log("avoid multiple clicks")
                 // avoid multiple clicks
@@ -101,12 +108,7 @@ export default function EventElement({
         }
 
     }
-
-    const stopFoucsTimer = () => {
-        if (intervalFoucsRef.current)
-            clearInterval(intervalFoucsRef.current);
-        intervalFoucsRef.current = undefined;
-    }
+   
 
     const stopTimer = () => {
         if (intervalRef.current)
@@ -165,11 +167,15 @@ export default function EventElement({
                 //marginRight: firstInGroup ? 24 : 0,
             }}
             onClick={() => {
+                stopKioskTimer();
                 playAudio()
             }}
             onFocus={() =>{
-                if (kioskMode)
-                    playAudioInKisokMode()
+                if (kioskMode) {
+                    stopKioskTimer();
+                    audioRef?.current?.pause();
+                    playAudioInKisokMode();
+                }
             }}
 
         >

@@ -93,8 +93,8 @@ export default function Kiosk({ onSelectUser }:
                         ref={i === 0 && !userAboutToEnter ? firstElemRef : undefined}
                         key={i}
                         ignoreTab={!!userAboutToEnter}
-                        width={userAboutToEnter ? userEnterScale * .7 : 250}
-                        height={userAboutToEnter ? userEnterScale * .7 : 250}
+                        width={userAboutToEnter ? userEnterScale * .7 : 210}
+                        height={userAboutToEnter ? userEnterScale * .7 : 210}
                         name={getNick(user)}
                         icon={user.avatar?.url}
                         //onPress={() => onSelectUser(user._ref?.id, nickName, user.avatar?.url)}

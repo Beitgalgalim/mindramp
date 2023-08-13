@@ -998,6 +998,8 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
     const effectiveEmail = impersonateUser || email;
     const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
 
+    functions.logger.log("getEvents. roles:", JSON.stringify(roles), "impUser:", impersonateUser, "user:", email, participantKey);
+
     const returnEvents = cachedEvents.events.filter(entry =>
         roles.includes(Roles.ContentAdmin) || // content-admin loads all
         entry.event.participants === undefined || // public event
