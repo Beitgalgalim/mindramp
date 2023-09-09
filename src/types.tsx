@@ -122,6 +122,7 @@ export interface AccessibilitySettingsData {
     imageSize: number,
     titleSize: number,
     hoursSize: number,
+    navigationBottom: boolean,
 }
 
 export interface UserElementProps {

@@ -404,9 +404,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     accSettings={accSettings}
                     audioRef={audioRef}
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
-                    loading={loadingEvents}
-                    height={admin ? 79 : 85}
-                /> :
+                    loading={loadingEvents}                /> :
 
                 <Events
                     events={events}

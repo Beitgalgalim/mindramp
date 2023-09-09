@@ -19,6 +19,12 @@
     flex-direction: row;
 }
 
+.events-container-with-nav {
+    display: flex;
+    flex-direction: column;
+}
+
+
 .events-main {
     display: flex;
     flex-direction: column;

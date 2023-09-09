@@ -19,7 +19,6 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
     audioRef,
     onChangeDaysOffset,
     loading,
-    height,
 }:
     {
         events: any[], isTV: boolean,
@@ -29,8 +28,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
         accSettings?: AccessibilitySettingsData,
         audioRef: MutableRefObject<HTMLAudioElement>
         onChangeDaysOffset: (newOffet: number) => void,
-        loading: boolean,
-        height: number
+        loading: boolean
     }) {
 
     const [scrollingColumn, setScrollingColumn] = useState(0);
@@ -112,71 +110,78 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
     }
 
     const columnWidth = 100 / days.length;
-
-    return (<div className="events-main-container">
-        {days.map((day, dayIndex) =>
-            <div className="events-main" key={dayIndex} style={{
-                height: height + "vh", width: columnWidth + "vw"
-            }}>
-
-
-                {!isTV &&
-                    <EventsNavigationNew
-                        height={"8vh"}
-                        currentNavigation={daysOffset}
-                        onNavigate={(offset: number) => {
-                            if (offset > 0) {
-                                api.logAnalyticEvent("NavButton", { offset });
-                            }
-                            onChangeDaysOffset(offset);
-                        }}
-                        buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent: 26, caption: "מחר" }, { widthPercent: 30, caption: "מחרתיים" }]}
-                        tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
-                        kiosk={kioskMode}
-                    />
+    const nav = !isTV &&
+        <EventsNavigationNew
+            height={"80px"}
+            currentNavigation={daysOffset}
+            onNavigate={(offset: number) => {
+                if (offset > 0) {
+                    api.logAnalyticEvent("NavButton", { offset });
                 }
+                onChangeDaysOffset(offset);
+            }}
+            buttons={[{ widthPercent: 40, caption: "היום, " + getNiceDay(refDate.day()) }, { widthPercent: 26, caption: "מחר" }, { widthPercent: 30, caption: "מחרתיים" }]}
+            //tabMarker={day.eventGroup && day.eventGroup.length > 0 ? "" : "last"}
+            kiosk={kioskMode}
+        />
 
-                {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
-                {isTV && <div className="events-top-seperator" />}
 
-                <div className="events-scroll-container"
-                    ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}>
-                    {/* <EventsContainer
+    return (
+        <div className="events-container-with-nav">
+            <div className="events-main-container">
+                {days.map((day, dayIndex) =>
+                    <div className="events-main" key={dayIndex} style={{
+                        height: "calc(87vh - 80px)", width: columnWidth + "vw"
+                    }}>
+
+                        {accSettings?.navigationBottom ? null : nav}
+
+
+                        {isTV && <Text textAlign={"center"} fontSize={30}>{day.caption}</Text>}
+                        {isTV && <div className="events-top-seperator" />}
+
+                        <div className="events-scroll-container"
+                            ref={isTV && dayIndex == scrollingColumn ? scrollElem : undefined}>
+                            {/* <EventsContainer
                     backgroundColor={beta?"white": "#EBF0F2"}
                     
                     vhHeight={height - 8}
 
                 > */}
-                    {
-                        day.eventGroup?.map((evGroup, i) => (
-                            <div className={evGroup.length > 1 ? "multiple-events-container" : ""}>
-                                {
-                                    evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
-                                        isTv={isTV}
-                                        groupIndex={i}
-                                        kioskMode={kioskMode}
-                                        tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
-                                        accessibilitySettings={accSettings}
-                                        showingKeyEvent={false}
-                                        width={columnWidth}
-                                        single={ar.length === 1}
-                                        firstInGroup={j === 0}
-                                        event={ev}
-                                        now={showDateTime}
-                                        audioRef={audioRef}
-                                    />))
-                                }
-                            </div>))
-                    }
-                    {isTV && <div className="event-day-seperator" />}
-                </div>
-                {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
-                    <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
-                    {loading && <CircularProgress size={Design.buttonSize} />}
+                            {
+                                day.eventGroup?.map((evGroup, i) => (
+                                    <div className={evGroup.length > 1 ? "multiple-events-container" : ""}>
+                                        {
+                                            evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
+                                                isTv={isTV}
+                                                groupIndex={i}
+                                                kioskMode={kioskMode}
+                                                tabMarker={i == day.eventGroup.length - 1 && j == evGroup.length - 1 ? "last" : ""}
+                                                accessibilitySettings={accSettings}
+                                                showingKeyEvent={false}
+                                                width={columnWidth}
+                                                single={ar.length === 1}
+                                                firstInGroup={j === 0}
+                                                event={ev}
+                                                now={showDateTime}
+                                                audioRef={audioRef}
+                                            />))
+                                        }
+                                    </div>))
+                            }
+                            {isTV && <div className="event-day-seperator" />}
+                        </div>
+                        {day.eventGroup.length == 0 && <VBoxC style={{ height: "50vh" }}>
+                            <Text textAlign={"center"} fontSize={"2em"}>{loading ? "טוען..." : day.emptyMsg}</Text>
+                            {loading && <CircularProgress size={Design.buttonSize} />}
 
-                </VBoxC>}
+                        </VBoxC>}
+                    </div>
+
+                )}
 
             </div>
-        )}
-    </div>);
+            {accSettings?.navigationBottom ? nav : null}
+
+        </div>);
 }

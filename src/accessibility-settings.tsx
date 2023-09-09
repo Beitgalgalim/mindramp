@@ -9,6 +9,7 @@ import './css/user-events.css'
 import EventElement from "./event-element";
 import dayjs from './localDayJs'
 import { Event } from "./event";
+import { Checkbox } from '@mui/material';
 
 
 function getData(data?: AccessibilitySettingsData): AccessibilitySettingsData {
@@ -19,6 +20,7 @@ function getData(data?: AccessibilitySettingsData): AccessibilitySettingsData {
         imageSize: 1,
         titleSize: 1,
         hoursSize: 1,
+        navigationBottom: true,
     };
 }
 
@@ -121,6 +123,16 @@ export default function AccessibilitySettings({
                 <button onClick={() => updateSettings("hoursSize", 0.1, 1)}>+</button>
 
             </div>
+        </div>
+        <div className="ev-details-check-box">
+            <Checkbox checked={accSettings?.navigationBottom} onChange={(ev, value) => {
+                onSettingsChange({
+                    ...getData(accSettings),
+                    navigationBottom: ev.currentTarget.checked,
+                })
+            }} />
+
+            <div >סרגל ניווט בתחתית</div>
         </div>
         <div className="preview-events">
             <EventElement

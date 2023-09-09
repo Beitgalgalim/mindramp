@@ -15,7 +15,7 @@ export const NavButton = ({ caption, isLast, selected, widthPercent, onPress, ta
             tab-marker={tabMarker}
             onClick={(e) => onPress(e)}>
 
-            <div className={selected? " day-nav-button-selected":"day-nav-button"}>
+            <div className={selected ? " day-nav-button-selected" : "day-nav-button"}>
                 {caption}
             </div>
             {selected && <div className="nav-underline" />}
@@ -25,7 +25,8 @@ export const NavButton = ({ caption, isLast, selected, widthPercent, onPress, ta
 }
 
 export default function EventsNavigationNew(props: any) {
-    return <div className="event-nav">
+    return <div className="event-nav" style={{minHeight: props.height}}>
+        {!props.top && <div className="events-top-seperator" />}
         <div className="event-nav-buttons">
             {
                 props.buttons.map((btn: any, i: number) => (
@@ -46,7 +47,7 @@ export default function EventsNavigationNew(props: any) {
                 ))
             }
         </div>
-        <div className="events-top-seperator" />
+        {props.top && <div className="events-top-seperator" />}
 
     </div>
 
