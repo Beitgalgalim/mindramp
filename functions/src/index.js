@@ -561,7 +561,12 @@ exports.registerUser = functions.region("europe-west1").https.onCall(async (data
                     }
                     return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat)));
                 }
-            );
+            ).catch(err => {
+                if (err.message.indexOf("uid already exists") > 0) {
+                    throw new functions.https.HttpsError("already-exists", "משתמש כבר קיים", `משתמש עם מזהה ${data.email} כבר קיים במערכת`);
+                }
+                throw new functions.https.HttpsError("internal", err.message);
+            });
     } else {
         throwNoUserAdmin();
     }
