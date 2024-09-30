@@ -26,6 +26,7 @@
     width: 263px;
     height: 280px;
     object-fit: scale-down;
+    object-position: top left;
 }
 
 .border {

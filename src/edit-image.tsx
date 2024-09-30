@@ -3,7 +3,7 @@ import { Button, Grid } from "@mui/material";
 import { useRef, useState } from "react";
 import { Text } from "./elem";
 import { EditImageProps, MediaResource } from "./types";
-import { Tag , WithContext as ReactTags } from 'react-tag-input';
+import { Tag, WithContext as ReactTags } from 'react-tag-input';
 import ReactCrop, {
     centerCrop,
     makeAspectCrop,
@@ -35,67 +35,69 @@ function centerAspectCrop(
     )
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: PercentCrop, fileName: string): Promise<File | undefined> {
-    return new Promise<File | undefined>((resolve, reject) => {
-        const canvas = document.createElement("canvas");
-        const scaleX = image.naturalWidth / image.width;
-        const scaleY = image.naturalHeight / image.height;
-        const cropX = crop.x * image.width / 100;
-        const cropY = crop.y * image.height / 100;
-        const cropWidth = crop.width * image.width / 100;
-        const cropHeight = crop.height * image.height / 100;;
-
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-            ctx.drawImage(
-                image,
-                cropX * scaleX,
-                cropY * scaleY,
-                cropWidth * scaleX,
-                cropHeight * scaleY,
-                0,
-                0,
-                cropWidth,
-                cropHeight
-            )
-
-            const reader = new FileReader()
-            canvas.toBlob(blob => {
-                if (blob) {
-                    reader.readAsDataURL(blob)
-                    reader.onloadend = () => {
-                        resolve(dataURLtoFile(reader.result as string, fileName));
-                    }
-                } else {
-                    reject("Failed to convert to blob");
-                }
-            })
-        } else {
-            reject("can't create canvas context");
-        }
-    });
-
+interface CroppedImg {
+    file: File;
+    blob: Blob;
 }
 
-function dataURLtoFile(dataurl: string, filename: string): File | undefined {
-    console.log(dataurl)
-    let arr = dataurl.split(',');
-    if (arr.length == 2) {
-        const regEx = arr[0].match(/:(.*?);/);
-        if (regEx && regEx.length > 1) {
-            let mime = regEx[1],
-                bstr = atob(arr[1]),
-                n = bstr.length,
-                u8arr = new Uint8Array(n);
+const imageScale = 263 / 280;
 
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new File([u8arr], filename, { type: mime });
+function getCroppedImg(
+    image: HTMLImageElement,
+    crop: PercentCrop, // PercentCrop relative to the displayed image element
+    fileName: string
+): Promise<CroppedImg | undefined> {
+    return new Promise<CroppedImg | undefined>((resolve, reject) => {
+        // Get the container dimensions (the displayed size of the img element)
+        const scale = imageScale * image.naturalHeight > image.naturalWidth ?
+            image.naturalHeight / image.height :
+            image.naturalWidth / image.width;
+
+        console.log("img n:", imageScale, scale)
+        //console.log("scaleX:",scaleX ,"scaleY", scaleY)
+
+        const cropX = (crop.x * image.width * scale / 100);
+        const cropY = (crop.y * image.height * scale / 100);
+        const cropWidth = (crop.width * image.width * scale) / 100;
+        const cropHeight = (crop.height * image.height * scale) / 100;
+
+        // Create a canvas with the scaled crop dimensions
+        const canvas = document.createElement("canvas");
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+            reject("Can't create canvas context");
+            return;
         }
-    }
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Draw the cropped area of the natural image onto the canvas
+        ctx.drawImage(
+            image,
+            cropX,      // Start X position in the natural image
+            cropY,      // Start Y position in the natural image
+            cropWidth,  // Width in the natural image
+            cropHeight,// Height in the natural image
+            0,                // Draw at X=0 on canvas
+            0,                // Draw at Y=0 on canvas
+            cropWidth,  // Canvas width
+            cropHeight  // Canvas height
+        );
+
+        // Convert the canvas to a blob and then to a File
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                reject("Failed to convert to blob");
+                return;
+            }
+            // Create a File from the blob
+            const file = new File([blob], fileName, { type: blob.type });
+            resolve({ file, blob });
+        }, "image/jpeg"); // You can specify the image format here
+    });
 }
 
 const aspect = 80 / 85;
@@ -108,22 +110,23 @@ export default function EditImage(
     const [crop, setCrop] = useState<PercentCrop>();
     const [file, setFile] = useState<File | undefined>(undefined);
     const [dirty, setDirty] = useState<boolean>(false);
+    //const [prevImg, setPrevImg] = useState<string | undefined>();
     const [name, setName] = useState<string>(imageInfo.name);
-    const [tags, setTags] = useState<Tag[] | undefined>(imageInfo.keywords?.map(k => ({id:k, text:k})));
+    const [tags, setTags] = useState<Tag[] | undefined>(imageInfo.keywords?.map(k => ({ id: k, text: k })));
     const KeyCodes = {
         comma: 188,
         enter: 13,
-      };
-    
+    };
+
     const delimiters = [KeyCodes.comma, KeyCodes.enter];
     const handleAddition = (tag: Tag) => {
-       setTags(currentTags => currentTags? [...currentTags, tag] : [tag]);
+        setTags(currentTags => currentTags ? [...currentTags, tag] : [tag]);
     };
-    
-     const handleDelete = (i :number) => {
-       setTags(tags?.filter((tag, index) => index !== i));
+
+    const handleDelete = (i: number) => {
+        setTags(tags?.filter((tag, index) => index !== i));
     };
-     
+
     function onSelectedFile(f: any) {
         if (!f.target.files || f.target.files.length === 0) {
             setPreview(undefined);
@@ -155,9 +158,15 @@ export default function EditImage(
             <div>תמונה*</div>
             <div className="edit-image-img-cont">
                 {preview && !imageInfo._ref ?
-                    <ReactCrop crop={crop} onChange={(c: PixelCrop, p: PercentCrop) => { 
+                    <ReactCrop crop={crop} onChange={(c: PixelCrop, p: PercentCrop) => {
                         if (p.width < 10 || p.height < 10) return;
-                        setCrop(p) 
+                        console.log("crop", p)
+                        setCrop(p)
+                        // if (imgRef.current)
+                        //     getCroppedImg(imgRef.current, p, "ttt").then(({ blob }: any) => {
+                        //         const url = URL.createObjectURL(blob);;
+                        //         setPrevImg(url)
+                        //     })
                     }}
                         aspect={aspect}>
                         <img ref={imgRef} className="edit-image-img" src={preview} onLoad={onImageLoad}
@@ -170,6 +179,7 @@ export default function EditImage(
                 {!imageInfo._ref && <AddPhotoAlternateOutlined style={{ fontSize: 35 }}
                     onClick={() => inputEl?.current?.click()} />}
             </div>
+            {/* {prevImg && <img src={prevImg} />} */}
             <div>מילות חיפוש</div>
             <ReactTags
                 tags={tags}
@@ -181,7 +191,7 @@ export default function EditImage(
                 autocomplete
             />
 
-  
+
         </div>
 
         <div className="edit-image-buttons">
@@ -192,17 +202,20 @@ export default function EditImage(
                 }
                 //todo validate file name
                 if (file && crop && imgRef.current) {
-                    getCroppedImg(imgRef.current, crop, name).then((f: File | undefined) => onSave({
-                        ...imageInfo,
-                        name,
-                        keywords : tags?.map(t=>t.id),
-                    }, f)
-                    );
+                    getCroppedImg(imgRef.current, crop, name).then(res => {
+                        if (res) {
+                            onSave({
+                                ...imageInfo,
+                                name,
+                                keywords: tags?.map(t => t.id),
+                            }, res.file)
+                        }
+                    });
                 } else {
                     onSave({
                         ...imageInfo,
                         name,
-                        keywords : tags?.map(t=>t.id),
+                        keywords: tags?.map(t => t.id),
                     })
                 }
             }}>שמור</Button>
@@ -221,5 +234,5 @@ export default function EditImage(
 
             <Button variant="contained" onClick={onCancel}>ביטול</Button>
         </div>
-    </div>
+    </div >
 }
