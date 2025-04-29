@@ -23,8 +23,8 @@ export default function EventElement({
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
-    const intervalRef = useRef<NodeJS.Timer>();
-    const timerFoucsRef = useRef<NodeJS.Timer>();
+    const intervalRef = useRef<NodeJS.Timeout| undefined>(undefined);
+    const timerFoucsRef = useRef<NodeJS.Timeout| undefined>(undefined);
     
     const playAudioInKisokMode = () => {
         if (timerFoucsRef.current) {

@@ -1,4 +1,4 @@
-import React, { ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import React, { JSX, ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import {
     Box, ListItemButton, TextField, Typography, InputAdornment, Fab, IconButton, Popper, ClickAwayListener
 
@@ -54,7 +54,7 @@ export function VBox(props: any) {
 export const ClickableText = React.forwardRef((props: any, ref: any) => {
 
     const { textValue, style, onClick, onValueChange, onBlur, invalid, onArrowUp, onArrowDown, placeholder, showExpand, setOpen, open, readOnly } = props;
-    const handleExpand = useCallback((e) => {
+    const handleExpand = useCallback((e: any) => {
         if (setOpen) setOpen(!open)
         e.stopPropagation();
     }, [open]);
@@ -252,9 +252,9 @@ export function ComboBox(props: ComboBoxProps) {
                     width={listWidth || 100}
                     direction={listStyle?.textAlign === "right" ? "rtl" : "ltr"}
                     itemSize={itemSize}
-                    //initialScrollOffset={0}
-                    //initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}
-                    >
+                //initialScrollOffset={0}
+                //initialScrollOffset={currentIndex > 0 ? currentIndex * (itemSize) : 0}
+                >
                     {renderItems}
                 </FixedSizeList>
             </Popper>

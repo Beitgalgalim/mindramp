@@ -120,7 +120,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [searchParams] = useSearchParams();
     const isTV = searchParams.get("isTv") === "true";
     isTV && console.log("TV mode")
-    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && roles[0].id === Roles.Kiosk);
+    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && (roles[0].id === Roles.Kiosk|| roles[0].id == Roles.Editor));
 
     useEffect(() => {
         setEtag(undefined);

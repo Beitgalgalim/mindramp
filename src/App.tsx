@@ -31,7 +31,7 @@ function App(props: any) {
 
   const [connected, setConnected] = useState(false);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const msgTimerRef = useRef<NodeJS.Timer>();
+  const msgTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Notification
   const [localNotificationToken, setLocalNotificationToken] = useLocalStorageState<string>("NotificationToken");

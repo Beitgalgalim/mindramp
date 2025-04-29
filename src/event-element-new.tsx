@@ -26,7 +26,7 @@ export default function EventElementNew({
 ) {
     const [playProgress, setPlayProgress] = useState(-1);
     const [eventAudioLoading, setEventAudioLoading] = useState<boolean>(false);
-    const intervalRef = useRef<NodeJS.Timer>();
+    const intervalRef = useRef<NodeJS.Timeout| undefined>(undefined);
 
     const startTimer = () => {
         // Clear any timers already running

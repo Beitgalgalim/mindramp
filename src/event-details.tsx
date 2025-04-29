@@ -314,7 +314,7 @@ export default function EventDetails({
                                 onRemove={editEvent ? () => {
                                     if (editEvent.participants) {
                                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                                        const { newParticipants, [key]: _ } = editEvent.participants;
+                                        const { [key]: _, ...newParticipants } = editEvent.participants;
                                         updateEvent("participants", newParticipants);
                                     }
 
