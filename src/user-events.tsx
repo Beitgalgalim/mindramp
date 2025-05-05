@@ -14,7 +14,7 @@ import UserSettings from "./user-settings";
 import { Event } from './event'
 import useLocalStorageState from "use-local-storage-state";
 import AccessibilitySettings from "./accessibility-settings";
-import { beep, hasRole } from "./utils/common";
+import { beep, documentKioskKeyDown, handleKioskKeyDown, hasRole } from "./utils/common";
 import { AccessibleView } from "./accessible-day-view";
 import Users from "./users";
 import Media from "./media";
@@ -120,7 +120,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [searchParams] = useSearchParams();
     const isTV = searchParams.get("isTv") === "true";
     isTV && console.log("TV mode")
-    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && (roles[0].id === Roles.Kiosk|| roles[0].id == Roles.Editor));
+    const accessibleCalendarAct = isTV || accessibleCalendar || !roles.length || (roles.length === 1 && (roles[0].id === Roles.Kiosk || roles[0].id == Roles.Editor));
 
     useEffect(() => {
         setEtag(undefined);
@@ -214,6 +214,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         })
     }, [])
 
+    useEffect(() => kioskMode ? documentKioskKeyDown(firstElemRef, document) : undefined, []);
+
     const newKeyEventsCount = keyEvents?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
     const newMessagesCount = messages?.reduce((acc, ke) => ke.unread ? acc + 1 : acc, 0) || 0;
 
@@ -255,7 +257,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                         , undefined, 10000);
                 })
             }}
-            onCancel={()=>setShowLogin(false)}
+            onCancel={() => setShowLogin(false)}
         />
     }
 
@@ -290,25 +292,14 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         />
     }
     const admin = hasRole(roles, Roles.ContentAdmin) || hasRole(roles, Roles.UserAdmin);
-    return <div dir={"rtl"} className="userEventsContainer"
-
-        onKeyDown={(e: any) => {
-            if (e.key === "Tab" && !e.shiftKey) {
-                if (kioskMode) beep(200, 50, 40)
-                if (e.target.getAttribute("tab-marker") === "last") {
-                    firstElemRef.current?.focus();
-                    e.preventDefault();
-                }
-            }
-        }}
-    >
+    return <div dir={"rtl"} className="userEventsContainer">
 
         <SideMenu
             open={showMenu}
             onClose={() => setShowMenu(false)}
             user={user}
             nickName={nickName}
-            setNickName={(newNick:string) => {
+            setNickName={(newNick: string) => {
                 user && api.updateNickName(user, newNick).then(
                     () => {
                         notify.success("כינוי עודכן בהצלחה");
@@ -332,7 +323,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }}
             isAdmin={admin}
             adminView={!accessibleCalendar}
-            setAdminView={(isAdmin:boolean)=>setAccessibleCalendar(!isAdmin)}
+            setAdminView={(isAdmin: boolean) => setAccessibleCalendar(!isAdmin)}
             notify={notify}
             newNotificationCount={newNotificationCount}
         />
@@ -404,7 +395,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
                     accSettings={accSettings}
                     audioRef={audioRef}
                     onChangeDaysOffset={(newOffset) => setDaysOffset(newOffset)}
-                    loading={loadingEvents}                /> :
+                    loading={loadingEvents} /> :
 
                 <Events
                     events={events}

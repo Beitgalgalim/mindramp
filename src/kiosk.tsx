@@ -4,7 +4,7 @@ import { PersonOutlined } from '@mui/icons-material';
 import * as api from './api'
 import { KioskProps, UserInfo } from './types';
 import "./css/kiosk.css"
-import { beep } from './utils/common';
+import { beep, documentKioskKeyDown, handleKioskKeyDown } from './utils/common';
 
 // const colors = [
 //     '#6DB1B9',
@@ -36,11 +36,13 @@ function hashForColor(name: string) {
 
 const KioskPerson = forwardRef((props: any, ref: LegacyRef<HTMLButtonElement>) => {
     return <button ref={ref} className="kiosk-person"
-        tabIndex={props.ignoreTab?-1:undefined}
+        tabIndex={props.ignoreTab ? -1 : undefined}
         tab-marker={props["tab-marker"]}
         onClick={props.onPress}
-        style={{ backgroundColor: hashForColor(props.name), 
-            width: props.width, height: props.height}}
+        style={{
+            backgroundColor: hashForColor(props.name),
+            width: props.width, height: props.height
+        }}
         onKeyDown={props.onKeyDown}
     >
         {props.icon ? <img style={{ width: props.width - 70, height: props.height - 70 }} src={props.icon} /> :
@@ -49,7 +51,7 @@ const KioskPerson = forwardRef((props: any, ref: LegacyRef<HTMLButtonElement>) =
     </button>
 });
 
-function getNick(user:UserInfo) {
+function getNick(user: UserInfo) {
     return user.nickName ? user.nickName : (user.fname + " " + user.lname);
 }
 
@@ -63,30 +65,23 @@ export default function Kiosk({ onSelectUser }:
         api.getKioskUsers().then((users: UserInfo[]) => setUsers(users));
     }, []);
 
+    useEffect(() => documentKioskKeyDown(firstElemRef, document), []);
+
     const usersArray = userAboutToEnter ? [userAboutToEnter] : users;
 
-    const userEnterScale = Math.min(window.innerWidth,  window.innerHeight );
+    const userEnterScale = Math.min(window.innerWidth, window.innerHeight);
 
-    return <div >
+    return <div>
         <h1>יומן בית הגלגלים - בחירת משתמשים</h1>
-        <div
-            onKeyDown={(e: any) => {
-                if (e.key == "Tab" && !e.shiftKey) {
-                    beep(200, 50, 40)
-                    if (e.target.getAttribute("tab-marker") === "last") {
-                        firstElemRef.current?.focus();
-                        e.preventDefault();
-                    }
-                }
-            }}
-        >
+        <div>
+
             {userAboutToEnter && <button className="kiosk-btn-enter kiosk-enter"
-            onClick={() => onSelectUser(userAboutToEnter._ref?.id, getNick(userAboutToEnter), userAboutToEnter.avatar?.url)}
-            ref={firstElemRef} >הכנס</button>}
+                onClick={() => onSelectUser(userAboutToEnter._ref?.id, getNick(userAboutToEnter), userAboutToEnter.avatar?.url)}
+                ref={firstElemRef} >הכנס</button>}
             {userAboutToEnter &&
-                <button className="kiosk-btn-enter kiosk-cancel"onClick={() => setUserAboutToEnter(null)} tab-marker="last">בטל</button>
+                <button className="kiosk-btn-enter kiosk-cancel" onClick={() => setUserAboutToEnter(null)} tab-marker="last">בטל</button>
             }
-            <div className="kiosk-container" style={{height:userAboutToEnter?"70vh":"90vh"}}>
+            <div className="kiosk-container" style={{ height: userAboutToEnter ? "70vh" : "90vh" }}>
                 {usersArray.map((user, i) => {
 
                     return (<KioskPerson
@@ -100,14 +95,14 @@ export default function Kiosk({ onSelectUser }:
                         //onPress={() => onSelectUser(user._ref?.id, nickName, user.avatar?.url)}
                         onPress={() => {
                             setUserAboutToEnter(user)
-                            setTimeout(()=>firstElemRef.current?.focus(),50);
+                            setTimeout(() => firstElemRef.current?.focus(), 50);
                         }}
                         tab-marker={i === users.length - 1 ? "last" : ""}
                     />)
                 })}
             </div>
 
-            
+
         </div>
     </div >
 }

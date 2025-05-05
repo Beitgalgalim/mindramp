@@ -150,7 +150,7 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
                 > */}
                             {
                                 day.eventGroup?.map((evGroup, i) => (
-                                    <div className={evGroup.length > 1 ? "multiple-events-container" : ""}>
+                                    <div className={evGroup.length > 1 ? "multiple-events-container" : ""} key={i}>
                                         {
                                             evGroup.map((ev, j, ar) => (<EventElement key={ev.tag}
                                                 isTv={isTV}

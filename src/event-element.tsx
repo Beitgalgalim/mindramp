@@ -168,6 +168,7 @@ export default function EventElement({
             }}
             onClick={() => {
                 stopKioskTimer();
+                console.log("User click event")
                 playAudio()
             }}
             onFocus={() =>{
