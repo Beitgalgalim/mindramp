@@ -113,8 +113,13 @@ export default function NewDatePicker({
         }
     }
 
-    const setEndDate = (newEndDate: string) => {
-        setEndLocal(newEndDate);
+    const setEndDate = (newEndDate: string, fromPicker:boolean) => {
+        
+        if (fromPicker) {
+            setEndLocal(dayjs(newEndDate).format(DateFormats.DATE_LOCALE));
+        } else {
+            setEndLocal(newEndDate);
+        }
         const valid = dayjs(newEndDate).isValid();
         setInvalidEndDate(valid ? undefined : newEndDate);
         if (valid) {
@@ -197,26 +202,26 @@ export default function NewDatePicker({
 
             {isDateRange &&
                 <ReactDatePicker
+                    className="datepicker-dateinput"
                     ref={dateEndPicker}
-
-                    selected={dayjs(end).subtract(1, "days").isAfter(start) ?
-                        dayjs(end).subtract(1, "days").toDate() :
-                        dayjs(start).toDate()
+                    disabled={!!readOnly}
+                    selected={end ? dayjs(end).subtract(1,"day").toDate() :
+                        dayjs(start).subtract(1,"day").toDate()
                     }
-                    onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE))}
+                    onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE), true)}
                     shouldCloseOnSelect={true}
                     onCalendarOpen={() => setEndOpen(true)}
                     onCalendarClose={() => setEndOpen(false)}
 
                     customInput={
                         <ClickableText
-                            style={{ textAlign: "center" }}
-                            showExpand={true}
+                            style={{ textAlign: "center", fontSize }}
+                            showExpand={!readOnly}
                             onClick={() => dateEndPicker?.current?.setOpen(true)}
                             readOnly={readOnly}
                             setOpen={(o: boolean) => dateEndPicker?.current?.setOpen(o)}
                             onValueChange={(val: string) => {
-                                setEndDate(val)
+                                setEndDate(val, false)
                             }}
                             open={endOpen}
                             invalid={invalidEndDate != undefined}

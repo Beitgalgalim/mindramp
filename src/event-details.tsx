@@ -19,6 +19,7 @@ import { useState, useCallback, useRef } from 'react';
 import { EventDetailsProps, InstanceType, MediaResource, UserInfo, UserType } from './types';
 import { AddPhotoAlternateOutlined, Close, Delete, South } from '@mui/icons-material';
 import EventsNavigationNew from './events-navigation-new';
+import { replaceTime } from './utils/date';
 
 const listStyle = { fontSize: "1em", textAlign: "right" };
 const textStyle = {
@@ -126,6 +127,9 @@ export default function EventDetails({
         if (objToSave.allDay) {
             delete objToSave.keyEvent;
             delete objToSave.reminderMinutes;
+
+            objToSave.start= replaceTime(objToSave.start, "00:00");
+            objToSave.end = replaceTime(objToSave.end, "23:59");
         }
 
         // Check if Audio exists and if not - warn
@@ -262,6 +266,7 @@ export default function EventDetails({
                     setStart={(d) => updateEvent("start", d)}
                     setEnd={(d) => updateEvent("end", d)}
                     pickTimes={!event.allDay}
+                    isDateRange={event.allDay}
                     readOnly={!editEvent}
                 />
             </div>
@@ -280,6 +285,11 @@ export default function EventDetails({
                         <Checkbox checked={event.showOnSharedScreen} disabled={!editEvent || participants.length === 0} onChange={(e) => updateEvent("showOnSharedScreen", e.currentTarget.checked)} />
                         <div>הצג במסך משותף</div>
                     </div>
+
+                    {event.allDay && <div className="ev-details-check-box">
+                        <Checkbox checked={event.overrideAll == true} disabled={!editEvent} onChange={(e) => updateEvent("overrideAll", e.currentTarget.checked)} />
+                        <div >בטל אירועים שבמקביל</div>
+                    </div>}
                 </div>
             </div>
 

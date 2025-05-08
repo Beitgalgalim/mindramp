@@ -6,7 +6,7 @@ export const DateFormats = {
     DATE_TIME: "YYYY-MM-DDTHH:mm",
     DATE_TIME_TS: "YYYY-MM-DDTHH:mm.SSS",
     DATE: "YYYY-MM-DD",
-    DATE_LOCALE:"DD/MM/YYYY",
+    DATE_LOCALE: "DD/MM/YYYY",
     TIME_AM_PM: "hh:mma",
     TIME: "HH:mm"
 };
@@ -123,6 +123,8 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
         toMidNight(dayjs(startDate)) :
         toMidNight(dayjs());
 
+    const overrideAll = events.filter((event: any) => event.overrideAll);
+
     events.forEach((event: any) => {
         if (event.recurrent && !event.instanceStatus) {
             const rec: RecurrentEventField = event.recurrent;
@@ -140,17 +142,38 @@ export function explodeEvents(events: any, daysBefore: number = 30, daysAfter: n
                         (rec.freq === "weekly" && date.day() === weekDay) ||
                         (rec.freq === "biWeekly" && date.day() === weekDay && daysSinceStart % 14 === 0)
                     ) {
+
                         const eventObj = { ...event }
                         adjustEvent(eventObj, date);
+                        if (eventOverriden(eventObj, overrideAll)) {
+                            eventObj.overriden = true;
+                        }
                         ret.push(eventObj);
+
                     }
                 }
             }
         } else {
-            ret.push(event);
+            if (eventOverriden(event, overrideAll)) {
+                const eventObj = { ...event }
+                eventObj.overriden = true;
+                ret.push(eventObj);
+            } else {
+                ret.push(event);
+            }
+
         }
     })
     return ret;
+}
+
+function eventOverriden(evt:any, overrideAllEvents:any[]):boolean {
+    for (let owEvent of overrideAllEvents) {
+        if (!evt.allDay && owEvent.start <= evt.start && evt.end <= owEvent.end) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function adjustEvent(evt: any, date: Dayjs) {
@@ -161,6 +184,11 @@ function adjustEvent(evt: any, date: Dayjs) {
 export function replaceDatePreserveTime(origin: string, newDate: Dayjs): string {
     const origDate = dayjs(origin);
     return newDate.format(DateFormats.DATE) + "T" + origDate.format(DateFormats.TIME);
+}
+
+export function replaceTime(origin: string, newTime:string): string {
+    const origDate = dayjs(origin); 
+    return origDate.format(DateFormats.DATE) + "T" + newTime;
 }
 
 export function replaceDatePreserveTime2(origin: string, newDate: Dayjs): string | undefined {
@@ -181,7 +209,7 @@ export function replaceDatePreserveTime2(origin: string, newDate: Dayjs): string
         const newDatestr = newDatejs.format(DateFormats.DATE);
         const timeStr = origDate.format(DateFormats.TIME);
         const newdt = dayjs(newDatestr + "T" + timeStr);
-        
+
         if (!newdt.isValid()) return undefined;
 
         return newdt.format(DateFormats.DATE_TIME);

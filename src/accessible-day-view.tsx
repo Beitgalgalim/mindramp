@@ -78,7 +78,9 @@ export function AccessibleView({ events, isTV, refDate, daysOffset, kioskMode, b
     let showingEvents = [];
     const showDateTime = daysOffset === 0 ? refDate : dayjs(refDate.add(daysOffset, "days").format(DateFormats.DATE) + " 00:00");
 
-    showingEvents = events.filter(e => !e.allDay && e.start >= showDateTime.format(DateFormats.DATE) &&
+    showingEvents = events.filter(e => 
+        !e.overriden &&
+        !e.allDay && e.start >= showDateTime.format(DateFormats.DATE) &&
         e.start < showDateTime.add(1, "day").format(DateFormats.DATE) && !showDateTime.isAfter(e.end));
 
     days.push({

@@ -30,6 +30,9 @@ module.exports.explodeEvents = (events, daysBefore, daysAfter, startDate) => {
         toMidNight(dayjs(startDate)) :
         toMidNight(dayjs());
 
+    const overrideAll = events.filter((event) => event.overrideAll);
+
+
     events.forEach((event) => {
         if (event.recurrent && !event.instanceStatus) {
             const rec = event.recurrent;
@@ -49,16 +52,34 @@ module.exports.explodeEvents = (events, daysBefore, daysAfter, startDate) => {
                     ) {
                         const eventObj = { ...event };
                         adjustEvent(eventObj, date);
+                        if (eventOverriden(eventObj, overrideAll)) {
+                            eventObj.overriden = true;
+                        }
                         ret.push(eventObj);
                     }
                 }
             }
         } else {
-            ret.push(event);
+            if (eventOverriden(event, overrideAll)) {
+                const eventObj = { ...event }
+                eventObj.overriden = true;
+                ret.push(eventObj);
+            } else {
+                ret.push(event);
+            }
         }
     });
     return ret;
 };
+
+function eventOverriden(evt, overrideAllEvents) {
+    for (let owEvent of overrideAllEvents) {
+        if (!evt.allDay && owEvent.start <= evt.start && evt.end <= owEvent.end) {
+            return true;
+        }
+    }
+    return false;
+}
 
 const MonthMap = {
     Jan: "ינו",

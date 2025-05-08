@@ -78,6 +78,9 @@ export class Event {
     isPersonal?: boolean;
     unread?: boolean;
     modifiedAt?:string;
+    overriden?:boolean;
+    overrideAll?:boolean;
+    
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
@@ -125,6 +128,7 @@ export class Event {
         assignIfExists(evt, "allDay", doc);
         assignIfExists(evt, "reminderMinutes", doc);
         assignIfExists(evt, "modifiedAt", doc);
+        assignIfExists(evt, "overrideAll", doc);
         evt.isPersonal = isPersonal;
 
         return evt;
@@ -212,6 +216,7 @@ export class Event {
         
         clearFieldIfEmpty("allDay");
         clearFieldIfEmpty("reminderMinutes");
+        clearFieldIfEmpty("overrideAll");
 
         delete eventObj._ref;
         delete eventObj.id;
@@ -221,6 +226,8 @@ export class Event {
         delete eventObj.isPersonal;
         delete eventObj.unread;
         delete eventObj.modifiedAt;
+        delete eventObj.overriden;
+
         return eventObj;
     }
 
