@@ -61,7 +61,7 @@ module.exports.explodeEvents = (events, daysBefore, daysAfter, startDate) => {
             }
         } else {
             if (eventOverriden(event, overrideAll)) {
-                const eventObj = { ...event }
+                const eventObj = { ...event };
                 eventObj.overriden = true;
                 ret.push(eventObj);
             } else {
@@ -73,7 +73,7 @@ module.exports.explodeEvents = (events, daysBefore, daysAfter, startDate) => {
 };
 
 function eventOverriden(evt, overrideAllEvents) {
-    for (let owEvent of overrideAllEvents) {
+    for (const owEvent of overrideAllEvents) {
         if (!evt.allDay && owEvent.start <= evt.start && evt.end <= owEvent.end) {
             return true;
         }

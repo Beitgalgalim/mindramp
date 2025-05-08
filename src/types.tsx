@@ -206,7 +206,7 @@ export interface WithWindowSize {
 };
 
 interface Notify {
-    success(body: string, title?: string, duration?:number): void;
+    success(body: string, title?: string, duration?: number): void;
     error(body: string, title?: string): void;
     ask(body: string, title: string | undefined, buttons: MsgButton[], details?: string): void;
     clear(): void;
@@ -232,13 +232,15 @@ export interface SideMenuProps extends WithUser, Notifying {
     onClose: Callback,
     avatarUrl?: string,
     nickName?: string,
-    onNotifications:Callback,
-    onAccessibilitySettings:Callback,
+    onNotifications: Callback,
+    onAccessibilitySettings: Callback,
     onShowLogin: Callback,
     isAdmin: boolean,
     adminView: boolean,
-    setAdminView: (isAdminView: boolean)=>void,
-    setNickName: (newValue:string)=>void,
+    setAdminView: (isAdminView: boolean) => void,
+    deletedView: boolean,
+    setDeletedView: (isDeletedView: boolean) => void,
+    setNickName: (newValue: string) => void,
     newNotificationCount: number,
 }
 
@@ -294,6 +296,11 @@ export interface MediaProps extends Notifying, WithMedia, WithReload { }
 export interface UsersProps extends Notifying, WithUsers, WithReload, WithUser, WithRoles {
 }
 
+export interface DeletedItemsProps extends Notifying {
+    onClose: () => void;
+    onRefresh: () => void;
+}
+
 export interface LoginProps extends Notifying {
     onForgotPwd: () => void,
     onLogin: (u: User) => void,
@@ -332,8 +339,8 @@ export interface EventsHeaderProps extends WithUser, WithRoles {
     height: number | string,
     showDateTime: Dayjs,
     centered: boolean,
-    onMenuClick:Callback,
-            
+    onMenuClick: Callback,
+
     newNotificationCount: number,
     kioskMode: boolean,
     showHome: boolean,

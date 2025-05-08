@@ -729,6 +729,10 @@ function getEventCollection(isDev) {
     return isDev ? db.collection("event_dev") : db.collection("event");
 }
 
+function getEventArchiveCollection(isDev) {
+    return isDev ? db.collection("event-archive_dev") : db.collection("event-archive");
+}
+
 
 async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing) {
     const roles = await getUserRoles(isDev, context);
@@ -909,15 +913,19 @@ exports.deleteEvent = functions.region("europe-west1").https.onCall(async (data,
     await verifyDeleteEventPermission(isDev, context, id);
 
     const collection = getEventCollection(isDev);
+    const archiveCollection = getEventArchiveCollection(isDev);
 
     if (id) {
         const docRef = collection.doc(id);
+        const batch = db.batch();
         if (deleteModifiedInstance) {
             return collection.where("recurrent.gid", "==", id).get().then(instances => {
-                const batch = db.batch();
                 const removedIDs = [];
                 instances.docs.forEach(doc => {
                     batch.delete(doc.ref);
+                    // add to archive
+                    batch.set(archiveCollection.doc(doc.id), { ...doc.data(), deletedAt: dayjs().format("YYYY-MM-DD") });
+
                     removedIDs.push(doc.ref.id);
                 });
                 batch.delete(docRef);
@@ -925,8 +933,12 @@ exports.deleteEvent = functions.region("europe-west1").https.onCall(async (data,
                 return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => removedIDs);
             });
         }
+        const doc = await docRef.get();
 
-        return docRef.delete().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => [id]);
+        batch.delete(docRef);
+        batch.set(archiveCollection.doc(id), { ...doc.data(), deletedAt: dayjs().format("YYYY-MM-DD") });
+
+        return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat))).then(() => [id]);
     }
 });
 
@@ -942,6 +954,66 @@ function updateEventInCache(isDev, id, change) {
         }
     }
 }
+
+exports.getDeletedEvents = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const isDev = data.isDev;
+    const roles = await getUserRoles(isDev, context);
+    if (!roles.includes(Roles.ContentAdmin)) {
+        throwNoUserAdmin();
+    }
+
+    const now = dayjs().utc().tz(JERUSALEM).subtract(10, "day").format("YYYY-MM-DD");
+    const archivedEvents = await getEventArchiveCollection(isDev).where("deletedAt", ">=", now).get();
+    const cachedEvents = await (await getEventsViaCache(isDev)).events.filter(ce => ce.event.recurrent?.exclude && ce.event.recurrent.exclude.some(ex => ex >= now));
+
+    return {
+        series: cachedEvents,
+        deleted: archivedEvents.docs.map(doc => ({ event: doc.data(), id: doc.id })),
+    };
+});
+
+exports.restoreDeletedEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
+    const { isDev, eventRecord, date } = data;
+
+    const roles = await getUserRoles(isDev, context);
+    if (!roles.includes(Roles.ContentAdmin)) {
+        throwNoUserAdmin();
+    }
+
+    const batch = db.batch();
+
+    if (eventRecord.event.deletedAt) {
+        const doc = await getEventArchiveCollection(isDev).doc(eventRecord.id).get();
+        if (doc.exists) {
+            batch.delete(doc.ref);
+            const docData = doc.data();
+            delete docData.deletedAt;
+
+            batch.set(getEventCollection(isDev).doc(eventRecord.id), docData);
+        } else {
+            throw new functions.https.HttpsError("not-found", "Event not found");
+        }
+    } else if (date) {
+        const seriesRef = getEventCollection(isDev).doc(eventRecord.id);
+        const seriesDoc = await seriesRef.get();
+        if (seriesDoc.exists) {
+            const seriesDocObj = seriesDoc.data();
+            if (seriesDocObj.recurrent.exclude) {
+                const index = seriesDocObj.recurrent.exclude.indexOf(date);
+                if (index >= 0) {
+                    seriesDocObj.recurrent.exclude.splice(index, 1);
+                }
+            }
+            batch.update(seriesRef, { recurrent: seriesDocObj.recurrent });
+        } else {
+            throw new functions.https.HttpsError("not-found", "Series not found");
+        }
+    } else {
+        throw new functions.https.HttpsError("invalid-argument", "Unexpected event to restore");
+    }
+
+    return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat)));
+});
 
 async function getEventsViaCache(isDev) {
     const collection = isDev ? db.collection("event_dev") : db.collection("event");

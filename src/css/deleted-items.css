@@ -1,0 +1,31 @@
+.deleted-items-close-btn {
+    position: absolute;
+    left: 0px;
+    top: 17px;
+    width: 75px;
+    height: 75;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.deleted-items-table {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: auto;
+    row-gap: 10px;
+}
+
+.deleted-items-header-item {
+    font-size: 22px;
+    text-align: right;
+    font-weight: bold;
+}
+
+.row-item {
+    margin: 5px;
+    margin-right: 15px;
+    font-size: 18px;
+    text-align: right;
+}

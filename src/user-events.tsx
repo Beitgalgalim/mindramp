@@ -26,6 +26,7 @@ import { ReactComponent as MediaBtn } from './icons/media.svg'
 import SideMenu from "./side-menu";
 import Login from "./login";
 import { User } from "@firebase/auth";
+import { DeletedItems } from "./deleted-items";
 
 
 const AdminBtn = ({
@@ -92,6 +93,7 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         }
     });
     const [accessibleCalendar, setAccessibleCalendar] = useLocalStorageState<boolean | undefined>("accessibleCalendar", { defaultValue: undefined });
+    const [deletedView, setDeletedView] = useState<boolean>(false);
 
     const [media, setMedia] = useState<MediaResource[]>([]);
     const [users, setUsers] = useState<UserInfo[]>([]);
@@ -142,6 +144,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }));
             setRawEvents(evtsWithId);
         }).finally(() => setLoadingEvents(false));
+
+        api.getDeletedEvents().then(res => console.log("deleted", res))
     }, [connected, startDate, reload, etag, user]);
 
     useEffect(() => {
@@ -261,6 +265,14 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         />
     }
 
+    if (deletedView) {
+        return <DeletedItems
+            onClose={() => setDeletedView(false)}
+            onRefresh={() => setReload(old => old + 1)}
+            notify={notify}
+        />
+    }
+
     if (showUserSettings) {
         return <UserSettings
             onAccessibilitySettings={() => {
@@ -324,6 +336,11 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             isAdmin={admin}
             adminView={!accessibleCalendar}
             setAdminView={(isAdmin: boolean) => setAccessibleCalendar(!isAdmin)}
+            deletedView={deletedView}
+            setDeletedView={(deletedView: boolean) => {
+                setShowMenu(false);
+                setDeletedView(deletedView)
+            }}
             notify={notify}
             newNotificationCount={newNotificationCount}
         />

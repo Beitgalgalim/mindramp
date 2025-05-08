@@ -38,6 +38,13 @@
   }
 }
 
+.progress-host {
+  position: absolute;
+  top: 45vh;
+  left: 45vw;
+  z-index: 100000;
+}
+
 
 .manageButtonContainer {
   position: absolute;

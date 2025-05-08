@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as api from './api'
 
 import './css/App.css';
-import { Alert, AlertTitle, Collapse } from '@mui/material'
+import { Alert, AlertTitle, CircularProgress, Collapse } from '@mui/material'
 import { Text, Spacer, HBoxC } from './elem';
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -174,7 +174,10 @@ function App(props: any) {
 
   return (
     <div className="App" dir="rtl">
-      {msg && <Collapse in={true} timeout={500} sx={{
+      {msg?.progress && <div className="progress-host">
+        <CircularProgress /></div>}
+
+      {msg && !msg.progress && <Collapse in={true} timeout={500} sx={{
         position: 'fixed',
         display: "flex", justifyContent: "center", alignItems: "center",
         top: msg.top || 10, width: "100vw", fontSize: 15, zIndex: 10000

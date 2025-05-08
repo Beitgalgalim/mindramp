@@ -236,6 +236,28 @@ export function getPersonalizedEvents(user: string | undefined, eTag: string | u
     };
     return getEventsFunc(payload).then(res => res.data);
 }
+
+export function getDeletedEvents(): Promise<any> { // todo not any
+    const getDeletedEventsFunc = httpsCallable(functions, 'getDeletedEvents');
+    const payload: any = {
+        isDev: isDev(),
+    };
+    return getDeletedEventsFunc(payload).then(res => res.data);
+}
+
+export function restoreDeletedEvent(rec: any, dateStr?: string) {
+    const restoreDeletedEventFunc = httpsCallable(functions, 'restoreDeletedEvent');
+    const payload: any = {
+        isDev: isDev(),
+        eventRecord: rec,
+        date: dateStr,
+    };
+    return restoreDeletedEventFunc(payload);
+}
+
+
+
+
 // export function getEvents(filter: boolean = false, user: string = ""): Promise<Event[]> {
 //     if (!filter) {
 //         return _getCollection(Collections.EVENT_COLLECTION, "start", "asc").then(docs => docs.map((doc: any) => Event.fromDbObj(doc)));
