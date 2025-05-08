@@ -10,6 +10,7 @@ import "./css/date-picker.css"
 import { DateFormats, DateJSParseFormats, day2DayName, getTimes, MonthMap, parseTime, replaceDatePreserveTime2, validTime } from './utils/date';
 
 import dayjs from './localDayJs'
+import { Dayjs } from 'dayjs';
 
 const times = getTimes();
 
@@ -84,50 +85,49 @@ export default function NewDatePicker({
         }
     }
 
-    const setDate = (newDate: string, fromPicker: boolean) => {
-        const newDatejs = dayjs(newDate, DateJSParseFormats);
-        setInvalidStartDate(newDatejs.isValid() ? undefined : newDate);
-        if (newDatejs.isValid()) {
+    const setDate = (newDate: Dayjs, fromPicker: boolean) => {
+        setInvalidStartDate(newDate.isValid() ? undefined : newDate.format(DateFormats.DATE_LOCALE));
+        if (newDate.isValid()) {
             if (fromPicker) {
-                setStartLocal(dayjs(newDate).format(DateFormats.DATE_LOCALE));
+                setStartLocal(newDate.format(DateFormats.DATE_LOCALE));
             } else {
-                setStartLocal(newDate);
+                setStartLocal(newDate.format(DateFormats.DATE_TIME));
             }
 
             console.log("valid date", newDate)
 
-            const newStart = replaceDatePreserveTime2(start, newDatejs)
+            const newStart = replaceDatePreserveTime2(start, newDate)
             if (newStart) {
                 setStart(newStart);
             } else {
-                setInvalidStartDate(newDate);
+                setInvalidStartDate(newDate.format(DateFormats.DATE_LOCALE));
             }
-            const newEnd = replaceDatePreserveTime2(end, newDatejs);
+            const newEnd = replaceDatePreserveTime2(end, newDate);
             if (newEnd) {
                 setEnd(newEnd);
             } else {
                 setInvalidEndDate(newEnd);
             }
         } else {
-            setStartLocal(newDate);
+            setStartLocal(newDate.format(DateFormats.DATE_TIME));
         }
     }
 
-    const setEndDate = (newEndDate: string, fromPicker:boolean) => {
+    const setEndDate = (newEndDate: Dayjs, fromPicker:boolean) => {
         
         if (fromPicker) {
-            setEndLocal(dayjs(newEndDate).format(DateFormats.DATE_LOCALE));
+            setEndLocal(newEndDate.format(DateFormats.DATE_LOCALE));
         } else {
-            setEndLocal(newEndDate);
+            setEndLocal(newEndDate.format(DateFormats.DATE_TIME));
         }
         const valid = dayjs(newEndDate).isValid();
-        setInvalidEndDate(valid ? undefined : newEndDate);
+        setInvalidEndDate(valid ? undefined : newEndDate.format(DateFormats.DATE_LOCALE));
         if (valid) {
             if (dayjs(start).isAfter(newEndDate)) {
-                newEndDate = start;
+                newEndDate = dayjs(start);
             }
             // since all day events don't show the next day, add one day
-            setEnd(dayjs(newEndDate).add(1, "days").format(DateFormats.DATE_TIME));
+            setEnd(newEndDate.add(1, "days").format(DateFormats.DATE_TIME));
         }
     }
 
@@ -141,7 +141,7 @@ export default function NewDatePicker({
                     selected={dayjs(start).toDate()}
                     onChange={(d: Date) => {
                         console.log("picker change")
-                        setDate(dayjs(d).format(DateFormats.DATE), true)
+                        setDate(dayjs(d), true)
                     }}
                     shouldCloseOnSelect={true}
                     onCalendarOpen={() => setStartOpen(true)}
@@ -154,7 +154,7 @@ export default function NewDatePicker({
                             readOnly={readOnly}
                             setOpen={(o: boolean) => dateStartPicker?.current?.setOpen(o)}
                             onValueChange={(val: string) => {
-                                setDate(val, false)
+                                setDate(dayjs(val), false)
                             }}
                             open={startOpen}
                             invalid={invalidStartDate != undefined}
@@ -208,7 +208,8 @@ export default function NewDatePicker({
                     selected={end ? dayjs(end).subtract(1,"day").toDate() :
                         dayjs(start).subtract(1,"day").toDate()
                     }
-                    onChange={(d: Date) => setEndDate(dayjs(d).format(DateFormats.DATE), true)}
+                    onChange={(d: Date) => 
+                        setEndDate(dayjs(d), true)}
                     shouldCloseOnSelect={true}
                     onCalendarOpen={() => setEndOpen(true)}
                     onCalendarClose={() => setEndOpen(false)}
@@ -221,7 +222,7 @@ export default function NewDatePicker({
                             readOnly={readOnly}
                             setOpen={(o: boolean) => dateEndPicker?.current?.setOpen(o)}
                             onValueChange={(val: string) => {
-                                setEndDate(val, false)
+                                setEndDate(dayjs(val), false)
                             }}
                             open={endOpen}
                             invalid={invalidEndDate != undefined}
