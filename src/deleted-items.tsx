@@ -47,7 +47,7 @@ export const DeletedItems = ({ onClose, onRefresh, notify }: DeletedItemsProps) 
                 <div className="deleted-items-header-item">פעולות</div>
                 {deletedEvents?.deleted.map((rec, index) => (
                     <>
-                        <div className="row-item">{rec.event.title}</div>
+                        <div className="row-item">{rec.event.title}{rec.event.instaceStatus == true?" (עם שינויים)":""}</div>
                         <div className="row-item">{rec.event.date}</div>
                         <div className="row-item">
                             <button className="restore-button" onClick={() => restoreDeleted(rec)}>שחזר</button>
