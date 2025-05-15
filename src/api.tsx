@@ -360,8 +360,8 @@ export function getMedia(): Promise<MediaResource[]> {
 }
 
 export async function upsertEvent(event: Event, id?: string): Promise<Event> {
-
-    const dbEventObj = event.toDbObj(id === undefined || id === "");
+    const isCreate = id === undefined || id === "";
+    const dbEventObj = event.toDbObj(isCreate, isCreate? false: event.instanceStatus);
 
     const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
     const payload: any = {
@@ -382,7 +382,7 @@ export async function upsertEvent(event: Event, id?: string): Promise<Event> {
 export async function createEventInstance(event: Event, id: string):
     Promise<{ instance: Event, series: Event }> {
 
-    const dbEventObj = event.toDbObj();
+    const dbEventObj = event.toDbObj(true, true);
 
     const createEventInstanceFunc = httpsCallable(functions, 'createEventInstance');
     const payload: any = {

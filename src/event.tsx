@@ -53,7 +53,7 @@ export const ReminderFieldKeyValue = [
 
 
 export class Event {
-    id?:string = "";
+    id?: string = "";
     date: string = "";
     title: string = "";
     start: string = "";
@@ -77,14 +77,14 @@ export class Event {
     clearAudio?: boolean;
     isPersonal?: boolean;
     unread?: boolean;
-    modifiedAt?:string;
-    overriden?:boolean;
-    overrideAll?:boolean;
-    
+    modifiedAt?: string;
+    overriden?: boolean;
+    overrideAll?: boolean;
+
 
     _ref?: DocumentReference | undefined = undefined;
     tag?: string;
-    
+
     static fromEventAny(evt: Event | EventApi): Event {
         let eventApi = evt as EventApi;
         if ("toPlainObject" in eventApi) {
@@ -149,7 +149,7 @@ export class Event {
         return ""
     }
 
-    static getParticipantsAsArray(participants?:any): Participant[] {
+    static getParticipantsAsArray(participants?: any): Participant[] {
         const ret = [] as Participant[];
         if (participants) {
             for (const [key, value] of Object.entries(participants)) {
@@ -159,9 +159,12 @@ export class Event {
         return ret;
     }
 
-    toDbObj(isCreate: boolean = true): any {
+    toDbObj(isCreate: boolean = true, isInstance: boolean = false): any {
         let eventObj = { ...this };
-        eventObj.date = dayjs(this.start).format(DateFormats.DATE);
+        if (!isInstance || !eventObj.date) {
+            // only change the date if not existing. otherwise keep the date of the instance
+            eventObj.date = dayjs(this.start).format(DateFormats.DATE);
+        }
         eventObj.start = dayjs(this.start).format(DateFormats.DATE_TIME);
         eventObj.end = dayjs(this.end).format(DateFormats.DATE_TIME);
 
@@ -213,7 +216,7 @@ export class Event {
         clearFieldIfEmpty("guide");
         clearFieldIfEmpty("keyEvent");
         clearFieldIfEmpty("showOnSharedScreen");
-        
+
         clearFieldIfEmpty("allDay");
         clearFieldIfEmpty("reminderMinutes");
         clearFieldIfEmpty("overrideAll");
