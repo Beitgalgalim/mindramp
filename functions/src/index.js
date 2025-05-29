@@ -1,9 +1,15 @@
-const functions = require("firebase-functions");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
+const { logger, setGlobalOptions } = require("firebase-functions/v2");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { defineString } = require("firebase-functions/params");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+
+// Dependencies for the addMessage function.
+const FieldValue = require("firebase-admin/firestore").FieldValue;
+const onDocumentUpdated = require("firebase-functions/firestore").onDocumentUpdated;
 
 const admin = require("firebase-admin");
-const {
-    FieldValue,
-} = require("@google-cloud/firestore");
+const genAI = require("@google/generative-ai");
 
 const axios = require("axios");
 const eventsUtil = require("./events");
@@ -22,6 +28,18 @@ const JERUSALEM = "Asia/Jerusalem";
 const express = require("express");
 const webhookMiddleware = require("x-hub-signature").middleware;
 const bodyParser = require("body-parser");
+
+setGlobalOptions({
+    region: "europe-west1",
+});
+
+// Env:
+const whatsappVerifytoken = defineString("WA_VERIFY_TOKEN");
+const whatsappAppSecret = defineString("WA_APP_SECRET");
+const whatsappPhoneId = defineString("WA_PHONE_ID");
+const whatsappPhoneNumber = defineString("WA_PHONE_NUMBER");
+const whatsappAccessToken = defineString("WA_ACCESS_TOKEN");
+const geminiApiKey = defineString("GEMINI_API_KEY");
 
 const app = express();
 
@@ -84,12 +102,12 @@ const allowedElevateRoles = [
 const getParticipantKey = (email) => (email?.replace(/\./g, "")?.replace("@", ""));
 
 
-exports.updateNotification = functions.region("europe-west1").https.onCall((data, context) => {
-    if (!context.auth) {
+exports.updateNotification = onCall({ cors: true }, async (request) => {
+    if (!request.auth) {
         return;
     }
-    const { notificationOn, notificationToken, isDev } = data;
-    const docRef = db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default");
+    const { notificationOn, notificationToken, isDev } = request.data;
+    const docRef = db.collection(isDev ? "users_dev" : "users").doc(request.auth.token.email).collection("personal").doc("Default");
     return docRef.get().then(doc => {
         const update = {};
         if (notificationOn !== undefined) {
@@ -110,7 +128,7 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
             }
         }
 
-        functions.logger.info("Update Notifications", "update", update);
+        logger.info("Update Notifications", "update", update);
         if (doc.exists) {
             return doc.ref.update(update);
         } else {
@@ -119,79 +137,16 @@ exports.updateNotification = functions.region("europe-west1").https.onCall((data
     });
 });
 
-// function getAccessToken() {
-//     return admin.credential.applicationDefault().getAccessToken();
-// }
+exports.sendNotificationTest = onCall({ cors: true }, async (request) => {
+    const { isDev } = request.data;
 
-// function sendNotification(accessToken, title, body, link, deviceToken) {
-//     const postData = {
-//         message: {
-//             "notification": {
-//                 "title": title,
-//                 "body": body,
-//             },
-//             "webpush": link ? {
-//                 "fcm_options": {
-//                     "link": link,
-//                 },
-//             } : undefined,
-//         },
-//     };
-
-//     const headers = {
-//         "Authorization": "Bearer " + accessToken.access_token,
-//         "Content-Type": "application/json",
-//     };
-//     const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
-//     postData.message.token = deviceToken;
-
-//     return axios.post(url, postData, {
-//         headers,
-//     }).then(() => ({ success: true }));
-// }
-
-exports.sendNotificationTest = functions.region("europe-west1").https.onCall((data, context) => {
-    const { isDev } = data;
-
-    if (context?.auth?.token?.email?.length > 0) {
-        return addNotification(undefined, "test_notification", [], [], [context.auth.token.email], isDev);
+    if (request?.auth?.token?.email?.length > 0) {
+        return addNotification(undefined, "test_notification", [], [], [request.auth.token.email], isDev);
     }
-
-    // const postData = {
-    //     message: {
-    //         "notification": {
-    //             "title": title,
-    //             "body": body,
-    //         },
-    //         "webpush": link ? {
-    //             "fcm_options": {
-    //                 "link": link,
-    //             },
-    //         } : undefined,
-    //     },
-    // };
-
-    // return getAccessToken().then((accessToken) => {
-    //     return db.collection(isDev ? "users_dev" : "users").doc(context.auth.token.email).collection("personal").doc("Default").get().then(doc => {
-    //         if (doc.exists && doc.data().notificationTokens && doc.data().notificationTokens.length > 0) {
-    //             const headers = {
-    //                 "Authorization": "Bearer " + accessToken.access_token,
-    //                 "Content-Type": "application/json",
-    //             };
-    //             const url = "https://fcm.googleapis.com/v1/projects/mindramp-58e89/messages:send";
-    //             const notifToken = doc.data().notificationTokens[0];
-    //             postData.message.token = notifToken.token;
-
-    //             return axios.post(url, postData, {
-    //                 headers,
-    //             }).then((res) => ({ success: true }));
-    //         }
-    //     });
-    // });
 });
 
-exports.forgotUser = functions.region("europe-west1").https.onCall((data, context) => {
-    const { isDev, phone } = data;
+exports.forgotUser = onCall({ cors: true }, async (request) => {
+    const { isDev, phone } = request.data;
     const phoneNumber = phone.replace(/[^\d]+/g, "");
 
     return db.collection(isDev ? "users_dev" : "users").where("phone", "==", phoneNumber).get().then(res => {
@@ -200,80 +155,79 @@ exports.forgotUser = functions.region("europe-west1").https.onCall((data, contex
 
             return addNotification(undefined, "send_user_info", [email], [], [email], isDev);
         } else {
-            throw new functions.https.HttpsError("failed-precondition", "UnknownPhone", `Phone number '${phoneNumber}' not found`);
+            throw new HttpsError("failed-precondition", "UnknownPhone", `Phone number '${phoneNumber}' not found`);
         }
     });
 });
 
-exports.forgotPwd = functions.region("europe-west1").https.onCall((data, context) => {
-    // const { isDev } = data;
-    const phoneNumber = functions.config().whatsapp.phonenumber;
+exports.forgotPwd = onCall({ cors: true }, async (request) => {
+    const phoneNumber = whatsappPhoneNumber.value();
     return {
         phone: phoneNumber,
     };
 });
 
+exports.notifications = onSchedule({
+    schedule: "every 1 minutes",
+    timeZone: "Asia/Jerusalem",
+    region: "europe-west1",
+    timeoutSeconds: 300,
+}, async () => {
+    const now = dayjs().utc().tz(JERUSALEM);
 
-exports.notifications = functions.region("europe-west1").pubsub
-    // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
-    .schedule("every 1 minutes")
-    .timeZone(JERUSALEM)
-    .onRun(async (context) => {
-        const now = dayjs().utc().tz(JERUSALEM);
+    async function handleReminders(isDev) {
+        const twoDaysAhead = now.add(2, "days");
 
-        async function handleReminders(isDev) {
-            const twoDaysAhead = now.add(2, "days");
+        const cachedEvents = await getEventsViaCache(isDev);
 
-            const cachedEvents = await getEventsViaCache(isDev);
+        const allEvents = eventsUtil.explodeEvents(cachedEvents.events.map(entry => ({ id: entry.id, ...entry.event })), 1, 2);
 
-            const allEvents = eventsUtil.explodeEvents(cachedEvents.events.map(entry => ({ id: entry.id, ...entry.event })), 1, 2);
+        const events = allEvents.filter(ev => ev.reminderMinutes !== undefined &&
+            ev.date >= now.format("YYYY-MM-DD") &&
+            ev.date <= twoDaysAhead.format("YYYY-MM-DD") &&
+            (
+                !ev.notified ||
+                ev.recurrent && !ev.instanceStatus && ev.notified < now.format("YYYY-MM-DD") // recurrent meeting (not instance)
+            )
+        );
 
-            const events = allEvents.filter(ev => ev.reminderMinutes !== undefined &&
-                ev.date >= now.format("YYYY-MM-DD") &&
-                ev.date <= twoDaysAhead.format("YYYY-MM-DD") &&
-                (
-                    !ev.notified ||
-                    ev.recurrent && !ev.instanceStatus && ev.notified < now.format("YYYY-MM-DD") // recurrent meeting (not instance)
-                )
-            );
+        const notifyEvents = [];
 
-            const notifyEvents = [];
-
-            events.forEach(ev => {
-                const reminderStart = dayjs.tz(ev.start, JERUSALEM).subtract(ev.reminderMinutes, "minutes");
-                if (reminderStart.isBefore(now)) {
-                    notifyEvents.push(ev);
-                } else {
-                    functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
-                }
-            });
-
-            functions.logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events" + (isDev ? " dev" : ""), notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.id })));
-
-            if (notifyEvents.length > 0) {
-                const batch = db.batch();
-                const notifiedChange = { notified: now.format("YYYY-MM-DD HH:mm:ss") };
-                notifyEvents.forEach(ev => {
-                    const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
-                    if (ev.guide && !notifyList.includes(ev.guide.email)) {
-                        notifyList.push(ev.guide.email);
-                    }
-
-                    addNotification(batch, "event_reminder", [ev.title, getReminderString(ev)], [], notifyList, isDev);
-
-                    // Update event being notified:
-                    const docRef = db.collection(isDev ? "event_dev" : "event").doc(ev.id);
-                    batch.update(docRef, notifiedChange);
-                    updateEventInCache(isDev, ev.id, notifiedChange);
-                });
-                return batch.commit();
+        events.forEach(ev => {
+            const reminderStart = dayjs.tz(ev.start, JERUSALEM).subtract(ev.reminderMinutes, "minutes");
+            if (reminderStart.isBefore(now)) {
+                notifyEvents.push(ev);
+            } else {
+                logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "skipped event:", ({ title: ev.title, date: ev.date, start: ev.start, id: ev.id, reminderAt: reminderStart.format("YYYY-MM-DDTHH:mm") }));
             }
+        });
+
+        logger.log("Notifications, time:", now.format("YYYY-MM-DDTHH:mm"), "notify events" + (isDev ? " dev" : ""), notifyEvents.map(e => ({ title: e.title, date: e.date, start: e.start, id: e.id })));
+
+        if (notifyEvents.length > 0) {
+            const batch = db.batch();
+            const notifiedChange = { notified: now.format("YYYY-MM-DD HH:mm:ss") };
+            notifyEvents.forEach(ev => {
+                const notifyList = getParticipantsAsArray(ev.participants).map(p => p.email);
+                if (ev.guide && !notifyList.includes(ev.guide.email)) {
+                    notifyList.push(ev.guide.email);
+                }
+
+                addNotification(batch, "event_reminder", [ev.title, getReminderString(ev)], [], notifyList, isDev);
+
+                // Update event being notified:
+                const docRef = db.collection(isDev ? "event_dev" : "event").doc(ev.id);
+                batch.update(docRef, notifiedChange);
+                updateEventInCache(isDev, ev.id, notifiedChange);
+            });
+            return batch.commit();
         }
-        return Promise.all([
-            handleReminders(true),
-            handleReminders(false),
-        ]);
-    });
+    }
+    return Promise.all([
+        handleReminders(true),
+        handleReminders(false),
+    ]);
+});
 
 
 function getReminderString(ev, now) {
@@ -327,17 +281,13 @@ function getBeforeTimeText(minutes) {
     return "עוד מעל שעתיים";
 }
 
-exports.eventChanged = functions.region("europe-west1").firestore
-    .document("event/{eventID}")
-    .onWrite((change, context) => {
-        return handleParticipantAdded(false, change, context);
-    });
+exports.eventChanged = onDocumentUpdated("event/{eventID}", (change) => {
+    return handleParticipantAdded(false, change);
+});
 
-exports.eventChangedDev = functions.region("europe-west1").firestore
-    .document("event_dev/{eventID}")
-    .onWrite((change, context) => {
-        return handleParticipantAdded(true, change, context);
-    });
+exports.eventChangedDev = onDocumentUpdated("event_dev/{eventID}", (change) => {
+    return handleParticipantAdded(true, change);
+});
 
 function getParticipantsAsArray(participants) {
     const ret = [];
@@ -351,7 +301,7 @@ function getParticipantsAsArray(participants) {
 }
 
 
-function handleParticipantAdded(isDev, change, context) {
+function handleParticipantAdded(isDev, change) {
     const added = [];
     let removed = [];
     let previousParticipants = [];
@@ -371,7 +321,7 @@ function handleParticipantAdded(isDev, change, context) {
     if (change.after.exists) {
         if (eventsUtil.inThePast(change.after.data().end)) {
             // if the event ends in the past
-            functions.logger.info("change event in the past");
+            logger.info("change event in the past");
             return false;
         }
 
@@ -461,10 +411,10 @@ async function getRoleViaCach(isDev) {
 }
 
 
-exports.getRoles = functions.region("europe-west1").https.onCall((data, context) => {
-    const isDev = data.isDev;
+exports.getRoles = onCall({ cors: true }, async (request) => {
+    const isDev = request.data.isDev;
 
-    return getUserRoles(isDev, context).then(roles => {
+    return getUserRoles(isDev, request).then(roles => {
         if (!roles.includes(Roles.UserAdmin)) {
             throwNoUserAdmin();
         }
@@ -473,11 +423,11 @@ exports.getRoles = functions.region("europe-west1").https.onCall((data, context)
 });
 
 
-async function getUserRoles(isDev, context) {
-    if (!context.auth) {
+async function getUserRoles(isDev, reqeust) {
+    if (!reqeust.auth) {
         return [];
     }
-    const user = context.auth.token.email;
+    const user = reqeust.auth.token.email;
     return getUserRolesInternal(isDev, user, true);
 }
 
@@ -512,14 +462,15 @@ function recursiveAssignRole(userRoles, roles, role) {
 }
 
 function throwNoUserAdmin() {
-    throw new functions.https.HttpsError("failed-precondition", "notUserAdmin", "User Admin role is missing");
+    throw new HttpsError("failed-precondition", "notUserAdmin", "User Admin role is missing");
 }
 
 function throwNoEditPermission() {
-    throw new functions.https.HttpsError("failed-precondition", "noEditPermission", "Editing permission is missing");
+    throw new HttpsError("failed-precondition", "noEditPermission", "Editing permission is missing");
 }
 
-exports.registerUser = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.registerUser = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const info = data.info;
     const roles = data.roles;
@@ -532,7 +483,7 @@ exports.registerUser = functions.region("europe-west1").https.onCall(async (data
         info.phone = phone;
     }
 
-    const userRoles = await getUserRoles(isDev, context);
+    const userRoles = await getUserRoles(isDev, request);
 
     if (userRoles.includes(Roles.UserAdmin)) {
         return admin.auth()
@@ -563,20 +514,21 @@ exports.registerUser = functions.region("europe-west1").https.onCall(async (data
                 }
             ).catch(err => {
                 if (err.message.indexOf("uid already exists") > 0) {
-                    throw new functions.https.HttpsError("already-exists", "משתמש כבר קיים", `משתמש עם מזהה ${data.email} כבר קיים במערכת`);
+                    throw new HttpsError("already-exists", "משתמש כבר קיים", `משתמש עם מזהה ${data.email} כבר קיים במערכת`);
                 }
-                throw new functions.https.HttpsError("internal", err.message);
+                throw new HttpsError("internal", err.message);
             });
     } else {
         throwNoUserAdmin();
     }
 });
 
-exports.deleteUser = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.deleteUser = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const email = data.email;
 
-    const userRoles = await getUserRoles(isDev, context);
+    const userRoles = await getUserRoles(isDev, request);
 
     if (userRoles.includes(Roles.UserAdmin)) {
         return admin.auth().deleteUser(email).then(() => {
@@ -604,14 +556,15 @@ exports.deleteUser = functions.region("europe-west1").https.onCall(async (data, 
     } else throwNoUserAdmin();
 });
 
-exports.getUserRoles = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.getUserRoles = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const email = data.email;
 
-    const currentUserRoles = await getUserRoles(isDev, context);
+    const currentUserRoles = await getUserRoles(isDev, request);
     const isUserAdmin = (currentUserRoles.includes(Roles.UserAdmin));
 
-    if (isUserAdmin || email === context.auth.token.email) {
+    if (isUserAdmin || email === request.auth.token.email) {
         const userRolesRecursive = await getUserRolesInternal(isDev, email, true);
         const userRoles = await getUserRolesInternal(isDev, email, false);
         return userRolesRecursive.map(urr => {
@@ -623,14 +576,15 @@ exports.getUserRoles = functions.region("europe-west1").https.onCall(async (data
         });
     } else throwNoUserAdmin();
 });
-exports.updateUser = functions.region("europe-west1").https.onCall(async (data, context) => {
-    const currentUser = context.auth.token.email;
+exports.updateUser = onCall({ cors: true }, async (request) => {
+    const data = request.data;
+    const currentUser = request.auth.token.email;
     const isDev = data.isDev;
     const roles = data.roles;
     const email = data.email;
     const info = data.info;
 
-    functions.logger.info("updateUser", data);
+    logger.info("updateUser", data);
 
 
     if (info.phone) {
@@ -644,7 +598,7 @@ exports.updateUser = functions.region("europe-west1").https.onCall(async (data, 
     // - UserAdmin role (change roles as long as he/she himself has them)
     // - the User himself (but cannot change any role)
 
-    const userRoles = await getUserRoles(isDev, context);
+    const userRoles = await getUserRoles(isDev, request);
     const isUserAdmin = (userRoles.includes(Roles.UserAdmin));
     if (email === currentUser || isUserAdmin) {
         const batch = db.batch();
@@ -653,7 +607,7 @@ exports.updateUser = functions.region("europe-west1").https.onCall(async (data, 
         let rolesChanged = false;
         if (isUserAdmin && roles) {
             const userRolesBefore = await getUserRolesInternal(isDev, email, false);
-            functions.logger.info("updateUser-update roles", roles, userRolesBefore);
+            logger.info("updateUser-update roles", roles, userRolesBefore);
 
             const newRoles = roles.filter(r => !userRolesBefore.includes(r));
             const removedRoles = userRolesBefore.filter(ur => !roles.includes(ur));
@@ -701,7 +655,7 @@ async function promoteTag(isDev, tag, noCreate) {
     try {
         await storageRef.file(fileName).setMetadata(metadata);
     } catch (e) {
-        functions.logger.error("Cannot update event marker" + (noCreate ? "" : " try create file"), e, "isDev", isDev);
+        logger.error("Cannot update event marker" + (noCreate ? "" : " try create file"), e, "isDev", isDev);
         if (!noCreate) {
             const file = storageRef.file(fileName);
             return file.save("", {
@@ -734,15 +688,15 @@ function getEventArchiveCollection(isDev) {
 }
 
 
-async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing) {
-    const roles = await getUserRoles(isDev, context);
+async function verifyEditEventPermission(isDev, request, eventObj, addIfMissing) {
+    const roles = await getUserRoles(isDev, request);
 
     if (!roles.includes(Roles.ContentAdmin)) {
         if (!roles.includes(Roles.Editor)) {
             throwNoEditPermission();
         } else {
-            const email = context.auth.token.email;
-            functions.logger.info("Editor only", email);
+            const email = request.auth.token.email;
+            logger.info("Editor only", email);
             const participantKey = getParticipantKey(email);
             if (!eventObj.participants[participantKey]) {
                 if (!addIfMissing) {
@@ -751,7 +705,7 @@ async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing)
                 // Since the user is only "editor", we add him/her as participant
                 const user = await db.collection(isDev ? "users_dev" : "users").doc(email).get();
                 if (!user.exists) {
-                    functions.logger.info("Editor only - cannot find user info", email);
+                    logger.info("Editor only - cannot find user info", email);
                     throwNoEditPermission();
                 }
                 eventObj.participants[participantKey] = {
@@ -767,14 +721,14 @@ async function verifyEditEventPermission(isDev, context, eventObj, addIfMissing)
     }
 }
 
-async function verifyDeleteEventPermission(isDev, context, eventID) {
-    const roles = await getUserRoles(isDev, context);
+async function verifyDeleteEventPermission(isDev, request, eventID) {
+    const roles = await getUserRoles(isDev, request);
 
     if (!roles.includes(Roles.ContentAdmin)) {
         if (!roles.includes(Roles.Editor)) {
             throwNoEditPermission();
         }
-        const email = context.auth.token.email;
+        const email = request.auth.token.email;
         const event = await getEventCollection(isDev).doc(eventID).get();
         if (!event.exists || !event.data().participants[getParticipantKey(email)]) {
             throwNoEditPermission();
@@ -782,12 +736,13 @@ async function verifyDeleteEventPermission(isDev, context, eventID) {
     }
 }
 
-exports.upsertEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.upsertEvent = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const eventObj = data.event;
     const id = data.id;
 
-    await verifyEditEventPermission(isDev, context, eventObj, true);
+    await verifyEditEventPermission(isDev, request, eventObj, true);
 
     const collection = getEventCollection(isDev);
     const returnEvent = {};
@@ -827,12 +782,13 @@ exports.upsertEvent = functions.region("europe-west1").https.onCall(async (data,
     }
 });
 
-exports.createEventInstance = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.createEventInstance = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const eventObj = data.event;
     const id = data.id;
 
-    await verifyEditEventPermission(isDev, context, eventObj, false); // editor cannot make instance of an event he/she is not part of
+    await verifyEditEventPermission(isDev, request, eventObj, false); // editor cannot make instance of an event he/she is not part of
 
     eventObj.instanceStatus = true;
     eventObj.recurrent = { gid: id };
@@ -870,14 +826,15 @@ exports.createEventInstance = functions.region("europe-west1").https.onCall(asyn
     });
 });
 
-exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.createEventInstanceAsDeleted = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const id = data.id;
     const excludeDate = data.excludeDate;
 
     // Verify user is admin
     // Editor cannt delete instance if he/she is not a participant
-    await verifyDeleteEventPermission(isDev, context, id, false);
+    await verifyDeleteEventPermission(isDev, request, id, false);
 
     const collection = getEventCollection(isDev);
     const seriesRef = collection.doc(id);
@@ -904,13 +861,14 @@ exports.createEventInstanceAsDeleted = functions.region("europe-west1").https.on
     });
 });
 
-exports.deleteEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.deleteEvent = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
     const id = data.id;
     const deleteModifiedInstance = data.deleteModifiedInstance;
 
     // Verify user is admin
-    await verifyDeleteEventPermission(isDev, context, id);
+    await verifyDeleteEventPermission(isDev, request, id);
 
     const collection = getEventCollection(isDev);
     const archiveCollection = getEventArchiveCollection(isDev);
@@ -955,9 +913,10 @@ function updateEventInCache(isDev, id, change) {
     }
 }
 
-exports.getDeletedEvents = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.getDeletedEvents = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
-    const roles = await getUserRoles(isDev, context);
+    const roles = await getUserRoles(isDev, request);
     if (!roles.includes(Roles.ContentAdmin)) {
         throwNoUserAdmin();
     }
@@ -972,10 +931,11 @@ exports.getDeletedEvents = functions.region("europe-west1").https.onCall(async (
     };
 });
 
-exports.restoreDeletedEvent = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.restoreDeletedEvent = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const { isDev, eventRecord, date } = data;
 
-    const roles = await getUserRoles(isDev, context);
+    const roles = await getUserRoles(isDev, request);
     if (!roles.includes(Roles.ContentAdmin)) {
         throwNoUserAdmin();
     }
@@ -991,7 +951,7 @@ exports.restoreDeletedEvent = functions.region("europe-west1").https.onCall(asyn
 
             batch.set(getEventCollection(isDev).doc(eventRecord.id), docData);
         } else {
-            throw new functions.https.HttpsError("not-found", "Event not found");
+            throw new HttpsError("not-found", "Event not found");
         }
     } else if (date) {
         const seriesRef = getEventCollection(isDev).doc(eventRecord.id);
@@ -1006,10 +966,10 @@ exports.restoreDeletedEvent = functions.region("europe-west1").https.onCall(asyn
             }
             batch.update(seriesRef, { recurrent: seriesDocObj.recurrent });
         } else {
-            throw new functions.https.HttpsError("not-found", "Series not found");
+            throw new HttpsError("not-found", "Series not found");
         }
     } else {
-        throw new functions.https.HttpsError("invalid-argument", "Unexpected event to restore");
+        throw new HttpsError("invalid-argument", "Unexpected event to restore");
     }
 
     return batch.commit().then(() => promoteTag(isDev, dayjs().format(tagFormat)));
@@ -1022,7 +982,7 @@ async function getEventsViaCache(isDev) {
     const latestTag = await getTag(isDev);
 
     if (cachedEvents) {
-        // functions.logger.info("Tags", "saved", latestTag, "calc", currentEtag);
+        // logger.info("Tags", "saved", latestTag, "calc", currentEtag);
         if (cachedEtag !== latestTag) {
             cachedEvents = undefined;
             cachedEtag = latestTag;
@@ -1048,9 +1008,10 @@ async function getEventsViaCache(isDev) {
 }
 
 
-exports.getEvents = functions.region("europe-west1").https.onCall(async (data, context) => {
+exports.getEvents = onCall({ cors: true }, async (request) => {
+    const data = request.data;
     const isDev = data.isDev;
-    const email = context?.auth?.token?.email;
+    const email = request?.auth?.token?.email;
     const impersonateUser = data.impersonateUser;
     const eTag = data.eTag;
 
@@ -1060,22 +1021,22 @@ exports.getEvents = functions.region("europe-west1").https.onCall(async (data, c
         return { noChange: true };
     }
 
-    const roles = await getUserRoles(isDev, context);
+    const roles = await getUserRoles(isDev, request);
 
 
     if (impersonateUser && impersonateUser !== email) {
         if (!email) {
-            throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied");
+            throw new HttpsError("permission-denied", "ImpresonationDenied");
         }
         if (!roles.includes(Roles.Kiosk)) {
-            throw new functions.https.HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
+            throw new HttpsError("permission-denied", "ImpresonationDenied", "Impersonated User is not marked to showInKiosk");
         }
     }
 
     const effectiveEmail = impersonateUser || email;
     const participantKey = effectiveEmail && effectiveEmail.replace(/\./g, "").replace("@", "");
 
-    functions.logger.log("getEvents. roles:", JSON.stringify(roles), "impUser:", impersonateUser, "user:", email, participantKey);
+    logger.log("getEvents. roles:", JSON.stringify(roles), "impUser:", impersonateUser, "user:", email, participantKey);
 
     const returnEvents = cachedEvents.events.filter(entry =>
         roles.includes(Roles.ContentAdmin) || // content-admin loads all
@@ -1106,74 +1067,76 @@ const backupCollections = [
     { name: "role" },
 ];
 
-exports.BackupDB = functions.region("europe-west1").pubsub
+exports.BackupDB = onSchedule({
+    schedule: "00 01 * * *",
+    timeZone: "Asia/Jerusalem",
+    region: "europe-west1",
+    timeoutSeconds: 300,
+}, async () => {
     // minute (0 - 59) | hour (0 - 23) | day of the month (1 - 31) | month (1 - 12) | day of the week (0 - 6) - Sunday to Saturday
-    .schedule("00 01 * * *") // Every day at 01:00
-    .timeZone("Asia/Jerusalem")
-    .onRun((context) => {
-        const zipName = "backup|" + dayjs().format("YYYY-MM-DD HH:mm") + ".zip";
-        const output = fs.createWriteStream("/tmp/" + zipName);
-        const archive = archiver("zip", {
-            gzip: true,
-            zlib: { level: 9 }, // Sets the compression level.
-        });
-
-        archive.on("error", (err) => {
-            functions.logger.error("BackupDB failed", err);
-            throw (err);
-        });
-
-        // pipe archive data to the output file
-        archive.pipe(output);
-
-        const waitFor = [];
-
-        for (let i = 0; i < backupCollections.length; i++) {
-            waitFor.push(db.collection(backupCollections[i].name).get().then(async (collData) => {
-                const name = backupCollections[i].name + "|" + dayjs().format("YYYY-MM-DD HH:mm") + ".json";
-                const fileName = "/tmp/backup|" + name;
-
-                fs.appendFileSync(fileName, "[\n");
-                for (let docIndex = 0; docIndex < collData.size; docIndex++) {
-                    const doc = collData.docs[docIndex];
-                    const backupDoc = doc.data();
-                    backupDoc._docID = doc.ref.id;
-
-                    if (backupCollections[i].subCollections) {
-                        for (let j = 0; j < backupCollections[i].subCollections.length; j++) {
-                            const subColl = backupCollections[i].subCollections[j];
-                            const subColDocs = await db.collection(backupCollections[i].name).doc(doc.ref.id).collection(subColl.name).get();
-                            backupDoc[subColl.name] = [];
-                            subColDocs.forEach(subColDoc => {
-                                const backupSubColDoc = subColDoc.data();
-                                backupSubColDoc._docID = subColDoc.ref.id;
-                                backupDoc[subColl.name].push(backupSubColDoc);
-                            });
-                        }
-                    }
-
-                    fs.appendFileSync(fileName, JSON.stringify(backupDoc, undefined, " "));
-                    fs.appendFileSync(fileName, ",\n");
-                }
-                fs.appendFileSync(fileName, "]");
-                console.log("add to archive", name);
-                archive.file(fileName, { name });
-            }));
-        }
-        return Promise.all(waitFor).then(() => {
-            console.log("finalize archive");
-            archive.finalize().then(
-                () => admin.storage().bucket().upload("/tmp/" + zipName, {
-                    destination: `backups/${zipName}`,
-                }).then(
-                    () => {
-                        console.log("Backup complete successfuly!");
-                        return archiveData();
-                    },
-                    (err) => console.log("Backup failed", err)),
-            );
-        });
+    const zipName = "backup|" + dayjs().format("YYYY-MM-DD HH:mm") + ".zip";
+    const output = fs.createWriteStream("/tmp/" + zipName);
+    const archive = archiver("zip", {
+        gzip: true,
+        zlib: { level: 9 }, // Sets the compression level.
     });
+
+    archive.on("error", (err) => {
+        logger.error("BackupDB failed", err);
+        throw (err);
+    });
+
+    // pipe archive data to the output file
+    archive.pipe(output);
+
+    const waitFor = [];
+
+    for (let i = 0; i < backupCollections.length; i++) {
+        waitFor.push(db.collection(backupCollections[i].name).get().then(async (collData) => {
+            const name = backupCollections[i].name + "|" + dayjs().format("YYYY-MM-DD HH:mm") + ".json";
+            const fileName = "/tmp/backup|" + name;
+
+            fs.appendFileSync(fileName, "[\n");
+            for (let docIndex = 0; docIndex < collData.size; docIndex++) {
+                const doc = collData.docs[docIndex];
+                const backupDoc = doc.data();
+                backupDoc._docID = doc.ref.id;
+
+                if (backupCollections[i].subCollections) {
+                    for (let j = 0; j < backupCollections[i].subCollections.length; j++) {
+                        const subColl = backupCollections[i].subCollections[j];
+                        const subColDocs = await db.collection(backupCollections[i].name).doc(doc.ref.id).collection(subColl.name).get();
+                        backupDoc[subColl.name] = [];
+                        subColDocs.forEach(subColDoc => {
+                            const backupSubColDoc = subColDoc.data();
+                            backupSubColDoc._docID = subColDoc.ref.id;
+                            backupDoc[subColl.name].push(backupSubColDoc);
+                        });
+                    }
+                }
+
+                fs.appendFileSync(fileName, JSON.stringify(backupDoc, undefined, " "));
+                fs.appendFileSync(fileName, ",\n");
+            }
+            fs.appendFileSync(fileName, "]");
+            console.log("add to archive", name);
+            archive.file(fileName, { name });
+        }));
+    }
+    return Promise.all(waitFor).then(() => {
+        console.log("finalize archive");
+        archive.finalize().then(
+            () => admin.storage().bucket().upload("/tmp/" + zipName, {
+                destination: `backups/${zipName}`,
+            }).then(
+                () => {
+                    console.log("Backup complete successfuly!");
+                    return archiveData();
+                },
+                (err) => console.log("Backup failed", err)),
+        );
+    });
+});
 
 
 function archiveData() {
@@ -1209,7 +1172,7 @@ function archiveData() {
             }
         });
 
-        functions.logger.info("Current events", ev.docs.length, "All past-events", past, "Recurrent-events", recurrent, "instance-events", instance, "past recurring-instance-events", pastInstance);
+        logger.info("Current events", ev.docs.length, "All past-events", past, "Recurrent-events", recurrent, "instance-events", instance, "past recurring-instance-events", pastInstance);
         return batch.commit();
     });
 }
@@ -1272,8 +1235,8 @@ const addNotificationFree = (message_body, toEmailArray, isDev) => {
 
 
 app.get("/whatsapp/webhooks", (req, res) => {
-    functions.logger.info("WhatApp Webhooks GET: " + JSON.stringify(req.query), req.query);
-    if (req.query["hub.verify_token"] == functions.config().whatsapp.verifytoken && req.query["hub.mode"] == "subscribe") {
+    logger.info("WhatApp Webhooks GET: " + JSON.stringify(req.query), req.query);
+    if (req.query["hub.verify_token"] == whatsappVerifytoken.value() && req.query["hub.mode"] == "subscribe") {
         res.send(req.query["hub.challenge"]);
     }
 
@@ -1286,16 +1249,16 @@ app.use(bodyParser.json({
 
 app.use(webhookMiddleware({
     algorithm: "sha256",
-    secret: functions.config().whatsapp.appsecret,
+    secret: whatsappAppSecret.value(),
     require: false,
     header: "x-hub-signature-256",
 }));
 
 app.post("/whatsapp/webhooks", (req, res) => {
-    functions.logger.info("WhatApp Webhooks POST: ", req.body);
+    logger.info("WhatApp Webhooks POST: ", req.body);
     const sentSignature = req.headers["x-hub-signature-256"];
     if (!sentSignature) {
-        functions.logger.info("WhatApp webhook is missing 'x-hub-signature' header", req.headers);
+        logger.info("WhatApp webhook is missing 'x-hub-signature' header", req.headers);
         res.send("not ok");
         return;
     }
@@ -1325,28 +1288,28 @@ app.post("/whatsapp/webhooks", (req, res) => {
                                             const email = res.docs[0].id;
                                             return handleIncomingTextMessage(text, email, true);
                                         } else {
-                                            functions.logger.info("Unknown phone", phoneNumber, "msg", text);
+                                            logger.info("Unknown phone", phoneNumber, "msg", text);
                                         }
                                     });
                                 }
                             });
                         } else {
-                            functions.logger.info("unknown message: ", message.from, message.text.body);
+                            logger.info("unknown message: ", message.from, message.text.body);
 
                             return sendFreeMessage("בקשה/הודעה לא מוכרת - בקשת נדחית.", [message.from]);
                         }
                     });
                 } else {
-                    functions.logger.info("unknown incoming post whatsapp webhook: ", change);
+                    logger.info("unknown incoming post whatsapp webhook: ", change);
                 }
             });
 
             return Promise.all(waitFor).then(() => res.status(200).send("EVENT_RECEIVED"));
         } else {
-            functions.logger.info("No entry");
+            logger.info("No entry");
         }
     } else {
-        functions.logger.info("unknown message type");
+        logger.info("unknown message type");
     }
 
     res.status(200).send("EVENT_RECEIVED");
@@ -1363,16 +1326,16 @@ const handleIncomingTextMessage = (text, fromEmail, isDev) => {
                 password: newPwd,
             }).then(
                 () => {
-                    functions.logger.info("Successful password reset", fromEmail);
+                    logger.info("Successful password reset", fromEmail);
                     return addNotificationFree("סיסמא הוחלפה בהצלחה. \nמשתמש: " + fromEmail + "\nסיסמא חדשה: " + newPwd + "\n", [fromEmail], isDev);
                 },
                 err => {
-                    functions.logger.info("Password reset failed", fromEmail, err);
+                    logger.info("Password reset failed", fromEmail, err);
                     return addNotificationFree("החלפת סיסמא נכשלה.\nשגיאה: " + err.toString() + "\n", [fromEmail], isDev);
                 });
         });
     } else {
-        functions.logger.info("unknown text message: ", text, fromEmail);
+        logger.info("unknown text message: ", text, fromEmail);
     }
 };
 
@@ -1427,10 +1390,10 @@ const sendTemplateMessage = (msg_template, parameters, quickReplyParameters, num
 };
 
 const sendWhatAppMessage = (postData, numbers) => {
-    const url = `https://graph.facebook.com/v14.0/${functions.config().whatsapp.phoneid}/messages`;
+    const url = `https://graph.facebook.com/v14.0/${whatsappPhoneId.value()}/messages`;
 
     const headers = {
-        "Authorization": "Bearer " + functions.config().whatsapp.accesstoken,
+        "Authorization": "Bearer " + whatsappAccessToken.value(),
         "Content-Type": "application/json",
     };
 
@@ -1440,7 +1403,7 @@ const sendWhatAppMessage = (postData, numbers) => {
             "972" + number.substr(1) :
             number.startsWith("+") ? number.substr(1) : number;
 
-        // functions.logger.info("send whatsapp", { url, postData, headers });
+        // logger.info("send whatsapp", { url, postData, headers });
 
         waitFor.push(
             axios.post(url, postData, {
@@ -1451,46 +1414,86 @@ const sendWhatAppMessage = (postData, numbers) => {
     return Promise.all(waitFor);
 };
 
-exports.httpApp = functions.region("us-central1").https.onRequest(app);
+exports.httpApp = onRequest({ region: "us-central1" }, app);
 
-exports.notificationAdded = functions.region("europe-west1").firestore
-    .document("notifications/{notifID}")
-    .onCreate((snapshot, context) => {
-        const isDev = snapshot.data().isDev;
 
-        const usersRef = db.collection(isDev ? "users_dev" : USERS_COLLECTION);
-        return usersRef.get().then(users => {
-            const to = snapshot.data().to;
-            const phoneNumbers = [];
+exports.notificationAdded = onDocumentCreated("notifications/{notifID}", (event) => {
+    const snapshot = event.data;
+    const isDev = snapshot.data().isDev;
 
-            if (to.length > 0 && to[0] === "all" || to[0] === "all-exclude") {
-                users.docs.forEach(user => {
-                    if (to[0] === "all" || !to.includes(user.ref.id)) {
-                        // Send Message
-                        if (user && user.data().phone && user.data().phone.length > 0) {
-                            phoneNumbers.push(user.data().phone);
-                        }
-                    }
-                });
-            } else {
-                to.forEach(sentToUser => {
-                    const user = users.docs.find(u => u.ref.id === sentToUser);
+    const usersRef = db.collection(isDev ? "users_dev" : USERS_COLLECTION);
+    return usersRef.get().then(users => {
+        const to = snapshot.data().to;
+        const phoneNumbers = [];
 
+        if (to.length > 0 && to[0] === "all" || to[0] === "all-exclude") {
+            users.docs.forEach(user => {
+                if (to[0] === "all" || !to.includes(user.ref.id)) {
+                    // Send Message
                     if (user && user.data().phone && user.data().phone.length > 0) {
                         phoneNumbers.push(user.data().phone);
                     }
-                });
-            }
-
-            if (phoneNumbers.length > 0) {
-                if (snapshot.data().message_template) {
-                    return sendTemplateMessage(snapshot.data().message_template, snapshot.data().parameters,
-                        snapshot.data().quickReplyParameters, phoneNumbers);
-                } else {
-                    return sendFreeMessage(snapshot.data().message_body, phoneNumbers);
                 }
+            });
+        } else {
+            to.forEach(sentToUser => {
+                const user = users.docs.find(u => u.ref.id === sentToUser);
+
+                if (user && user.data().phone && user.data().phone.length > 0) {
+                    phoneNumbers.push(user.data().phone);
+                }
+            });
+        }
+
+        if (phoneNumbers.length > 0) {
+            if (snapshot.data().message_template) {
+                return sendTemplateMessage(snapshot.data().message_template, snapshot.data().parameters,
+                    snapshot.data().quickReplyParameters, phoneNumbers);
+            } else {
+                return sendFreeMessage(snapshot.data().message_body, phoneNumbers);
             }
-        });
+        }
     });
+});
 
 
+// --- AUDIO meeting setup
+exports.ProcessMeetingRequestAudio = onCall({ cors: true }, async (request) => {
+    if (!request.auth) {
+        return;
+    }
+    const { audioPart } = request.data;
+
+    // Initialize the Google Generative AI client
+    const genAIAPI = new genAI.GoogleGenerativeAI(geminiApiKey.value());
+    const model = genAIAPI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+
+    const textPrompt = `I am a person managing own calendar. I send you an audio track with specification of a meeting.
+Extract the meeting information, and espond with only a JSON object.
+here is an example for the JSON structure:
+{
+    "title": "<נושא הפגישה כאן>",
+    "description": "<תיאור הפגישה כאן>",
+    "date": "2025-05-29",
+    "startTime": "14:00",
+    "lengthMinutes": 30
+}.
+Assume now is ${dayjs().format("YYYY-MM-DD HH:mm")}.
+
+If the audio only contains partial info, ommit from the JSON. if unable to detect any info, respond with an error JSON like {"error": "Audio unclear"}.`;
+
+    const textPart = { text: textPrompt };
+
+    try {
+        const result = await model.generateContent([textPart, audioPart]); // Send both text and audio parts
+        const response = result.response;
+        return response.text();
+    } catch (error) {
+        console.error("Error calling Gemini API:", error);
+        if (error instanceof Error) {
+            throw new Error(`Gemini API request failed: ${error.message}`);
+        }
+        throw new Error("Gemini API request failed with an unknown error.");
+    }
+});

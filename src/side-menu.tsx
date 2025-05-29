@@ -1,4 +1,4 @@
-import { Accessibility, AddCard, AdminPanelSettings, Check, Close, Garage, Login, Logout, Notifications, SettingsAccessibility, SettingsAccessibilityOutlined, ThreeP } from "@mui/icons-material";
+import { Accessibility, AddCard, AdminPanelSettings, Check, Close, Garage, Login, Logout, NewReleases, Notifications, SettingsAccessibility, SettingsAccessibilityOutlined, ThreeP } from "@mui/icons-material";
 import { SideMenuProps } from "./types";
 import "./css/side-menu.css";
 import * as api from './api'
@@ -10,7 +10,8 @@ import { TextField } from "@mui/material";
 
 export default function SideMenu({ open, onClose, avatarUrl, nickName,
     onNotifications, onAccessibilitySettings, onShowLogin, user, isAdmin,
-    adminView, setAdminView, deletedView, setDeletedView,   notify, setNickName, newNotificationCount }: SideMenuProps) {
+    adminView, setAdminView, deletedView, setDeletedView,   notify, setNickName, newNotificationCount,
+    openAIWindow }: SideMenuProps) {
     const [showNickEditor, setShowNickEditor] = useState<boolean>(false);
     const [editedNickName, setEditedNickName] = useState<string | undefined>(undefined);
 
@@ -46,6 +47,12 @@ export default function SideMenu({ open, onClose, avatarUrl, nickName,
                     <Garage />
                     <div className="menu-item-caption">אירועים שנמחקו</div>
                     <div className="menu-item-3col">{deletedView && <Check />}</div>
+                </div>
+                }
+                {
+                    isAdmin && <div className="menu-item-container" onClick={() => openAIWindow?.()}>
+                    <NewReleases />
+                    <div className="menu-item-caption">פגישה AI</div>
                 </div>
                 }
             </div>

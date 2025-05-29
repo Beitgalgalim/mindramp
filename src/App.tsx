@@ -15,6 +15,7 @@ import { Close } from '@mui/icons-material';
 import useLocalStorageState from 'use-local-storage-state';
 import About from './about';
 import Kiosk from './kiosk';
+import { MeetingRequest } from './meeting-request';
 let gNotificationTimeout: any = undefined;
 
 function App(props: any) {
@@ -102,6 +103,7 @@ function App(props: any) {
   };
 
   useEffect(() => {
+    console.log("Init...")
     api.initAPI(
       // Callback for AuthStateChanged
       (userDocument) => {
@@ -172,6 +174,7 @@ function App(props: any) {
     actualtNotificationOn, deviceProvidedNotificationToken,
     localNotificationToken, notificationReady]);
 
+  
   return (
     <div className="App" dir="rtl">
       {msg?.progress && <div className="progress-host">

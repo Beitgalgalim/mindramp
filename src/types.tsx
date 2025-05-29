@@ -242,6 +242,7 @@ export interface SideMenuProps extends WithUser, Notifying {
     setDeletedView: (isDeletedView: boolean) => void,
     setNickName: (newValue: string) => void,
     newNotificationCount: number,
+    openAIWindow?: ()=>void;
 }
 
 export interface EventDetailsProps extends Notifying, WithMedia, WithUsers {
@@ -421,4 +422,9 @@ export interface HourLinesProps extends WithWindowSize {
     hours: string[];
     sliceEachHour: number;
     vertical: boolean;
+}
+
+export interface MeetingRequestProps extends Notifying {
+
+    onClose:()=>void
 }

@@ -31,3 +31,4 @@ test.js
 local-utils.js
 
 *.idea
+.env*

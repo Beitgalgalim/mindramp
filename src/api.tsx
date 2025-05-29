@@ -15,12 +15,14 @@ import {
 } from "firebase/auth";
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAnalytics, logEvent, Analytics, AnalyticsCallOptions } from "firebase/analytics";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 
 import { firebaseConfig } from './config';
 import { Collections, MediaResource, UserInfo, UserDocument, isDev, onPushNotificationHandler, UserType, LocationInfo, Role, RoleRecord } from './types';
 import { Event } from './event';
 import dayjs from 'dayjs';
+import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -361,7 +363,7 @@ export function getMedia(): Promise<MediaResource[]> {
 
 export async function upsertEvent(event: Event, id?: string): Promise<Event> {
     const isCreate = id === undefined || id === "";
-    const dbEventObj = event.toDbObj(isCreate, isCreate? false: event.instanceStatus);
+    const dbEventObj = event.toDbObj(isCreate, isCreate ? false : event.instanceStatus);
 
     const upsertEventFunc = httpsCallable(functions, 'upsertEvent');
     const payload: any = {
@@ -747,5 +749,48 @@ async function _getCollectionWithCond(collName: string, whereField: string, wher
 
             return obj;
         })
+    });
+}
+
+
+
+export async function meetingRequest(audioBlob: Blob): Promise<string> {
+    const base64Audio = await blobToBase64(audioBlob);
+
+    const audioPart = {
+        inlineData: {
+            data: base64Audio,
+            mimeType: audioBlob.type || 'audio/wav', // Use blob's MIME type, default to audio/wav
+        },
+    };
+
+    const ProcessMeetingRequestAudioFunc = httpsCallable(functions, 'ProcessMeetingRequestAudio');
+
+    const payload: any = {
+        audioPart,
+        isDev: isDev(),
+    };
+
+    return ProcessMeetingRequestAudioFunc(payload).then((res: any) => {
+        console.log(res, res.data)
+        return res.data
+    });
+}
+
+
+
+
+async function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            // result is a data URL (e.g., "data:audio/wav;base64,SGVsbG8="),
+            // we need to strip the prefix "data:...;base64,"
+            const base64String = result.substring(result.indexOf(',') + 1);
+            resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
     });
 }

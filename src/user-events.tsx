@@ -27,6 +27,7 @@ import SideMenu from "./side-menu";
 import Login from "./login";
 import { User } from "@firebase/auth";
 import { DeletedItems } from "./deleted-items";
+import { MeetingRequest } from "./meeting-request";
 
 
 const AdminBtn = ({
@@ -85,6 +86,8 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
     const [daysOffset, setDaysOffset] = useState<number>(0);
     const [manageUsers, setManageUsers] = useState(false);
     const [manageMedia, setManageMedia] = useState(false);
+    const [openAIWindow, setOpenAIWindow] = useState(false);
+
     const [filter, setFilter] = useLocalStorageState<EventFilter>("eventsFilter", {
         defaultValue: {
             users: [],
@@ -145,7 +148,6 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             setRawEvents(evtsWithId);
         }).finally(() => setLoadingEvents(false));
 
-        api.getDeletedEvents().then(res => console.log("deleted", res))
     }, [connected, startDate, reload, etag, user]);
 
     useEffect(() => {
@@ -273,6 +275,13 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
         />
     }
 
+    if (openAIWindow) {
+        return <div>
+            <MeetingRequest notify={notify} onClose={()=>setOpenAIWindow(false)}/>
+
+        </div>
+    }
+
     if (showUserSettings) {
         return <UserSettings
             onAccessibilitySettings={() => {
@@ -343,6 +352,10 @@ export default function UserEvents({ connected, notify, user, roles, isGuide, ki
             }}
             notify={notify}
             newNotificationCount={newNotificationCount}
+            openAIWindow={() => {
+                setOpenAIWindow(true)
+                setShowMenu(false);
+            }}
         />
 
 
